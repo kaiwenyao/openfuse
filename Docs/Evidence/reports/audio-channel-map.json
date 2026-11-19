@@ -1,0 +1,368 @@
+{
+  "duration": 60.0,
+  "failures": [],
+  "media": "Fixtures/generated/openfuse-fixture.mkv",
+  "results": [
+    {
+      "cycle": 0,
+      "dominant": "FL",
+      "expected": "FL",
+      "leakage_db": -41.8,
+      "ok": true,
+      "tone_magnitude": [
+        0.08249,
+        0.0,
+        0.00067,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 0,
+      "dominant": "FR",
+      "expected": "FR",
+      "leakage_db": -177.3,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.08247,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 0,
+      "dominant": "FC",
+      "expected": "FC",
+      "leakage_db": -180.0,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.08252,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 0,
+      "dominant": "LFE",
+      "expected": "LFE",
+      "leakage_db": -170.2,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.08295,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 0,
+      "dominant": "BL",
+      "expected": "BL",
+      "leakage_db": -50.9,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.00023,
+        0.08249,
+        0.0
+      ]
+    },
+    {
+      "cycle": 0,
+      "dominant": "BR",
+      "expected": "BR",
+      "leakage_db": -125.8,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.08249
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "FL",
+      "expected": "FL",
+      "leakage_db": -96.5,
+      "ok": true,
+      "tone_magnitude": [
+        0.08249,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "FR",
+      "expected": "FR",
+      "leakage_db": -88.1,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.08248,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "FC",
+      "expected": "FC",
+      "leakage_db": -179.5,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.08252,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "LFE",
+      "expected": "LFE",
+      "leakage_db": -117.9,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.08295,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "BL",
+      "expected": "BL",
+      "leakage_db": -132.9,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.08248,
+        0.0
+      ]
+    },
+    {
+      "cycle": 1,
+      "dominant": "BR",
+      "expected": "BR",
+      "leakage_db": -55.2,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.00014,
+        0.08249
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "FL",
+      "expected": "FL",
+      "leakage_db": -35.4,
+      "ok": true,
+      "tone_magnitude": [
+        0.08249,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0014
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "FR",
+      "expected": "FR",
+      "leakage_db": -40.3,
+      "ok": true,
+      "tone_magnitude": [
+        0.0008,
+        0.08248,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "FC",
+      "expected": "FC",
+      "leakage_db": -44.7,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.00048,
+        0.08252,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "LFE",
+      "expected": "LFE",
+      "leakage_db": -172.6,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.08296,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "BL",
+      "expected": "BL",
+      "leakage_db": -85.2,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.08249,
+        0.0
+      ]
+    },
+    {
+      "cycle": 2,
+      "dominant": "BR",
+      "expected": "BR",
+      "leakage_db": -80.8,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        1e-05,
+        0.0,
+        0.0,
+        0.08249
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "FL",
+      "expected": "FL",
+      "leakage_db": -96.6,
+      "ok": true,
+      "tone_magnitude": [
+        0.08249,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "FR",
+      "expected": "FR",
+      "leakage_db": -88.1,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.08247,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "FC",
+      "expected": "FC",
+      "leakage_db": -180.0,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.08251,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "LFE",
+      "expected": "LFE",
+      "leakage_db": -180.0,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.08295,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "BL",
+      "expected": "BL",
+      "leakage_db": -53.1,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.00018,
+        0.08249,
+        0.0
+      ]
+    },
+    {
+      "cycle": 3,
+      "dominant": "BR",
+      "expected": "BR",
+      "leakage_db": -125.4,
+      "ok": true,
+      "tone_magnitude": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.08249
+      ]
+    }
+  ],
+  "tone_tests": 24
+}

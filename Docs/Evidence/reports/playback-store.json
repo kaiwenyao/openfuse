@@ -1,0 +1,17 @@
+{
+  "records": {
+    "Fixtures/generated/openfuse-fixture.mkv": {
+      "displayTitle": "openfuse-fixture",
+      "duration": 60,
+      "fileSize": 17654819,
+      "isFinished": false,
+      "lastPlayedAt": "2026-11-19T22:24:28Z",
+      "mediaPath": "Fixtures/generated/openfuse-fixture.mkv",
+      "playCount": 0,
+      "position": 30.458,
+      "preferredAudioTrackID": "mpv-audio:1",
+      "preferredSubtitleTrackID": "ext:Fixtures/generated/openfuse-fixture.zh-Hans.ass"
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,14 @@
+.build/
+build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+Media/
+Fixtures/generated/
+Fixtures/frames/
+*.mkv
+*.mp4
+*.ass
+!Fixtures/spec/*.ass
+*.log
+.DS_Store

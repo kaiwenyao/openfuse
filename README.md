@@ -6,6 +6,26 @@
 
 **两份文档配合使用。** 本页安排实现顺序、技术决策和每阶段的交付条件。[功能与验收矩阵](PARITY.md)列出对照对象、界面测量方法和可以直接执行的测试。
 
+## 当前进度（2026-11-19）
+
+- **M0 引擎与素材：完成。** AVPlayer 无法打开 Matroska（0 轨、0 s、无首帧）；libmpv 0.42.0 可播放、可定位，应用内启用 VideoToolbox 硬解。测试片由脚本生成：HEVC Main 10、E-AC-3 5.1、中日双语 ASS，文件级 24/24 声道报号校验通过。记录：[引擎选型](Docs/ENGINE-DECISION.md)、[测试素材](Docs/TEST-MEDIA.md)。
+- **M1 Mac 本地播放：首个可用版本。** 可打开 MKV、出画面/出声、切换外挂简繁 ASS、缺字体回退、拖动、全屏、退出后从上次位置续播，关闭播放器再打开可重建会话。构建与实测见 [M1 验收记录](Docs/M1-ACCEPTANCE.md)。
+- **尚未完成：** Infuse 同机对照与人工听测、WebDAV/OpenList、Jellyfin、海报库与搜索、其他 Apple 平台。首页目前只有本地文件与继续观看，详情页和设置页未实现。
+- **下一项：** M2 远程来源，先做 WebDAV/OpenList 的列目录、Range 读取、外挂字幕与播放中拖动，再做 Jellyfin Direct/Library 与进度回写。
+
+开发入口：
+
+```bash
+brew install mpv
+Scripts/make_fixtures.sh    # 生成 60 s 测试片到 Fixtures/generated/
+Scripts/build-app.sh        # 产出 build/OpenFuse.app
+swift test                  # 核心单元测试
+open build/OpenFuse.app
+```
+
+当前分支 `m1-local-playback`。每个里程碑使用独立分支；M2 从该分支拉出。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
+
+
 ## 第一个可以日常使用的 Mac 版本
 
 | 用户操作 | 交付时要看见的结果 |
