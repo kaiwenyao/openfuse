@@ -77,6 +77,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        if let jellyfinURL = value(after: "--jellyfin-url", in: arguments), let baseURL = URL(string: jellyfinURL) {
+            let user = self.value(after: "--jellyfin-user", in: arguments)
+                ?? ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? ""
+            let password = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_PASSWORD"]
+                ?? self.value(after: "--jellyfin-pass", in: arguments) ?? ""
+            let name = self.value(after: "--jellyfin-name", in: arguments) ?? "Jellyfin"
+            let itemID = self.value(after: "--jellyfin-item", in: arguments)
+            let mediaID = self.value(after: "--jellyfin-media", in: arguments)
+            Task { @MainActor in
+                guard let source = await model.addJellyfinSource(
+                    name: name, urlText: baseURL.absoluteString, username: user, password: password
+                ) else {
+                    self.scheduleQuitOnly(arguments: arguments)
+                    return
+                }
+                if let itemID, !arguments.contains("--jellyfin-browse") {
+                    await model.openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID)
+                } else {
+                    model.browseJellyfin(source)
+                }
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {
+                    Task { @MainActor in
+                        if let itemID {
+                            await model.openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID)
+                        }
+                    }
+                })
+            }
+            return
+        }
+
         let localPath = value(after: "--open", in: arguments)
         let webdavURL = value(after: "--webdav-url", in: arguments)
         guard localPath != nil || webdavURL != nil else {
@@ -200,6 +231,8 @@ struct RootView: View {
                 }
             case .browser(let source):
                 WebDAVBrowserView(source: source)
+            case .jellyfinBrowser(let source):
+                JellyfinBrowserView(source: source)
             }
         }
         .background(Theme.background)
@@ -220,6 +253,7 @@ enum Theme {
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
     @State private var isDropTarget = false
+    @State private var showAddJellyfin = false
 
     private let columns = [GridItem(.adaptive(minimum: 250, maximum: 340), spacing: 22)]
 
@@ -244,6 +278,9 @@ struct HomeView: View {
                         if !model.sources.isEmpty {
                             networkSources
                         }
+                        if !model.jellyfinSources.isEmpty {
+                            jellyfinSourcesSection
+                        }
                         engineCard
                     }
                     .padding(.horizontal, 36)
@@ -266,6 +303,10 @@ struct HomeView: View {
         .animation(.easeInOut(duration: 0.2), value: isDropTarget)
         .sheet(isPresented: $model.showAddSource) {
             AddSourceSheet()
+                .environmentObject(model)
+        }
+        .sheet(isPresented: $showAddJellyfin) {
+            AddJellyfinSheet()
                 .environmentObject(model)
         }
     }
@@ -297,6 +338,18 @@ struct HomeView: View {
                 model.showAddSource = true
             } label: {
                 Label("添加来源", systemImage: "network")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Theme.elevated, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showAddJellyfin = true
+            } label: {
+                Label("Jellyfin", systemImage: "play.tv")
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -402,6 +455,57 @@ struct HomeView: View {
                     .font(.system(size: 12.5))
                     .foregroundStyle(Theme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var jellyfinSourcesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Jellyfin")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Spacer()
+                Button {
+                    showAddJellyfin = true
+                } label: {
+                    Label("添加", systemImage: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.accent)
+            }
+            ForEach(model.jellyfinSources) { source in
+                HStack(spacing: 14) {
+                    Image(systemName: "play.tv.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Theme.warm)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(source.name)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(source.baseURL.absoluteString)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(Theme.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Button("浏览") { model.browseJellyfin(source) }
+                        .buttonStyle(.bordered)
+                    Button {
+                        model.removeJellyfinSource(source)
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(Theme.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("移除来源（不删除服务器内容）")
+                }
+                .padding(14)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
             }
         }
     }
@@ -582,6 +686,18 @@ struct MediaCard: View {
 }
 
 enum Timecode {
+    static func long(_ seconds: Double) -> String {
+        guard seconds.isFinite, seconds >= 0 else { return "—" }
+        let total = Int(seconds.rounded())
+        let hours = total / 3600
+        let minutes = (total / 60) % 60
+        let secs = total % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        }
+        return String(format: "%d 分钟", max(1, total / 60))
+    }
+
     static func short(_ seconds: Double) -> String {
         guard seconds.isFinite, seconds >= 0 else { return "00:00" }
         let total = Int(seconds.rounded())

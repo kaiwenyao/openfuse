@@ -37,6 +37,18 @@
 | 续播（远程） | 同上 | 播放到 25.083 s 退出，从首页记录重开 | 待采样 | 从 25.08 继续，6 s 后 30.583 s；来源与字幕偏好保留 | `reports/m2-webdav-resume.json` | 本地通过；跨设备待 M4 |
 | 添加/浏览 | 同上 | 本地 WebDAV 根目录、Unicode 与 `100% 测试` 目录 | 待采样 | 来源卡片、Movies/Shows 浏览、Unicode 往返、401 拒绝错误密码 | Evidence 07–08；`Scripts/test-webdav.sh` | 本地通过；真实 OpenList 待验证 |
 
+### M2b Jellyfin Direct 执行记录（2026-11-19）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| T05（Direct 部分） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 60 s 夹具／本地 Jellyfin 夹具／登录 test | Infuse 未安装，待采样 | 登录、2 个媒体库、电影/剧/季/集；PlaybackInfo 返回 2 个版本；直连播放 60 s、HEVC Main 10、VideoToolbox | `reports/m2-jellyfin-episode.json`、`m2-jellyfin-movie.json` | 部分通过（真实服务器、Library Mode 待做） |
+| T01（Jellyfin 直连） | 同上 | 同片／Jellyfin `ep-1` | 待采样 | 9.917 s 冻结帧；服务器标题「第 1 集」；服务器音轨/字幕命名保留 | Evidence 15、18 | 部分通过（听测/真实服务器待做） |
+| 版本选择 | 同上 | 电影两个 MediaSources | 待采样 | 选择 `ms-movie-compact`，服务端只流该 MediaSourceId | 服务端日志、`reports/m2-jellyfin-movie.json` | 本地通过 |
+| 进度回写 | 同上 | 播放→暂停→退出 | 待采样 | Playing → Progress（4.7/9.7/9.917 s）→ Stopped（9.917 s），PlayMethod=DirectPlay | `reports/m2-jellyfin-server-log.jsonl` | 本地通过；冲突规则待 T08 |
+| 服务器续播 | 同上 | 清空本地库，重开同一集 | 待采样 | 从服务器 9.917 s 起播，6 s 后 15.375 s | `reports/m2-jellyfin-resume.json` | 本地通过；跨设备待 M4 |
+| 浏览 UI | 同上 | 电影库/电视剧库 | 待采样 | 封面、服务器名称、来源卡片 | Evidence 13–14 | 部分通过（像素对照待做） |
+
+
 
 
 ## 功能清单

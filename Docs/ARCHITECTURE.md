@@ -62,7 +62,18 @@ Docs/                   决策、素材、验收、证据
 
 **安全注意：** 凭据作为 mpv `http-header-fields` 全局注入，跨域 302 时可能被转发。接真实 OpenList 前需改成本机代理，只在 origin 附带 Authorization。Keychain 首次读取可能弹系统授权，自动化用 `OPENFUSE_WEBDAV_PASSWORD` 覆盖。
 
-## 远程来源接口（Jellyfin 预留）
+## Jellyfin Direct（M2b 已实现）
+
+- `JellyfinSource`：名称、根 URL、用户名、userID/serverID；id 为 URL+用户名的哈希；`jellyfin-sources.json` 保存元数据，令牌存 Keychain（`com.openfuse.jellyfin`）。
+- `JellyfinClient`（actor）：登录、Views、Items、单条详情、PlaybackInfo、图片 URL、stream URL、Playing/Progress/Stopped 上报。
+- `JellyfinItem`/`MediaStream`/`MediaSource`：保留服务器 Id、名称、Type、年份、简介、封面 tag、RunTimeTicks、UserData 位置、版本与轨道。
+- `MediaItem.jellyfin`：播放 URL、`jellyfin://<source>/<item>/<mediaSource>` 续播键、`X-Emby-Token` 头、`JellyfinPlaybackContext`（play session、token、runtime、MediaStreams）。
+- PlayerModel 将服务器音频/内嵌字幕 `DisplayTitle` 覆盖到 mpv 轨道菜单；上报开始/每 5 s 进度/停止（只发一次）。
+- `JellyfinBrowserView`：库→剧→季→集；`JellyfinDetailView`：封面、简介、版本 Picker、播放。
+
+**仍待做：** Library Mode 聚合、外部字幕流、按 MediaStream Index 的严格轨道映射、真实服务器转码/HTTPS/多用户。
+
+## 远程来源接口（后续来源预留）
 
 播放器只依赖 URL 与轨道描述。M2 计划：
 

@@ -10,9 +10,9 @@
 
 - **M0 引擎与素材：完成。** AVPlayer 无法打开 Matroska（0 轨、0 s、无首帧）；libmpv 0.42.0 可播放、可定位，应用内启用 VideoToolbox 硬解。测试片由脚本生成：HEVC Main 10、E-AC-3 5.1、中日双语 ASS，文件级 24/24 声道报号校验通过。记录：[引擎选型](Docs/ENGINE-DECISION.md)、[测试素材](Docs/TEST-MEDIA.md)。
 - **M1 Mac 本地播放：首个可用版本。** 可打开 MKV、出画面/出声、切换外挂简繁 ASS、缺字体回退、拖动、全屏、退出后从上次位置续播，关闭播放器再打开可重建会话。构建与实测见 [M1 验收记录](Docs/M1-ACCEPTANCE.md)。
-- **M2 WebDAV 部分：完成本地验证。** 可添加 WebDAV 来源、按真实目录浏览、直接播放、发现远程外挂 ASS、简繁切换、限速下拖动（旧 GET 取消 + 中段 Range）、退出后续播；提供本地 WebDAV 夹具与端到端脚本。真实 OpenList/百度网盘账号未提供，登录、签名跳转与限流标为「待验证」。记录：[M2a WebDAV 验收](Docs/M2-WEBDAV.md)。
-- **尚未完成：** Jellyfin、海报库与搜索、真实 OpenList 验证、跨域重定向代理、Infuse 同机对照与人工听测、其他 Apple 平台。首页目前只有本地文件、继续观看与网络来源，详情页和设置页未实现。
-- **下一项：** Jellyfin Direct Mode（登录、视图/条目、PlaybackInfo、保留片名/封面/轨道、进度回写），随后 Library Mode 与海报库。
+- **M2 WebDAV + Jellyfin Direct：完成本地验证。** WebDAV 可添加来源、按真实目录浏览、直放、远程 ASS、限速拖动与续播。Jellyfin Direct 可登录、浏览电影/剧/季/集、使用服务器封面与版本、直连播放、保留服务器音轨/字幕命名、回写开始/进度/停止并用服务器位置续播。两者均提供本地协议夹具与端到端脚本。真实 OpenList、百度网盘与真实 Jellyfin 账号未提供，相关组合标为「待验证」。记录：[M2a WebDAV](Docs/M2-WEBDAV.md)、[M2b Jellyfin](Docs/M2-JELLYFIN.md)。
+- **尚未完成：** Library Mode 聚合与海报库（M3）、真实 OpenList/Jellyfin 验证、跨域凭据代理、Infuse 同机对照与人工听测、其他 Apple 平台。首页目前只有本地文件、继续观看与网络来源；详情页、设置页与搜索未实现。
+- **下一项：** M3：Jellyfin Library Mode 与聚合海报库、TMDB 识别、继续观看/最近添加、搜索、多版本与手工纠错。
 
 开发入口：
 
@@ -21,8 +21,10 @@ brew install mpv
 Scripts/make_fixtures.sh    # 生成 60 s 测试片到 Fixtures/generated/
 Scripts/build-app.sh        # 产出 build/OpenFuse.app
 swift test                  # 核心单元测试
-Scripts/test-webdav.sh            # 本地 WebDAV 协议检查
-Scripts/run-webdav-acceptance.sh  # 远程播放/拖动/续播端到端
+Scripts/test-webdav.sh              # 本地 WebDAV 协议检查
+Scripts/run-webdav-acceptance.sh    # WebDAV 播放/拖动/续播端到端
+Scripts/test-jellyfin.sh            # 本地 Jellyfin 协议检查
+Scripts/run-jellyfin-acceptance.sh  # Jellyfin 播放/版本/进度/续播端到端
 open build/OpenFuse.app
 ```
 

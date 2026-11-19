@@ -87,4 +87,4 @@ PASS: remote playback + remote ASS, Range seek (3 GETs), resume 25.083s
 
 ## 下一项
 
-Jellyfin：Direct Mode 登录与视图/条目、PlaybackInfo 选版本与直链/转码、保留服务器片名/封面/轨道、进度上报；随后 Library Mode 与海报库在 M3 接入。真实 Jellyfin 账号同样先用本地夹具（可用 Docker/独立测试实例）验证协议，缺账号的组合标「待验证」。
+Jellyfin Direct Mode 已在同一分支完成并记录于 [M2b Jellyfin 验收](M2-JELLYFIN.md)：登录、视图/条目、PlaybackInfo 版本、服务器片名/封面/轨道、进度回写与服务器续播。Library Mode 与海报库进入 M3。真实 Jellyfin 与 OpenList 账号仍未提供，相关组合保持「待验证」。

@@ -16,6 +16,13 @@
 | `10-webdav-zh-hant.jpg` | 远程切到 `zh-Hant` 的同一帧 | 同上 |
 | `11-webdav-seek.jpg` | 限速 WebDAV 拖动到 41 s | 同上 |
 | `12-webdav-player-ui.jpg` | 远程播放器控制层，来源显示「本地 WebDAV」 | 应用内窗口快照 |
+| `13-jellyfin-home.jpg` | 首页 Jellyfin 来源卡片 | 应用内窗口快照 |
+| `14-jellyfin-browser.jpg` | Jellyfin 电影库/电视剧库与封面 | 应用内窗口快照 |
+| `15-jellyfin-episode-frame.jpg` | Jellyfin 直连播放单集，服务器字幕 | 播放器 `glReadPixels` |
+| `16-jellyfin-version-frame.jpg` | 电影选择压缩版后的播放帧 | 同上 |
+| `17-jellyfin-resume.jpg` | 服务器位置 9.9 s 续播后的帧 | 同上 |
+| `18-jellyfin-player-ui.jpg` | Jellyfin 来源的播放器控制层 | 应用内窗口快照 |
+| `reports/m2-jellyfin-*.json` | 单集/电影/续播报告与服务端事件日志 | 应用 `--report`、夹具日志 |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |

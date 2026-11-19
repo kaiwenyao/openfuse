@@ -8,6 +8,7 @@ enum AppRoute: Equatable {
     case home
     case player
     case browser(WebDAVSource)
+    case jellyfinBrowser(JellyfinSource)
 }
 
 @MainActor
@@ -21,10 +22,14 @@ final class AppModel: ObservableObject {
     @Published var sources: [WebDAVSource] = []
     @Published var browsingSource: WebDAVSource?
     @Published var showAddSource = false
+    @Published var showAddJellyfin = false
+    @Published var jellyfinSources: [JellyfinSource] = []
 
     let supportDirectory: URL
     let store: PlaybackStore
     let sourceStore: SourceStore
+    let jellyfinStore: JellyfinSourceStore
+    private var sessionJellyfinTokens: [String: String] = [:]
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -32,10 +37,12 @@ final class AppModel: ObservableObject {
         do {
             self.store = try PlaybackStore(directory: directory)
             self.sourceStore = try SourceStore(directory: directory)
+            self.jellyfinStore = try JellyfinSourceStore(directory: directory)
         } catch {
             fatalError("cannot open OpenFuse store: \(error)")
         }
         self.sources = sourceStore.sources
+        self.jellyfinSources = jellyfinStore.sources
         refreshRecent()
     }
 
@@ -82,12 +89,13 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func startPlayer(with item: MediaItem) {
+    private func startPlayer(with item: MediaItem, serverStart: Double = 0) {
         if let current = player {
             current.stopAndClose()
         }
         let record = store.record(forPath: item.fingerprint.resumeKey)
-        let startAt = record.flatMap { ResumePolicy.resumePosition(for: $0) } ?? 0
+        let localStart = record.flatMap { ResumePolicy.resumePosition(for: $0) } ?? 0
+        let startAt = max(localStart, serverStart)
         let model = PlayerModel(item: item, startAt: startAt, store: store)
         model.onClose = { [weak self] in
             self?.player = nil
@@ -219,6 +227,15 @@ final class AppModel: ObservableObject {
     }
 
     func resume(_ record: PlaybackRecord) {
+        if record.sourceKind == "jellyfin",
+           let sourceID = record.sourceID,
+           let source = jellyfinSources.first(where: { $0.id == sourceID }) {
+            let parts = (record.remotePath ?? "").split(separator: "|", maxSplits: 1).map(String.init)
+            guard let itemID = parts.first, !itemID.isEmpty else { return }
+            let mediaID = parts.count > 1 ? parts[1] : nil
+            Task { await openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID) }
+            return
+        }
         if record.sourceKind == "webdav",
            let sourceID = record.sourceID,
            let path = record.remotePath,
@@ -235,7 +252,134 @@ final class AppModel: ObservableObject {
     }
 
     func saveForTermination() {
-        player?.saveProgress()
+        player?.finishSession()
+    }
+
+    // MARK: - Jellyfin
+
+    func jellyfinToken(for source: JellyfinSource) -> String? {
+        if let override = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_TOKEN"], !override.isEmpty {
+            return override
+        }
+        if let cached = sessionJellyfinTokens[source.id] { return cached }
+        return CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
+    }
+
+    func addJellyfinSource(name: String, urlText: String, username: String, password: String) async -> JellyfinSource? {
+        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https"
+        else {
+            statusMessage = "服务器地址需要是 http:// 或 https://"
+            return nil
+        }
+        var source = JellyfinSource(name: name.isEmpty ? url.host ?? "Jellyfin" : name, baseURL: url, username: username)
+        do {
+            let session = try await JellyfinClient.authenticate(source: source, password: password)
+            source.userID = session.userID
+            source.serverID = session.serverID
+            let client = JellyfinClient(source: source, token: session.accessToken)
+            let views = try await client.views()
+            sessionJellyfinTokens[source.id] = session.accessToken
+            let usesEnvironment = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_PASSWORD"] != nil
+                || ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_TOKEN"] != nil
+            if !usesEnvironment {
+                try? CredentialStore.save(password: session.accessToken, account: source.id, service: "com.openfuse.jellyfin")
+            }
+            try jellyfinStore.upsert(source)
+            jellyfinSources = jellyfinStore.sources
+            statusMessage = "已添加 \(source.name)，共 \(views.count) 个媒体库"
+            return source
+        } catch {
+            statusMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    func removeJellyfinSource(_ source: JellyfinSource) {
+        try? jellyfinStore.remove(id: source.id)
+        CredentialStore.delete(account: source.id, service: "com.openfuse.jellyfin")
+        sessionJellyfinTokens.removeValue(forKey: source.id)
+        jellyfinSources = jellyfinStore.sources
+        if case .jellyfinBrowser(let browsing) = route, browsing.id == source.id {
+            route = .home
+        }
+    }
+
+    func browseJellyfin(_ source: JellyfinSource) {
+        route = .jellyfinBrowser(source)
+    }
+
+    func jellyfinImageURL(source: JellyfinSource, item: JellyfinItem, maxWidth: Int = 480) -> URL? {
+        guard let client = jellyfinClient(for: source) else { return nil }
+        return client.imageURL(itemID: item.id, tag: item.primaryImageTag, maxWidth: maxWidth)
+    }
+
+    func jellyfinClient(for source: JellyfinSource) -> JellyfinClient? {
+        guard let token = jellyfinToken(for: source) else { return nil }
+        return JellyfinClient(source: source, token: token)
+    }
+
+    func loadJellyfinViews(source: JellyfinSource) async throws -> [JellyfinItem] {
+        guard let client = jellyfinClient(for: source) else { throw JellyfinError.unauthorized }
+        return try await client.views()
+    }
+
+    func loadJellyfinItems(source: JellyfinSource, parentID: String) async throws -> [JellyfinItem] {
+        guard let client = jellyfinClient(for: source) else { throw JellyfinError.unauthorized }
+        return try await client.items(parentID: parentID)
+    }
+
+    func loadJellyfinItem(source: JellyfinSource, itemID: String) async throws -> JellyfinItem {
+        guard let client = jellyfinClient(for: source) else { throw JellyfinError.unauthorized }
+        return try await client.item(id: itemID)
+    }
+
+    func loadJellyfinPlaybackInfo(source: JellyfinSource, itemID: String) async throws -> JellyfinPlaybackInfo {
+        guard let client = jellyfinClient(for: source) else { throw JellyfinError.unauthorized }
+        return try await client.playbackInfo(itemID: itemID)
+    }
+
+    func openJellyfinItem(
+        source: JellyfinSource,
+        itemID: String,
+        preferredMediaSourceID: String? = nil
+    ) async {
+        guard let client = jellyfinClient(for: source), let token = jellyfinToken(for: source) else {
+            statusMessage = "缺少 \(source.name) 的登录令牌，请重新添加来源"
+            return
+        }
+        do {
+            let item = try await client.item(id: itemID)
+            let playback = try await client.playbackInfo(itemID: itemID)
+            guard !playback.mediaSources.isEmpty else {
+                statusMessage = "服务器没有返回可播放版本"
+                return
+            }
+            let mediaSource: JellyfinMediaSource
+            if let preferredMediaSourceID,
+               let match = playback.mediaSources.first(where: { $0.id == preferredMediaSourceID || $0.name == preferredMediaSourceID }) {
+                mediaSource = match
+            } else if let direct = playback.mediaSources.first(where: { $0.supportsDirectPlay == true }) {
+                mediaSource = direct
+            } else {
+                mediaSource = playback.mediaSources[0]
+            }
+            let subtitles = MediaItem.serverSubtitles(source: source, mediaSource: mediaSource, token: token)
+            guard let mediaItem = MediaItem.jellyfin(
+                source: source,
+                item: item,
+                mediaSource: mediaSource,
+                playbackInfo: playback,
+                token: token,
+                subtitles: subtitles
+            ) else {
+                statusMessage = "无法构造 Jellyfin 播放地址"
+                return
+            }
+            startPlayer(with: mediaItem, serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks))
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
     func captureUI(to url: URL) {
@@ -255,6 +399,7 @@ final class AppModel: ObservableObject {
             "engine": "libmpv",
             "mpv": player.engine.getPropertyString("mpv-version") ?? "unknown",
             "file": player.url.absoluteString,
+            "title": player.title,
             "sourceKind": player.item.sourceKind ?? "local",
             "sourceName": player.item.sourceName ?? "本地文件",
             "sourceID": player.item.sourceID ?? "",
@@ -349,6 +494,10 @@ final class PlayerModel: ObservableObject {
     private var savedAudioID: String?
     private var selectionWorkItem: DispatchWorkItem?
     private var selectionAttempts = 0
+    private var jellyfinClient: JellyfinClient?
+    private var jellyfinContext: JellyfinPlaybackContext?
+    private var hasReportedStop = false
+    private var hasReportedStart = false
 
     init(item: MediaItem, startAt: Double, store: PlaybackStore) {
         self.item = item
@@ -356,6 +505,17 @@ final class PlayerModel: ObservableObject {
         self.store = store
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
+        if let context = item.jellyfinContext {
+            let source = JellyfinSource(
+                id: context.sourceID,
+                name: item.sourceName ?? "Jellyfin",
+                baseURL: context.baseURL,
+                username: "",
+                userID: context.userID
+            )
+            self.jellyfinClient = JellyfinClient(source: source, token: context.token)
+            self.jellyfinContext = context
+        }
         wireEngine()
         if let record = store.record(forPath: item.fingerprint.resumeKey) {
             savedAudioID = record.preferredAudioTrackID
@@ -440,6 +600,7 @@ final class PlayerModel: ObservableObject {
     private func handleFileLoaded() {
         debugSelection("file loaded, catalog=\(catalog.count)")
         fileLoaded = true
+        reportJellyfinStart()
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
         for track in catalog where track.source == .external {
@@ -484,12 +645,18 @@ final class PlayerModel: ObservableObject {
             }
         }
 
+        var embeddedSubtitleIndex = 0
+        let embeddedServerLabels = serverEmbeddedSubtitleLabels()
         for mpv in mpvTracks where mpv.type == "sub" {
             guard !usedMPVIDs.contains(mpv.id) else { continue }
             let format = SubtitleFormat(fileExtension: mpv.codec ?? "")
             let language = LanguageTag.normalizeISO(mpv.language)
+            let serverLabel = embeddedSubtitleIndex < embeddedServerLabels.count ? embeddedServerLabels[embeddedSubtitleIndex] : nil
+            embeddedSubtitleIndex += 1
             let label: String
-            if let title = mpv.title, !title.isEmpty {
+            if let serverLabel, !serverLabel.isEmpty {
+                label = serverLabel
+            } else if let title = mpv.title, !title.isEmpty {
                 label = title
             } else {
                 label = SubtitleLabel.make(language: language, format: format, forced: false, includeFormat: true)
@@ -522,6 +689,7 @@ final class PlayerModel: ObservableObject {
             audioResult.append(track)
             if mpv.isSelected { selectedAudioID = track.id }
         }
+        applyServerAudioLabels(&audioResult)
         audioTracks = audioResult
 
         if fileLoaded, !didApplyInitialSelection {
@@ -597,6 +765,26 @@ final class PlayerModel: ObservableObject {
             url.absoluteString.removingPercentEncoding ?? url.absoluteString,
         ]
         return candidates.contains(filename) || candidates.contains(decoded)
+    }
+
+    private func serverEmbeddedSubtitleLabels() -> [String] {
+        guard let streams = item.jellyfinContext?.mediaStreams else { return [] }
+        return streams
+            .filter { $0.type == "Subtitle" && $0.isExternal != true }
+            .sorted { $0.index < $1.index }
+            .map { $0.displayTitle ?? "" }
+    }
+
+    private func applyServerAudioLabels(_ tracks: inout [AudioTrack]) {
+        guard let streams = item.jellyfinContext?.mediaStreams else { return }
+        let serverAudio = streams.filter { $0.type == "Audio" }.sorted { $0.index < $1.index }
+        guard !serverAudio.isEmpty else { return }
+        for index in tracks.indices where index < serverAudio.count {
+            let stream = serverAudio[index]
+            if let title = stream.displayTitle, !title.isEmpty {
+                tracks[index].displayName = title
+            }
+        }
     }
 
     private func audioLabel(_ mpv: MPVTrackInfo) -> String {
@@ -692,6 +880,7 @@ final class PlayerModel: ObservableObject {
 
     func saveProgress(finished: Bool? = nil) {
         guard duration > 0 else { return }
+        reportJellyfinProgress()
         let resolvedFinished = finished ?? (hasFinished || ResumePolicy.isFinished(position: position, duration: duration))
         store.update(
             fingerprint: fingerprint,
@@ -711,12 +900,78 @@ final class PlayerModel: ObservableObject {
     private func finishPlayback() {
         hasFinished = true
         saveProgress(finished: true)
+        reportJellyfinStop(wait: false)
         onFinished?()
         showControls = true
     }
 
+    private func reportJellyfinStart() {
+        guard let client = jellyfinClient, let context = jellyfinContext, !hasReportedStart else { return }
+        hasReportedStart = true
+        let position = initialPosition
+        let paused = isPaused
+        Task.detached {
+            await client.reportStart(
+                itemID: context.itemID,
+                mediaSourceID: context.mediaSourceID,
+                playSessionID: context.playSessionID,
+                position: position,
+                isPaused: paused
+            )
+        }
+    }
+
+    private func reportJellyfinProgress() {
+        guard let client = jellyfinClient, let context = jellyfinContext, !hasReportedStop else { return }
+        let current = position
+        let paused = isPaused
+        Task.detached {
+            await client.reportProgress(
+                itemID: context.itemID,
+                mediaSourceID: context.mediaSourceID,
+                playSessionID: context.playSessionID,
+                position: current,
+                isPaused: paused
+            )
+        }
+    }
+
+    private func reportJellyfinStop(wait: Bool) {
+        guard let client = jellyfinClient, let context = jellyfinContext, !hasReportedStop else { return }
+        hasReportedStop = true
+        let current = position
+        if wait {
+            let semaphore = DispatchSemaphore(value: 0)
+            Task.detached {
+                await client.reportStopped(
+                    itemID: context.itemID,
+                    mediaSourceID: context.mediaSourceID,
+                    playSessionID: context.playSessionID,
+                    position: current
+                )
+                semaphore.signal()
+            }
+            _ = semaphore.wait(timeout: .now() + 0.8)
+        } else {
+            Task.detached {
+                await client.reportStopped(
+                    itemID: context.itemID,
+                    mediaSourceID: context.mediaSourceID,
+                    playSessionID: context.playSessionID,
+                    position: current
+                )
+            }
+        }
+    }
+
+    func finishSession() {
+        saveProgress()
+        reportJellyfinStop(wait: true)
+    }
+
     func stopAndClose() {
         saveProgress()
+        reportJellyfinStop(wait: true)
         progressTimer?.invalidate()
         progressTimer = nil
         controlsTimer?.invalidate()

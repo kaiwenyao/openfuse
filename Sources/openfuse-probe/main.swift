@@ -166,6 +166,46 @@ case "version":
     let engine = MPVEngine()
     print("mpv client API \(engine.clientAPIversion), mpv-version \(engine.getPropertyString("mpv-version") ?? "?")")
     exit(0)
+case "jellyfin":
+    let base = arguments[2]
+    let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"
+    let password = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_PASSWORD"] ?? "test"
+    guard let url = URL(string: base) else { exit(2) }
+    let semaphore = DispatchSemaphore(value: 0)
+    Task {
+        do {
+            var source = JellyfinSource(name: "fixture", baseURL: url, username: user)
+            let session = try await JellyfinClient.authenticate(source: source, password: password)
+            source.userID = session.userID
+            source.serverID = session.serverID
+            let client = JellyfinClient(source: source, token: session.accessToken)
+            let views = try await client.views()
+            let items = try await client.items(parentID: views.first?.id)
+            var report: [String: Any] = [
+                "server": base,
+                "userID": session.userID,
+                "views": views.map { ["id": $0.id, "name": $0.name, "type": $0.itemType ?? "", "collection": $0.collectionType ?? ""] },
+                "items": items.map { ["id": $0.id, "name": $0.name, "type": $0.itemType ?? ""] },
+            ]
+            if let first = items.first(where: { $0.isPlayable }) {
+                let info = try await client.playbackInfo(itemID: first.id)
+                report["playSession"] = info.playSessionID ?? ""
+                report["versions"] = info.mediaSources.map { ["id": $0.id, "name": $0.name, "direct": $0.supportsDirectPlay ?? false] }
+                if let media = info.mediaSources.first {
+                    report["streamURL"] = client.streamURL(itemID: first.id, mediaSource: media)?.absoluteString ?? ""
+                    report["imageURL"] = client.imageURL(itemID: first.id, tag: first.primaryImageTag)?.absoluteString.replacingOccurrences(of: session.accessToken, with: "TOKEN") ?? ""
+                }
+            }
+            let data = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+            print(String(data: data, encoding: .utf8) ?? "{}")
+        } catch {
+            FileHandle.standardError.write("jellyfin error: \(error)\n".data(using: .utf8)!)
+            exit(1)
+        }
+        semaphore.signal()
+    }
+    semaphore.wait()
+    exit(0)
 case "webdav":
     let base = arguments[2]
     let path = arguments.count > 3 ? arguments[3] : ""
