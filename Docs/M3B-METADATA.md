@@ -82,4 +82,4 @@ PASS: TMDB movie/TV enrichment, NFO precedence, WebDAV posters, local/remote UI
 
 ## 下一项
 
-M3c：TMDB 候选/手动匹配、WebDAV NFO 与海报缓存、集级跨源版本合并、增量扫描与取消、手工纠错、最近添加/继续观看排序、T07 10,000 条目压力；完成后再进入 M4 家庭设备与状态同步。
+集级跨源版本合并已在 [M3c 版本合并验收](M3C-VERSIONS.md) 完成（电影 4 版本、剧集每集 2–3 版本）。剩余 M3d：TMDB 候选/手动匹配、WebDAV NFO/认证海报、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压力；完成后再进入 M4。

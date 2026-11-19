@@ -117,6 +117,51 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(metadata.posterPath, poster.path)
     }
 
+    func testMergedEpisodesCombineSourcesAndVersions() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-merge-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try LibraryStore(directory: directory)
+
+        func movieWork(id: String, sourceKind: String, sourceID: String, title: String) -> ScannedWork {
+            ScannedWork(
+                id: id, kind: .movie, title: title, sortTitle: title, year: 2026,
+                overview: nil, poster: nil, sourceKind: sourceKind, sourceID: sourceID,
+                serverID: nil, seasons: [],
+                movie: ScannedEpisode(
+                    id: id + "-main", seasonNumber: 0, episodeNumber: 1, title: title,
+                    overview: nil, runtime: 60, poster: nil, serverID: nil,
+                    remotePath: nil, remoteVariant: nil, fileURL: nil,
+                    versions: [ScannedVersion(
+                        id: id + "-v", name: sourceKind == "jellyfin" ? "1080p" : "本地文件",
+                        mediaSourceID: sourceKind == "jellyfin" ? "ms1" : nil,
+                        container: "MKV", resolution: nil,
+                        remotePath: sourceKind == "webdav" ? "movie.mkv" : nil,
+                        fileURL: sourceKind == "local" ? "file:///tmp/movie.mkv" : nil
+                    )]
+                )
+            )
+        }
+        try store.replace(source: ScannedLibrary(
+            sourceKind: "local", sourceID: "s", sourceName: "local",
+            works: [movieWork(id: "local", sourceKind: "local", sourceID: "s", title: "OpenFuse Fixture")]
+        ))
+        try store.replace(source: ScannedLibrary(
+            sourceKind: "jellyfin", sourceID: "j", sourceName: "jf",
+            works: [movieWork(id: "jf", sourceKind: "jellyfin", sourceID: "j", title: "OpenFuse Fixture (2026)")]
+        ))
+        let works = try store.works()
+        let primary = works.first { $0.sourceKind == "jellyfin" }!
+        let local = works.first { $0.sourceKind == "local" }!
+        let group = LibraryGroup(id: primary.id, key: primary.mergeKey, primary: primary, works: [primary, local])
+        let merged = try LibraryAggregation.mergedEpisodes(group: group, store: store)
+        XCTAssertEqual(merged.count, 1)
+        XCTAssertEqual(merged[0].versions.count, 2)
+        XCTAssertEqual(Set(merged[0].versions.map { $0.label.split(separator: "·").first.map(String.init) ?? "" }),
+                       ["Jellyfin ", "本地 "])
+    }
+
     func testLocalScannerGroupsSeriesAndMovies() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-scan-\(UUID().uuidString)", isDirectory: true)

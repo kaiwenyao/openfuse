@@ -111,6 +111,21 @@ if {item["sourceKind"] for item in aggregate2["items"]} != {"local", "jellyfin",
     errors.append("webdav aggregate: missing source kinds")
 if len(aggregate2.get("groups", [])) != 3:
     errors.append(f"webdav aggregate: expected 3 merged groups, got {len(aggregate2.get('groups', []))}")
+merged = {entry["key"]: entry for entry in aggregate2.get("merged", [])}
+movie_key = "movie|openfuse fixture"
+series_key = "series|示例剧"
+if len(merged.get(movie_key, {}).get("episodes", [])) != 1:
+    errors.append("merged: movie episode missing")
+else:
+    movie_versions = merged[movie_key]["episodes"][0]["versions"]
+    if len(movie_versions) < 3:
+        errors.append(f"merged: movie versions {movie_versions}")
+if not merged.get(series_key, {}).get("episodes"):
+    errors.append("merged: series episodes missing")
+else:
+    first = merged[series_key]["episodes"][0]
+    if len(first["versions"]) < 3:
+        errors.append(f"merged: episode versions {first['versions']}")
 for item in aggregate2["items"]:
     if item["title"] == "OpenFuse Fixture (2026)" and len(item["episodes"][0]["versions"]) != 2:
         errors.append("jellyfin movie versions missing")

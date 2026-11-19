@@ -576,6 +576,22 @@ final class AppModel: ObservableObject {
                 "workIDs": group.works.map(\.id),
             ]
         }
+        payload["merged"] = libraryGroups.map { group -> [String: Any] in
+            let episodes = mergedEpisodes(for: group)
+            return [
+                "key": group.key,
+                "title": group.primary.title,
+                "sources": group.sourceKinds,
+                "episodes": episodes.map { episode -> [String: Any] in
+                    [
+                        "season": episode.seasonNumber,
+                        "episode": episode.episodeNumber,
+                        "title": episode.title,
+                        "versions": episode.versions.map { $0.label },
+                    ]
+                },
+            ]
+        }
         payload["items"] = libraryWorks.map { work -> [String: Any] in
             let seasons = librarySeasons(workID: work.id)
             let episodes = libraryEpisodes(workID: work.id)
@@ -616,6 +632,14 @@ final class AppModel: ObservableObject {
               let client = jellyfinClient(for: source)
         else { return nil }
         return client.imageURL(itemID: itemID, tag: tag, maxWidth: maxWidth)
+    }
+
+    func mergedEpisodes(for group: LibraryGroup) -> [MergedLibraryEpisode] {
+        (try? LibraryAggregation.mergedEpisodes(group: group, store: libraryStore)) ?? []
+    }
+
+    func playMergedVersion(_ version: MergedLibraryVersion) {
+        playLibrary(work: version.work, episode: version.episode, version: version.version)
     }
 
     func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {

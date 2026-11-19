@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 集级版本合并（M3c）
+
+- `LibraryAggregation.mergedEpisodes(group:store:)`：按 `(season, episode)` 合并组内各来源；同一集收集 `versions`，生成 `MergedLibraryEpisode`/`MergedLibraryVersion`。
+- 电影映射为 season 0 / episode 1，与剧集共用版本逻辑。
+- `LibraryDetailView`：电影版本 Picker（来源 · 版本名），剧集每集「N 个版本」菜单；选择后 `playMergedVersion` 调用原来源播放链路。
+- 续播键仍按来源/条目/版本保存，切版本不串进度。
+- 合并键仍为类型 + 规范化标题（去年份/去冒号副标题），待 TMDB id/手动匹配替代。
+
 ## 元数据（M3b）
 
 - `TMDBClient`（actor）：`/3/search/movie|tv`，标题+年份查询，进程内缓存；`OPENFUSE_TMDB_API_KEY/BASE_URL/IMAGE_BASE` 配置；无 key 时完全离线。

@@ -66,6 +66,13 @@
 | 海报库（WebDAV + TMDB） | 同上 | WebDAV 夹具 2 作品，无自带海报 | 待采样 | 扫描后 2 个作品均使用 TMDB 远程海报，海报网格可见 | `reports/m3b-tmdb-webdav.json`、Evidence 26 | 本地通过；真实 OpenList/TMDB 待验证 |
 | 详情元数据 | 同上 | TMDB 电影 | 待采样 | 详情显示 TMDB 标题、简介、海报 | Evidence 27 | 部分通过 |
 
+### M3c 集级版本合并执行记录（2026-11-19）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| T06（多版本，部分） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 + Jellyfin + WebDAV 同一电影/剧 | Infuse 未安装，待采样 | 电影 1 集 4 版本（Jellyfin 2 / 本地 / WebDAV）；剧集 S01E01 3 版本、S01E02 2 版本 | `reports/m3-library-aggregate-webdav.json` 的 `merged`、Evidence 29–30 | 部分通过（手动拆分/合并未做） |
+| 版本选择/播放 | 同上 | 合并后的电影与剧集 | 待采样 | 电影版本 Picker；剧集每集版本菜单；选择后走对应来源播放 | Evidence 29–30 | 本地通过；像素对照待做 |
+
 
 
 

@@ -1,6 +1,6 @@
 {
   "episodes": 4,
-  "generatedAt": "2026-11-19T23:30:17Z",
+  "generatedAt": "2026-11-19T23:51:49Z",
   "groups": [
     {
       "key": "movie|openfuse fixture",
@@ -15,13 +15,13 @@
       ]
     },
     {
-      "key": "series|另一部剧",
-      "primary": "另一部剧",
+      "key": "series|另一部剧 · 本地 nfo",
+      "primary": "另一部剧 · 本地 NFO",
       "sources": [
         "local"
       ],
       "workIDs": [
-        "local-8eaecc6e62103879"
+        "local-f58fbcc18ae2bebb"
       ]
     },
     {
@@ -60,6 +60,7 @@
       ],
       "id": "local-e23598dae9fa4342",
       "kind": "movie",
+      "overview": "",
       "poster": "file:build/library-fixture/Movies/OpenFuse Fixture (2026)/poster.jpg",
       "seasons": [],
       "sourceID": "local-65205c2a5c1367ad",
@@ -95,6 +96,7 @@
       ],
       "id": "jf:bb973e107452f145:movie-1",
       "kind": "movie",
+      "overview": "OpenFuse 自制的 HEVC Main 10、E-AC-3 5.1 与中日双语 ASS 测试片。",
       "poster": "jellyfin:movie-1|movie",
       "seasons": [],
       "sourceID": "bb973e107452f145",
@@ -107,7 +109,7 @@
         {
           "episode": 1,
           "fileURL": "file://build/library-fixture/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
-          "id": "local-8eaecc6e62103879-s1e1-a2256088",
+          "id": "local-f58fbcc18ae2bebb-s1e1-a2256088",
           "remotePath": "",
           "season": 1,
           "sourceKind": "local",
@@ -115,27 +117,28 @@
           "versions": [
             {
               "fileURL": "file://build/library-fixture/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
-              "id": "local-8eaecc6e62103879-s1e1-a2256088-v0",
+              "id": "local-f58fbcc18ae2bebb-s1e1-a2256088-v0",
               "mediaSourceID": "",
               "name": "本地文件"
             }
           ]
         }
       ],
-      "id": "local-8eaecc6e62103879",
+      "id": "local-f58fbcc18ae2bebb",
       "kind": "series",
+      "overview": "来自 tvshow.nfo 的本地简介，优先于 TMDB。",
       "poster": "file:build/library-fixture/Shows/另一部剧/poster.jpg",
       "seasons": [
         {
-          "id": "local-8eaecc6e62103879-s1",
+          "id": "local-f58fbcc18ae2bebb-s1",
           "number": 1,
           "title": "第 1 季"
         }
       ],
       "sourceID": "local-65205c2a5c1367ad",
       "sourceKind": "local",
-      "title": "另一部剧",
-      "year": 0
+      "title": "另一部剧 · 本地 NFO",
+      "year": 2025
     },
     {
       "episodes": [
@@ -176,6 +179,7 @@
       ],
       "id": "local-d277af4a63fb6820",
       "kind": "series",
+      "overview": "",
       "poster": "file:build/library-fixture/Shows/示例剧/poster.jpg",
       "seasons": [
         {
@@ -228,6 +232,7 @@
       ],
       "id": "jf:bb973e107452f145:series-1",
       "kind": "series",
+      "overview": "用于验证季/集层级、字幕与续播的测试剧。",
       "poster": "jellyfin:series-1|series",
       "seasons": [
         {
@@ -240,6 +245,73 @@
       "sourceKind": "jellyfin",
       "title": "示例剧",
       "year": 0
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Fixture (2026)",
+          "versions": [
+            "Jellyfin · 1080p HEVC 5.1",
+            "Jellyfin · 720p 压缩版",
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "movie|openfuse fixture",
+      "sources": [
+        "jellyfin",
+        "local"
+      ],
+      "title": "OpenFuse Fixture (2026)"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|另一部剧 · 本地 nfo",
+      "sources": [
+        "local"
+      ],
+      "title": "另一部剧 · 本地 NFO"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "Jellyfin · 服务器版本",
+            "本地 · 本地文件"
+          ]
+        },
+        {
+          "episode": 2,
+          "season": 1,
+          "title": "第 2 集",
+          "versions": [
+            "Jellyfin · 服务器版本",
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|示例剧",
+      "sources": [
+        "jellyfin",
+        "local"
+      ],
+      "title": "示例剧"
     }
   ],
   "rawEpisodes": 7,

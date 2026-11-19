@@ -148,28 +148,31 @@ struct LibraryDetailView: View {
     @EnvironmentObject private var model: AppModel
     let work: LibraryWork
 
-    @State private var seasons: [LibrarySeason] = []
-    @State private var episodes: [LibraryEpisode] = []
-    @State private var selectedSeasonID: String?
-    @State private var versions: [LibraryVersion] = []
+    @State private var mergedEpisodes: [MergedLibraryEpisode] = []
+    @State private var selectedSeasonNumber: Int?
     @State private var selectedVersionID: String?
     @State private var isLoading = true
-    @State private var selectedWorkID: String?
 
     private var group: LibraryGroup? { model.group(for: work) }
-    private var activeWork: LibraryWork {
-        guard let selectedWorkID else { return group?.primary ?? work }
-        return group?.works.first { $0.id == selectedWorkID } ?? group?.primary ?? work
+    private var primary: LibraryWork { group?.primary ?? work }
+    private var isMovie: Bool { primary.kind == .movie }
+
+    private var seasonNumbers: [Int] {
+        Array(Set(mergedEpisodes.filter { $0.seasonNumber > 0 }.map(\.seasonNumber))).sorted()
     }
 
-    private var currentEpisode: LibraryEpisode? {
-        episodes.first
+    private var visibleEpisodes: [MergedLibraryEpisode] {
+        if isMovie { return mergedEpisodes }
+        guard let season = selectedSeasonNumber else { return mergedEpisodes }
+        return mergedEpisodes.filter { $0.seasonNumber == season }
     }
 
-    private var currentVersions: [LibraryVersion] {
-        if !versions.isEmpty { return versions }
-        guard let episode = currentEpisode else { return [] }
-        return model.libraryVersions(itemID: episode.id)
+    private var movieVersions: [MergedLibraryVersion] {
+        mergedEpisodes.first?.versions ?? []
+    }
+
+    private var selectedMovieVersion: MergedLibraryVersion? {
+        movieVersions.first { $0.id == selectedVersionID } ?? movieVersions.first
     }
 
     var body: some View {
@@ -178,65 +181,40 @@ struct LibraryDetailView: View {
             Divider().overlay(Theme.stroke)
             ScrollView {
                 HStack(alignment: .top, spacing: 26) {
-                    LibraryPoster(work: activeWork)
+                    LibraryPoster(work: primary)
                         .frame(width: 210, height: 315)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(activeWork.title)
+                        Text(primary.title)
                             .font(.system(size: 28, weight: .semibold))
                             .foregroundStyle(Theme.text)
                         HStack(spacing: 8) {
-                            if let year = activeWork.year { Text(String(year)) }
-                            Text(activeWork.kind == .movie ? "电影" : "剧集")
-                            Text(activeWork.sourceKind == "jellyfin" ? "Jellyfin" : (activeWork.sourceKind == "webdav" ? "WebDAV" : "本地"))
+                            if let year = primary.year { Text(String(year)) }
+                            Text(isMovie ? "电影" : "剧集")
+                            if let group, group.works.count > 1 {
+                                Text(group.sourceLabel)
+                            } else {
+                                Text(primary.sourceKind == "jellyfin" ? "Jellyfin" : (primary.sourceKind == "webdav" ? "WebDAV" : "本地"))
+                            }
                         }
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Theme.secondary)
 
-                        if let group, group.works.count > 1 {
-                            HStack(spacing: 6) {
-                                ForEach(group.works) { candidate in
-                                    Button {
-                                        selectedWorkID = candidate.id
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text(sourceLabel(candidate.sourceKind))
-                                            Text("\(candidate.episodeCount)")
-                                                .foregroundStyle(Theme.secondary)
-                                        }
-                                        .font(.system(size: 10.5, weight: .semibold))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            activeWork.id == candidate.id ? Theme.accent.opacity(0.25) : Theme.panel,
-                                            in: Capsule()
-                                        )
-                                        .overlay(Capsule().stroke(
-                                            activeWork.id == candidate.id ? Theme.accent : Theme.stroke,
-                                            lineWidth: 1
-                                        ))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundStyle(activeWork.id == candidate.id ? Theme.accent : Theme.secondary)
-                                }
-                            }
-                        }
-
-                        if let overview = activeWork.overview, !overview.isEmpty {
+                        if let overview = primary.overview, !overview.isEmpty {
                             Text(overview)
                                 .font(.system(size: 12.5))
                                 .foregroundStyle(Theme.secondary)
                                 .lineLimit(6)
                                 .fixedSize(horizontal: false, vertical: true)
                         } else {
-                            Text(activeWork.kind == .movie ? "本地视频文件" : "\(activeWork.seasonCount) 季 · \(activeWork.episodeCount) 集")
+                            Text(isMovie ? "本地视频文件" : "\(primary.seasonCount) 季 · \(primary.episodeCount) 集")
                                 .font(.system(size: 12.5))
                                 .foregroundStyle(Theme.secondary)
                         }
 
-                        if activeWork.kind == .movie {
+                        if isMovie {
                             movieControls
                         }
                         Spacer()
@@ -245,7 +223,7 @@ struct LibraryDetailView: View {
                 }
                 .padding(28)
 
-                if activeWork.kind == .series {
+                if !isMovie {
                     episodeSection
                         .padding(.horizontal, 28)
                         .padding(.bottom, 28)
@@ -254,17 +232,6 @@ struct LibraryDetailView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .task { await load() }
-        .onChange(of: selectedWorkID) { _, _ in
-            Task { await load() }
-        }
-        .onChange(of: selectedSeasonID) { _, newValue in
-            guard let newValue else { return }
-            episodes = model.libraryEpisodes(workID: activeWork.id, seasonID: newValue)
-            if let episode = episodes.first {
-                versions = model.libraryVersions(itemID: episode.id)
-                selectedVersionID = versions.first?.id
-            }
-        }
     }
 
     private var header: some View {
@@ -291,24 +258,25 @@ struct LibraryDetailView: View {
     private var movieControls: some View {
         if isLoading {
             ProgressView().controlSize(.small)
-        } else if let episode = currentEpisode {
+        } else if !movieVersions.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                if currentVersions.count > 1 {
+                if movieVersions.count > 1 {
                     Picker("版本", selection: Binding(
-                        get: { selectedVersionID ?? currentVersions[0].id },
+                        get: { selectedVersionID ?? movieVersions[0].id },
                         set: { selectedVersionID = $0 }
                     )) {
-                        ForEach(currentVersions) { version in
-                            Text(version.name).tag(version.id)
+                        ForEach(movieVersions) { version in
+                            Text(version.label).tag(version.id)
                         }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(maxWidth: 460)
+                    .frame(maxWidth: 620)
                 }
                 Button {
-                    let version = currentVersions.first { $0.id == selectedVersionID } ?? currentVersions.first
-                    model.playLibrary(work: activeWork, episode: episode, version: version)
+                    if let selectedMovieVersion {
+                        model.playMergedVersion(selectedMovieVersion)
+                    }
                 } label: {
                     Label("播放", systemImage: "play.fill")
                         .font(.system(size: 13, weight: .semibold))
@@ -318,7 +286,6 @@ struct LibraryDetailView: View {
                         .foregroundStyle(Theme.background)
                 }
                 .buttonStyle(.plain)
-                .disabled(isLoading)
             }
         }
     }
@@ -329,30 +296,43 @@ struct LibraryDetailView: View {
                 Text("剧集")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.text)
+                Text("\(mergedEpisodes.count) 集 · \(Set(mergedEpisodes.flatMap { $0.versions.map(\.work.sourceKind) }).count) 个来源")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(Theme.secondary)
                 Spacer()
-                if seasons.count > 1 {
+                if seasonNumbers.count > 1 {
                     Picker("季", selection: Binding(
-                        get: { selectedSeasonID ?? seasons[0].id },
-                        set: { selectedSeasonID = $0 }
+                        get: { selectedSeasonNumber ?? seasonNumbers[0] },
+                        set: { selectedSeasonNumber = $0 }
                     )) {
-                        ForEach(seasons) { season in
-                            Text(season.title).tag(season.id)
+                        ForEach(seasonNumbers, id: \.self) { number in
+                            Text("第 \(number) 季").tag(number)
                         }
                     }
                     .pickerStyle(.menu)
                     .frame(width: 160)
                 }
             }
-            ForEach(episodes.sorted { ($0.seasonNumber, $0.episodeNumber) < ($1.seasonNumber, $1.episodeNumber) }) { episode in
+            ForEach(visibleEpisodes) { episode in
                 HStack(spacing: 12) {
                     Text(episode.episodeLabel ?? "—")
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                         .foregroundStyle(Theme.secondary)
                         .frame(width: 56, alignment: .leading)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(episode.title)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.text)
+                        HStack(spacing: 8) {
+                            Text(episode.title)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Theme.text)
+                            if episode.versions.count > 1 {
+                                Text("\(episode.versions.count) 个版本")
+                                    .font(.system(size: 9.5, weight: .semibold))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1)
+                                    .background(Theme.elevated, in: Capsule())
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                        }
                         if let overview = episode.overview, !overview.isEmpty {
                             Text(overview)
                                 .font(.system(size: 10.5))
@@ -361,14 +341,19 @@ struct LibraryDetailView: View {
                         }
                     }
                     Spacer()
-                    Button {
-                        model.playLibrary(work: activeWork, episode: episode)
+                    Menu {
+                        ForEach(episode.versions) { version in
+                            Button(version.label) {
+                                model.playMergedVersion(version)
+                            }
+                        }
                     } label: {
                         Image(systemName: "play.circle")
                             .font(.system(size: 18))
                             .foregroundStyle(Theme.accent)
                     }
-                    .buttonStyle(.plain)
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                 }
                 .padding(10)
                 .background(Theme.panel, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -376,27 +361,16 @@ struct LibraryDetailView: View {
         }
     }
 
-    private func sourceLabel(_ kind: String) -> String {
-        switch kind {
-        case "jellyfin": return "Jellyfin"
-        case "webdav": return "WebDAV"
-        default: return "本地"
-        }
-    }
-
     private func load() async {
         isLoading = true
-        seasons = model.librarySeasons(workID: activeWork.id)
-        if let first = seasons.first {
-            selectedSeasonID = first.id
-            episodes = model.libraryEpisodes(workID: activeWork.id, seasonID: first.id)
-        } else {
-            episodes = model.libraryEpisodes(workID: activeWork.id)
+        let group = model.group(for: work) ?? LibraryGroup(
+            id: work.id, key: work.mergeKey, primary: work, works: [work]
+        )
+        mergedEpisodes = model.mergedEpisodes(for: group)
+        if let firstSeason = mergedEpisodes.first(where: { $0.seasonNumber > 0 })?.seasonNumber {
+            selectedSeasonNumber = firstSeason
         }
-        if let episode = episodes.first {
-            versions = model.libraryVersions(itemID: episode.id)
-            selectedVersionID = versions.first?.id
-        }
+        selectedVersionID = mergedEpisodes.first?.versions.first?.id
         isLoading = false
     }
 }
