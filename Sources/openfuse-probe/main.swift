@@ -166,6 +166,42 @@ case "version":
     let engine = MPVEngine()
     print("mpv client API \(engine.clientAPIversion), mpv-version \(engine.getPropertyString("mpv-version") ?? "?")")
     exit(0)
+case "webdav":
+    let base = arguments[2]
+    let path = arguments.count > 3 ? arguments[3] : ""
+    guard let url = URL(string: base) else { exit(2) }
+    let user = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_USER"] ?? "test"
+    let password = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"] ?? "test"
+    let source = WebDAVSource(name: "fixture", baseURL: url, username: user)
+    let client = WebDAVClient(source: source, password: password)
+    let semaphore = DispatchSemaphore(value: 0)
+    Task {
+        do {
+            let entries = try await client.list(path: path)
+            var report: [String: Any] = [
+                "base": base,
+                "path": path,
+                "entries": entries.map { entry -> [String: Any] in
+                    ["name": entry.name, "path": entry.path, "dir": entry.isDirectory, "size": entry.size]
+                },
+            ]
+            if let video = entries.first(where: { $0.isPlayableVideo }) {
+                let first = try await client.fetch(path: video.path, range: 0..<1024)
+                report["rangeStatus"] = first.1.statusCode
+                report["rangeLength"] = first.0.count
+                report["rangeContentRange"] = first.1.value(forHTTPHeaderField: "Content-Range") ?? ""
+                report["magic"] = first.0.prefix(4).map { String(format: "%02x", $0) }.joined()
+            }
+            let data = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+            print(String(data: data, encoding: .utf8) ?? "{}")
+        } catch {
+            FileHandle.standardError.write("webdav error: \(error)\n".data(using: .utf8)!)
+            exit(1)
+        }
+        semaphore.signal()
+    }
+    semaphore.wait()
+    exit(0)
 case "tracks":
     let engine = MPVEngine(headless: true)
     var loaded = false

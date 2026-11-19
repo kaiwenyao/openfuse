@@ -12,3 +12,6 @@ Fixtures/frames/
 !Fixtures/spec/*.ass
 *.log
 .DS_Store
+
+__pycache__/
+*.pyc

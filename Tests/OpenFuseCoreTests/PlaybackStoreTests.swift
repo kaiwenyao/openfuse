@@ -65,6 +65,35 @@ final class PlaybackStoreTests: XCTestCase {
         XCTAssertNil(ResumePolicy.resumePosition(for: nearEnd))
     }
 
+    func testRemoteProgressMetadataRoundTrip() throws {
+        let store = try PlaybackStore(directory: directory)
+        let fingerprint = MediaFingerprint(
+            path: "webdav://abc123/Movies/Movie.mkv",
+            fileSize: 17654819,
+            modifiedAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        store.update(
+            fingerprint: fingerprint,
+            duration: 60,
+            position: 41,
+            displayTitle: "Movie",
+            subtitleTrackID: "remote:Movies/Movie.zh-Hans.ass",
+            sourceKind: "webdav",
+            sourceID: "abc123",
+            remotePath: "Movies/Movie.mkv",
+            remoteURL: "http://host/dav/Movies/Movie.mkv"
+        )
+        let reopened = try PlaybackStore(directory: directory)
+        let record = try XCTUnwrap(reopened.record(forPath: fingerprint.resumeKey))
+        XCTAssertEqual(record.sourceKind, "webdav")
+        XCTAssertEqual(record.sourceID, "abc123")
+        XCTAssertEqual(record.remotePath, "Movies/Movie.mkv")
+        XCTAssertEqual(record.remoteURL, "http://host/dav/Movies/Movie.mkv")
+        XCTAssertEqual(record.url.absoluteString, "http://host/dav/Movies/Movie.mkv")
+        XCTAssertTrue(record.isRemote)
+        XCTAssertEqual(ResumePolicy.resumePosition(for: record), 41)
+    }
+
     func testFileReplacementKeepsProgress() throws {
         let media = directory.appendingPathComponent("Movie.mkv")
         try Data(repeating: 1, count: 10).write(to: media)

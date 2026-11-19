@@ -27,6 +27,17 @@
 | 续播（T08 本地前置） | 同上 | 本地夹具，退出后重开 | 待采样 | 25.000 s 保存；重开从 25.0 s 继续，4 s 后 28.458 s；字幕偏好保留 | reports/m1-resume-before/after.json、playback-store.json | 本地通过；跨设备待 M4 |
 | 关闭重开 | 同上 | 同进程内关闭播放器再打开 | 待采样 | 渲染上下文重建，新会话从保存位置继续，无崩溃 | 运行日志 | 通过（一次） |
 
+### M2a WebDAV 执行记录（2026-11-19）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| T02（WebDAV Range） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 60 s 夹具／本地 WebDAV 夹具，700 KB/s 限速 | Infuse 未安装，待采样；参照需补签名地址过期、限流、断流、无 Range | 初始 GET 在 9,175,040 字节取消，新 Range 从 14,531,875 字节继续，冻结 41.042 s | `reports/m2-webdav-range-log.jsonl`、Evidence 11 | 本地通过；真实服务待验证 |
+| T01（远程部分） | 同上 | 同片／WebDAV 直连／首次打开 | 待采样 | 60.000 s、HEVC Main 10、VideoToolbox、E-AC-3 5.1；远程 `zh-Hans` 自动选中；9.958 s 帧与字幕一致 | `reports/m2-webdav-play.json`、Evidence 09 | 部分通过（真实 OpenList/听测待做） |
+| T04（远程外挂与切轨） | 同上 | 同目录三份 ASS／WebDAV | 待采样 | 远程 `zh-Hant` 切换成功，9 loci 字形与本地一致 | `reports/m2-webdav-zh-hant.json`、Evidence 10 | 部分通过 |
+| 续播（远程） | 同上 | 播放到 25.083 s 退出，从首页记录重开 | 待采样 | 从 25.08 继续，6 s 后 30.583 s；来源与字幕偏好保留 | `reports/m2-webdav-resume.json` | 本地通过；跨设备待 M4 |
+| 添加/浏览 | 同上 | 本地 WebDAV 根目录、Unicode 与 `100% 测试` 目录 | 待采样 | 来源卡片、Movies/Shows 浏览、Unicode 往返、401 拒绝错误密码 | Evidence 07–08；`Scripts/test-webdav.sh` | 本地通过；真实 OpenList 待验证 |
+
+
 
 ## 功能清单
 

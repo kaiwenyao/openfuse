@@ -15,9 +15,17 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
     public var preferredAudioTrackID: String?
     public var preferredSubtitleTrackID: String?
     public var displayTitle: String?
+    public var sourceKind: String?
+    public var sourceID: String?
+    public var remotePath: String?
+    public var remoteURL: String?
 
     public var id: String { mediaPath }
-    public var url: URL { URL(fileURLWithPath: mediaPath) }
+    public var url: URL {
+        if let remoteURL, let url = URL(string: remoteURL) { return url }
+        return URL(fileURLWithPath: mediaPath)
+    }
+    public var isRemote: Bool { sourceKind == "webdav" || sourceKind == "jellyfin" }
 
     public init(
         mediaPath: String,
@@ -29,7 +37,11 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
         playCount: Int = 0,
         preferredAudioTrackID: String? = nil,
         preferredSubtitleTrackID: String? = nil,
-        displayTitle: String? = nil
+        displayTitle: String? = nil,
+        sourceKind: String? = nil,
+        sourceID: String? = nil,
+        remotePath: String? = nil,
+        remoteURL: String? = nil
     ) {
         self.mediaPath = mediaPath
         self.fileSize = fileSize
@@ -41,6 +53,10 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
         self.preferredAudioTrackID = preferredAudioTrackID
         self.preferredSubtitleTrackID = preferredSubtitleTrackID
         self.displayTitle = displayTitle
+        self.sourceKind = sourceKind
+        self.sourceID = sourceID
+        self.remotePath = remotePath
+        self.remoteURL = remoteURL
     }
 }
 
@@ -115,7 +131,11 @@ public final class PlaybackStore: @unchecked Sendable {
         displayTitle: String? = nil,
         audioTrackID: String? = nil,
         subtitleTrackID: String? = nil,
-        finished: Bool? = nil
+        finished: Bool? = nil,
+        sourceKind: String? = nil,
+        sourceID: String? = nil,
+        remotePath: String? = nil,
+        remoteURL: String? = nil
     ) -> PlaybackRecord {
         lock.lock(); defer { lock.unlock() }
         let key = fingerprint.resumeKey
@@ -126,6 +146,10 @@ public final class PlaybackStore: @unchecked Sendable {
         if let displayTitle { record.displayTitle = displayTitle }
         if let audioTrackID { record.preferredAudioTrackID = audioTrackID }
         if let subtitleTrackID { record.preferredSubtitleTrackID = subtitleTrackID }
+        if let sourceKind { record.sourceKind = sourceKind }
+        if let sourceID { record.sourceID = sourceID }
+        if let remotePath { record.remotePath = remotePath }
+        if let remoteURL { record.remoteURL = remoteURL }
 
         let resolvedFinished = finished ?? ResumePolicy.isFinished(position: position, duration: record.duration)
         if resolvedFinished {

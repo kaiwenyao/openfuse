@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 enum AppRoute: Equatable {
     case home
     case player
+    case browser(WebDAVSource)
 }
 
 @MainActor
@@ -17,18 +18,24 @@ final class AppModel: ObservableObject {
     @Published var recent: [PlaybackRecord] = []
     @Published var player: PlayerModel?
     @Published var statusMessage: String?
+    @Published var sources: [WebDAVSource] = []
+    @Published var browsingSource: WebDAVSource?
+    @Published var showAddSource = false
 
     let supportDirectory: URL
     let store: PlaybackStore
+    let sourceStore: SourceStore
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
         self.supportDirectory = directory
         do {
             self.store = try PlaybackStore(directory: directory)
+            self.sourceStore = try SourceStore(directory: directory)
         } catch {
-            fatalError("cannot open playback store: \(error)")
+            fatalError("cannot open OpenFuse store: \(error)")
         }
+        self.sources = sourceStore.sources
         refreshRecent()
     }
 
@@ -67,22 +74,25 @@ final class AppModel: ObservableObject {
             statusMessage = "文件不存在：\(url.lastPathComponent)"
             return
         }
-        let fingerprint: MediaFingerprint
         do {
-            fingerprint = try MediaFingerprint(url: url)
+            let item = try MediaItem.local(url: url)
+            startPlayer(with: item)
         } catch {
             statusMessage = "无法读取文件：\(error.localizedDescription)"
-            return
         }
+    }
+
+    private func startPlayer(with item: MediaItem) {
         if let current = player {
             current.stopAndClose()
         }
-        let record = store.record(forPath: fingerprint.resumeKey)
+        let record = store.record(forPath: item.fingerprint.resumeKey)
         let startAt = record.flatMap { ResumePolicy.resumePosition(for: $0) } ?? 0
-        let model = PlayerModel(url: url, fingerprint: fingerprint, startAt: startAt, store: store)
+        let model = PlayerModel(item: item, startAt: startAt, store: store)
         model.onClose = { [weak self] in
             self?.player = nil
             self?.route = .home
+            self?.browsingSource = nil
             self?.refreshRecent()
         }
         model.onFinished = { [weak self] in
@@ -94,6 +104,113 @@ final class AppModel: ObservableObject {
         refreshRecent()
     }
 
+    // MARK: - WebDAV sources
+
+    func password(for source: WebDAVSource) -> String? {
+        if let override = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"], !override.isEmpty {
+            return override
+        }
+        return CredentialStore.load(account: source.id)
+    }
+
+    func webdavClient(for source: WebDAVSource) -> WebDAVClient? {
+        guard let password = password(for: source) else { return nil }
+        return WebDAVClient(source: source, password: password)
+    }
+
+    @discardableResult
+    func addSource(name: String, urlText: String, username: String, password: String) async -> WebDAVSource? {
+        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            statusMessage = "服务器地址需要是 http:// 或 https://"
+            return nil
+        }
+        let source = WebDAVSource(name: name.isEmpty ? url.host ?? "WebDAV" : name, baseURL: url, username: username)
+        let client = WebDAVClient(source: source, password: password)
+        do {
+            let entries = try await client.list()
+            var keychainError: Error?
+            let usesEnvironmentPassword = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"] != nil
+            if !usesEnvironmentPassword {
+                do {
+                    try CredentialStore.save(password: password, account: source.id)
+                } catch {
+                    keychainError = error
+                }
+            }
+            try sourceStore.upsert(source)
+            sources = sourceStore.sources
+            if let keychainError {
+                statusMessage = "来源已保存，但密码写入 Keychain 失败：\(keychainError.localizedDescription)"
+            } else if usesEnvironmentPassword {
+                statusMessage = "已添加 \(source.name)（密码来自环境变量，未写入 Keychain）"
+            } else {
+                statusMessage = "已添加 \(source.name)，根目录 \(entries.count) 项"
+            }
+            return source
+        } catch {
+            statusMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    func removeSource(_ source: WebDAVSource) {
+        try? sourceStore.remove(id: source.id)
+        CredentialStore.delete(account: source.id)
+        sources = sourceStore.sources
+        if let browsingSource, browsingSource.id == source.id {
+            self.browsingSource = nil
+            route = .home
+        }
+    }
+
+    func browse(_ source: WebDAVSource) {
+        browsingSource = source
+        route = .browser(source)
+    }
+
+    func loadDirectory(source: WebDAVSource, path: String) async throws -> [RemoteEntry] {
+        guard let client = webdavClient(for: source) else {
+            throw WebDAVError.unauthorized
+        }
+        return try await client.list(path: path)
+    }
+
+    func openRemote(source: WebDAVSource, entry: RemoteEntry, siblings: [RemoteEntry]) async {
+        guard let password = password(for: source) else {
+            statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
+            return
+        }
+        var directoryEntries = siblings
+        if directoryEntries.isEmpty {
+            let parent = (entry.path as NSString).deletingLastPathComponent
+            if let client = webdavClient(for: source) {
+                directoryEntries = (try? await client.list(path: parent)) ?? []
+            }
+        }
+        let subtitles = WebDAVClient.subtitleTracks(for: entry, siblings: directoryEntries)
+        let item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
+        startPlayer(with: item)
+    }
+
+    func openRemote(source: WebDAVSource, path: String) async {
+        guard let client = webdavClient(for: source) else {
+            statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
+            return
+        }
+        do {
+            guard let entry = try await client.stat(path: path) else {
+                statusMessage = "远程条目不存在：\(path)"
+                return
+            }
+            let parent = (path as NSString).deletingLastPathComponent
+            let siblings = (try? await client.list(path: parent)) ?? []
+            await openRemote(source: source, entry: entry, siblings: siblings)
+        } catch {
+            statusMessage = error.localizedDescription
+        }
+    }
+
     func closePlayer() {
         player?.stopAndClose()
         player = nil
@@ -102,6 +219,13 @@ final class AppModel: ObservableObject {
     }
 
     func resume(_ record: PlaybackRecord) {
+        if record.sourceKind == "webdav",
+           let sourceID = record.sourceID,
+           let path = record.remotePath,
+           let source = sources.first(where: { $0.id == sourceID }) {
+            Task { await openRemote(source: source, path: path) }
+            return
+        }
         open(url: record.url)
     }
 
@@ -130,7 +254,11 @@ final class AppModel: ObservableObject {
             "app": "OpenFuse",
             "engine": "libmpv",
             "mpv": player.engine.getPropertyString("mpv-version") ?? "unknown",
-            "file": player.url.path,
+            "file": player.url.absoluteString,
+            "sourceKind": player.item.sourceKind ?? "local",
+            "sourceName": player.item.sourceName ?? "本地文件",
+            "sourceID": player.item.sourceID ?? "",
+            "remotePath": player.item.remotePath ?? "",
             "duration": player.duration,
             "position": player.position,
             "paused": player.isPaused,
@@ -184,8 +312,9 @@ final class AppModel: ObservableObject {
 
 @MainActor
 final class PlayerModel: ObservableObject {
-    let url: URL
-    let fingerprint: MediaFingerprint
+    let item: MediaItem
+    var url: URL { item.playbackURL }
+    var fingerprint: MediaFingerprint { item.fingerprint }
     let engine: MPVEngine
     private let store: PlaybackStore
     private let initialPosition: Double
@@ -208,7 +337,9 @@ final class PlayerModel: ObservableObject {
     private var catalog: [SubtitleTrack]
     private var didAddExternalSubtitles = false
     private var didApplyInitialSelection = false
+    private var fileLoaded = false
     private var pendingSeek: Double?
+    private var queuedSeek: Double?
     private var progressTimer: Timer?
     private var controlsTimer: Timer?
     private var hasFinished = false
@@ -219,23 +350,20 @@ final class PlayerModel: ObservableObject {
     private var selectionWorkItem: DispatchWorkItem?
     private var selectionAttempts = 0
 
-    init(url: URL, fingerprint: MediaFingerprint, startAt: Double, store: PlaybackStore) {
-        self.url = url
-        self.fingerprint = fingerprint
+    init(item: MediaItem, startAt: Double, store: PlaybackStore) {
+        self.item = item
         self.initialPosition = startAt
         self.store = store
-        self.catalog = SubtitleCatalog.discover(for: url)
-        self.engine = MPVEngine()
+        self.catalog = item.subtitles
+        self.engine = MPVEngine(httpHeaders: item.httpHeaders)
         wireEngine()
-        if let record = store.record(forPath: fingerprint.resumeKey) {
+        if let record = store.record(forPath: item.fingerprint.resumeKey) {
             savedAudioID = record.preferredAudioTrackID
             savedSubtitleID = record.preferredSubtitleTrackID
         }
     }
 
-    var title: String {
-        DisplayTitle.make(from: url)
-    }
+    var title: String { item.title }
 
     var displayPosition: Double {
         min(max(position, 0), duration > 0 ? duration : position)
@@ -254,7 +382,7 @@ final class PlayerModel: ObservableObject {
         guard !hasStarted, engine.hasRenderContext else { return }
         hasStarted = true
         engine.onRenderContextReady = nil
-        engine.load(url: url, startAt: initialPosition)
+        engine.load(url: item.playbackURL, startAt: initialPosition)
         engine.play()
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
@@ -273,6 +401,11 @@ final class PlayerModel: ObservableObject {
             if let pending = self.pendingSeek, value > 0 {
                 self.pendingSeek = nil
                 self.engine.seek(to: pending)
+            }
+            if let queued = self.queuedSeek, value > 0 {
+                self.queuedSeek = nil
+                self.engine.seek(to: queued)
+                self.position = queued
             }
         }
         engine.onPauseChanged = { [weak self] paused in
@@ -298,7 +431,15 @@ final class PlayerModel: ObservableObject {
         }
     }
 
+    private func debugSelection(_ message: String) {
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_SELECTION"] != nil {
+            FileHandle.standardError.write("[selection] \(message)\n".data(using: .utf8)!)
+        }
+    }
+
     private func handleFileLoaded() {
+        debugSelection("file loaded, catalog=\(catalog.count)")
+        fileLoaded = true
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
         for track in catalog where track.source == .external {
@@ -311,6 +452,9 @@ final class PlayerModel: ObservableObject {
             pendingSeek = initialPosition
             engine.seek(to: initialPosition)
         }
+        if !didApplyInitialSelection {
+            scheduleInitialSelection(after: 0.6)
+        }
     }
 
     private func applyTracks(_ mpvTracks: [MPVTrackInfo]) {
@@ -320,7 +464,7 @@ final class PlayerModel: ObservableObject {
         for var track in catalog {
             guard let trackURL = track.url else { continue }
             let mpv = mpvTracks.first {
-                $0.type == "sub" && $0.externalFilename == trackURL.path
+                $0.type == "sub" && matchesExternal(filename: $0.externalFilename, url: trackURL)
             }
             if let mpv {
                 var updated = track
@@ -362,6 +506,7 @@ final class PlayerModel: ObservableObject {
             if mpv.isSelected { selectedSubtitleID = track.id }
         }
         subtitleTracks = subtitleResult
+        debugSelection("tracks: subs=\(subtitleResult.map { "\($0.id)#\($0.engineID ?? -1)" }) applied=\(didApplyInitialSelection) attempts=\(selectionAttempts)")
 
         var audioResult: [AudioTrack] = []
         for mpv in mpvTracks where mpv.type == "audio" {
@@ -379,7 +524,7 @@ final class PlayerModel: ObservableObject {
         }
         audioTracks = audioResult
 
-        if !didApplyInitialSelection {
+        if fileLoaded, !didApplyInitialSelection {
             scheduleInitialSelection(after: 0.35)
         }
     }
@@ -395,15 +540,23 @@ final class PlayerModel: ObservableObject {
     }
 
     private func applyInitialSelectionIfReady() {
-        guard !didApplyInitialSelection else { return }
+        debugSelection("ready check attempts=\(selectionAttempts) loaded=\(subtitleTracks.filter { $0.source == .external && $0.engineID != nil }.count)/\(catalog.filter { $0.source == .external }.count) fileLoaded=\(fileLoaded)")
+        guard !didApplyInitialSelection, fileLoaded else { return }
         let externalCatalog = catalog.filter { $0.source == .external }
         let loadedExternal = subtitleTracks.filter { $0.source == .external && $0.engineID != nil }
-        if !externalCatalog.isEmpty, loadedExternal.count < externalCatalog.count, selectionAttempts < 6 {
+        let hasSelectable = subtitleTracks.contains { $0.engineID != nil }
+        if !hasSelectable, selectionAttempts < 20 {
+            selectionAttempts += 1
+            scheduleInitialSelection(after: 0.4)
+            return
+        }
+        if !externalCatalog.isEmpty, loadedExternal.count < externalCatalog.count, selectionAttempts < 20 {
             selectionAttempts += 1
             scheduleInitialSelection(after: 0.4)
             return
         }
         applyInitialSelection()
+        debugSelection("applied selected=\(selectedSubtitleID ?? "nil")")
         didApplyInitialSelection = true
         selectionWorkItem?.cancel()
         selectionWorkItem = nil
@@ -432,6 +585,18 @@ final class PlayerModel: ObservableObject {
         if let embedded = selectable.first(where: { $0.source == .embedded }) {
             selectSubtitle(embedded)
         }
+    }
+
+    private func matchesExternal(filename: String?, url: URL) -> Bool {
+        guard let filename else { return false }
+        let decoded = filename.removingPercentEncoding ?? filename
+        let candidates = [
+            url.absoluteString,
+            url.path,
+            url.standardizedFileURL.path,
+            url.absoluteString.removingPercentEncoding ?? url.absoluteString,
+        ]
+        return candidates.contains(filename) || candidates.contains(decoded)
     }
 
     private func audioLabel(_ mpv: MPVTrackInfo) -> String {
@@ -466,7 +631,16 @@ final class PlayerModel: ObservableObject {
     }
 
     func seek(to target: Double) {
-        let clamped = max(0, min(duration > 0 ? duration - 0.25 : target, target))
+        guard duration > 0 else {
+            // Remote files (especially on a slow WebDAV server) may still be
+            // opening when the user drags. Queue the target instead of sending
+            // a command mpv will reject.
+            queuedSeek = target
+            position = target
+            showControlsTemporarily()
+            return
+        }
+        let clamped = max(0, min(duration - 0.25, target))
         position = clamped
         engine.seek(to: clamped)
         hasFinished = false
@@ -526,7 +700,11 @@ final class PlayerModel: ObservableObject {
             displayTitle: title,
             audioTrackID: selectedAudioID,
             subtitleTrackID: selectedSubtitleID,
-            finished: resolvedFinished
+            finished: resolvedFinished,
+            sourceKind: item.sourceKind,
+            sourceID: item.sourceID,
+            remotePath: item.remotePath,
+            remoteURL: item.isRemote ? item.playbackURL.absoluteString : nil
         )
     }
 
@@ -615,19 +793,5 @@ final class PlayerModel: ObservableObject {
 
     func toggleFullScreen() {
         NSApp.keyWindow?.toggleFullScreen(nil)
-    }
-}
-
-enum DisplayTitle {
-    static func make(from url: URL) -> String {
-        let base = url.deletingPathExtension().lastPathComponent
-        var title = base.replacingOccurrences(of: ".", with: " ")
-        title = title.replacingOccurrences(of: "_", with: " ")
-        let noise = ["2160p", "1080p", "720p", "WEB-DL", "WEBRip", "BluRay", "HEVC", "x265", "H265", "DDP5.1", "HDR"]
-        for token in noise {
-            title = title.replacingOccurrences(of: token, with: "", options: .caseInsensitive)
-        }
-        title = title.replacingOccurrences(of: "  ", with: " ").trimmingCharacters(in: .whitespaces)
-        return title.isEmpty ? base : title
     }
 }

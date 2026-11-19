@@ -51,7 +51,18 @@ Docs/                   决策、素材、验收、证据
 - 命令加锁；`shutdown` 等待事件线程退出后再销毁 handle。
 - Swift 5 语言模式以减少 C 回调与旧 AppKit 的迁移噪声；后续可评估 Swift 6 严格并发。
 
-## 远程来源接口（M2 预留）
+## 远程来源（M2 WebDAV 已实现）
+
+- `WebDAVSource`：名称、根 URL、用户名；id 由 URL+用户名哈希；`sources.json` 持久化，密码存 Keychain。
+- `WebDAVClient`（actor）：`list(path)` PROPFIND Depth 1、`stat(path)` Depth 0、`fetch(path, range)`；Basic auth；解析 XML 的 `displayname/resourcetype/getcontentlength/getcontenttype/getlastmodified/getetag`；路径按段编码/解码。
+- `RemoteEntry`：path、name、url、isDirectory、size、contentType、modifiedAt、etag。
+- `WebDAVClient.subtitleTracks(for:siblings:)`：复用本地匹配规则，构造 URL 型 `SubtitleTrack`，id 前缀 `remote:`。
+- `MediaItem`：统一本地/远程；远程 fingerprint 键为 `webdav://<sourceID>/<path>`，HTTP 头（Basic）注入 libmpv；`PlaybackRecord` 增加 sourceKind/sourceID/remotePath/remoteURL。
+- UI：首页来源卡片 + 添加来源表单；`WebDAVBrowserView` 面包屑/列表/错误重试；打开视频时先取同目录条目再发现字幕。
+
+**安全注意：** 凭据作为 mpv `http-header-fields` 全局注入，跨域 302 时可能被转发。接真实 OpenList 前需改成本机代理，只在 origin 附带 Authorization。Keychain 首次读取可能弹系统授权，自动化用 `OPENFUSE_WEBDAV_PASSWORD` 覆盖。
+
+## 远程来源接口（Jellyfin 预留）
 
 播放器只依赖 URL 与轨道描述。M2 计划：
 

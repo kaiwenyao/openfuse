@@ -52,7 +52,7 @@ public final class MPVEngine: @unchecked Sendable {
 
     public private(set) var snapshot = MPVSnapshot(position: 0, duration: 0, isPaused: true, tracks: [])
 
-    public init(headless: Bool = false) {
+    public init(headless: Bool = false, httpHeaders: [String] = []) {
         handle = mpv_create()
         guard let handle else {
             fatalError("mpv_create failed")
@@ -75,6 +75,9 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("audio-file-auto", "no")
         setOption("sub-ass", "yes")
         setOption("sub-scale-with-window", "yes")
+        if !httpHeaders.isEmpty {
+            setOption("http-header-fields", httpHeaders.joined(separator: ","))
+        }
         setOption("screenshot-directory", NSTemporaryDirectory())
         let logLevel = ProcessInfo.processInfo.environment["OPENFUSE_MPV_LOG"] ?? "warn"
         setOption("msg-level", "all=\(logLevel)")
@@ -149,7 +152,7 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func load(url: URL, startAt: Double = 0) {
-        command(["loadfile", url.path, "replace"])
+        command(["loadfile", url.isFileURL ? url.path : url.absoluteString, "replace"])
         if startAt > 0.2 {
             // Applied after file-loaded to avoid mpv dropping the seek during
             // demuxer initialisation.
@@ -181,7 +184,7 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func addSubtitle(url: URL, select: Bool = false) {
-        command(["sub-add", url.path, select ? "select" : "auto"])
+        command(["sub-add", url.isFileURL ? url.path : url.absoluteString, select ? "select" : "auto"])
     }
 
     public func removeSubtitle(id: Int64) {

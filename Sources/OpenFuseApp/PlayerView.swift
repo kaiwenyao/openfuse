@@ -105,7 +105,7 @@ struct PlayerView: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 HStack(spacing: 6) {
-                    Text("本地文件")
+                    Text(player.item.sourceName ?? "本地文件")
                     Text("·")
                     Text(player.audioTracks.first?.technicalLabel ?? "音频")
                     if let subtitle = selectedSubtitleName {

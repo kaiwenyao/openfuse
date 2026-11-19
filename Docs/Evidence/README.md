@@ -10,7 +10,15 @@
 | `04-subtitle-zh-hans.jpg` | 9.917 s，外挂简体 + 日文双语 | 同上 |
 | `05-subtitle-zh-hant.jpg` | 9.917 s，外挂繁体 + 日文双语 | 同上 |
 | `06-subtitle-font-fallback.jpg` | 4.417 s，缺字体 NOTE 样式与双语字幕 | 同上 |
-| `reports/*.json` | 对应运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |
+| `07-webdav-browser.jpg` | WebDAV 根目录浏览（Movies/Shows） | 应用内窗口快照 |
+| `08-webdav-sources.jpg` | 首页网络来源卡片 | 应用内窗口快照 |
+| `09-webdav-playback.jpg` | 远程播放 9.958 s，远程 `zh-Hans` 字幕 | 播放器 `glReadPixels` |
+| `10-webdav-zh-hant.jpg` | 远程切到 `zh-Hant` 的同一帧 | 同上 |
+| `11-webdav-seek.jpg` | 限速 WebDAV 拖动到 41 s | 同上 |
+| `12-webdav-player-ui.jpg` | 远程播放器控制层，来源显示「本地 WebDAV」 | 应用内窗口快照 |
+| `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
+| `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
+| `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |
 
 报告中的绝对路径已替换为仓库相对路径，日志保留最后 20 行。原始 PNG 与测试片不入库，可用 `Scripts/make_fixtures.sh` 重新生成。
 

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | M0 参照与选型 | 完成（Infuse 实机采样除外） | AVPlayer 打不开 MKV；libmpv 胜出。夹具与声道校验完成。 |
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
-| M2 远程播放 | 未开始 | 下一项：WebDAV/OpenList → Jellyfin。 |
+| M2 远程播放 | 部分完成：WebDAV | 已通过本地 WebDAV 夹具：列目录、直放、远程 ASS、Range 拖动、续播；真实 OpenList/百度网盘、Jellyfin 未开始。 |
 | M3 Mac 媒体库 | 未开始 | |
 | M4 家庭设备与同步 | 未开始 | |
 | M5 其余来源与高级播放 | 未开始 | 含自包含打包、HDR、投屏、Plex/Emby/SMB。 |
@@ -14,13 +14,13 @@
 
 ## 当前分支
 
-`m1-local-playback`（从 `main` 拉出）。M2 应从该分支拉出 `m2-remote-sources`。
+`m2-remote-sources`（从 `m1-local-playback` 拉出）。M3 从该分支继续。
 
 ## 下一批可执行工作
 
-1. 抽出 `MediaSource` 与 `RemoteFile`，让 `PlayerModel` 接受非本地 URL；保留 Range 读取与取消。
-2. WebDAV：`PROPFIND` 列目录、`GET` Range、206/416/200 处理、Unicode 路径、远程 ASS 发现、拖动时取消旧请求。
-3. Jellyfin Direct：登录、视图/条目、PlaybackInfo、`TranscodingUrl` 或直链、轨道保留、进度上报；Library 模式在 M3 接入。
+1. Jellyfin Direct：登录、视图/条目、PlaybackInfo、直链/转码选择、保留服务器片名/封面/轨道、进度上报。
+2. 真实 OpenList：用独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。
+3. Library Mode 与海报库：条目/季集/版本模型、TMDB 识别、聚合首页（M3）。
 4. 远程首帧与拖动分段计时；本地/LAN 10% 中位数目标。
 5. 真机 5.1 接收器与 Infuse 对照：需要设备与安装包时逐项登记「待验证」，不阻塞其他工作。
 

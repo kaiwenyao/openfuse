@@ -48,71 +48,132 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleLaunchArguments() {
         let arguments = CommandLine.arguments
+        let model = AppModel.shared
         if let captureUI = value(after: "--capture-ui", in: arguments) {
             let delay = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                AppModel.shared.captureUI(to: URL(fileURLWithPath: captureUI))
+                model.captureUI(to: URL(fileURLWithPath: captureUI))
             }
         }
-        if let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init),
-           !arguments.contains("--open") {
+
+        if arguments.contains("--show-add-source") {
+            model.showAddSource = true
+        }
+        if arguments.contains("--webdav-browse-saved") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let source = model.sources.first {
+                    model.browse(source)
+                }
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            }
+            return
+        }
+        if arguments.contains("--resume-first") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let record = model.recent.first {
+                    model.resume(record)
+                }
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            }
+            return
+        }
+        let localPath = value(after: "--open", in: arguments)
+        let webdavURL = value(after: "--webdav-url", in: arguments)
+        guard localPath != nil || webdavURL != nil else {
+            scheduleQuitOnly(arguments: arguments)
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            if let localPath {
+                model.open(url: URL(fileURLWithPath: localPath))
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {
+                    model.open(url: URL(fileURLWithPath: localPath))
+                })
+                return
+            }
+
+            guard let webdavURL, let baseURL = URL(string: webdavURL) else {
+                self.scheduleQuitOnly(arguments: arguments)
+                return
+            }
+            let user = self.value(after: "--webdav-user", in: arguments)
+                ?? ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_USER"] ?? ""
+            let password = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"]
+                ?? self.value(after: "--webdav-pass", in: arguments) ?? ""
+            let name = self.value(after: "--webdav-name", in: arguments) ?? "WebDAV"
+            let remotePath = self.value(after: "--webdav-path", in: arguments)
+            let browseOnly = remotePath == nil || arguments.contains("--webdav-browse")
+
+            Task { @MainActor in
+                guard let source = await model.addSource(name: name, urlText: baseURL.absoluteString, username: user, password: password) else {
+                    self.scheduleQuitOnly(arguments: arguments)
+                    return
+                }
+                if browseOnly {
+                    model.browse(source)
+                } else if let remotePath {
+                    await model.openRemote(source: source, path: remotePath)
+                }
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {
+                    Task { @MainActor in await model.openRemote(source: source, path: remotePath ?? "") }
+                })
+            }
+        }
+    }
+
+    private func scheduleAutomation(model: AppModel, arguments: [String], reopen: @escaping () -> Void) {
+        if let seek = value(after: "--seek", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                model.player?.seek(to: seek)
+            }
+        }
+        if let subtitleTag = value(after: "--subtitle", in: arguments) {
+            model.player?.selectSubtitle(language: subtitleTag, attempts: 10)
+        }
+        if let freezeAt = value(after: "--freeze-at", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                model.player?.freeze(at: freezeAt)
+            }
+        }
+        if arguments.contains("--fullscreen") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                model.player?.toggleFullScreen()
+            }
+        }
+        if arguments.contains("--reopen-test") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                model.closePlayer()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.5) {
+                reopen()
+            }
+        }
+        if let capture = value(after: "--capture", in: arguments) {
+            let captureAfter = value(after: "--capture-after", in: arguments).flatMap(Double.init) ?? 3
+            DispatchQueue.main.asyncAfter(deadline: .now() + captureAfter) {
+                model.player?.captureScreenshot(to: URL(fileURLWithPath: capture))
+                if let report = self.value(after: "--report", in: arguments) {
+                    model.writeTestReport(to: URL(fileURLWithPath: report))
+                }
+            }
+        } else if let report = value(after: "--report", in: arguments) {
+            let captureAfter = value(after: "--capture-after", in: arguments).flatMap(Double.init) ?? 3
+            DispatchQueue.main.asyncAfter(deadline: .now() + captureAfter) {
+                model.writeTestReport(to: URL(fileURLWithPath: report))
+            }
+        }
+        if let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + quitAfter) {
                 NSApp.terminate(nil)
             }
         }
-        guard let openIndex = arguments.firstIndex(of: "--open"), arguments.count > openIndex + 1 else {
-            return
-        }
-        let path = arguments[openIndex + 1]
-        let seek = value(after: "--seek", in: arguments).flatMap(Double.init)
-        let capture = value(after: "--capture", in: arguments)
-        let captureAfter = value(after: "--capture-after", in: arguments).flatMap(Double.init) ?? 3
-        let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init)
-        let report = value(after: "--report", in: arguments)
-        let subtitleTag = value(after: "--subtitle", in: arguments)
-        let freezeAt = value(after: "--freeze-at", in: arguments).flatMap(Double.init)
-        let model = AppModel.shared
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            model.open(url: URL(fileURLWithPath: path))
-            if let seek {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    model.player?.seek(to: seek)
-                }
-            }
-            if let subtitleTag {
-                model.player?.selectSubtitle(language: subtitleTag, attempts: 10)
-            }
-            if let freezeAt {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    model.player?.freeze(at: freezeAt)
-                }
-            }
-            if arguments.contains("--fullscreen") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    model.player?.toggleFullScreen()
-                }
-            }
-            if arguments.contains("--reopen-test") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    model.closePlayer()
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 5.5) {
-                    model.open(url: URL(fileURLWithPath: path))
-                }
-            }
-            if let capture {
-                DispatchQueue.main.asyncAfter(deadline: .now() + captureAfter) {
-                    model.player?.captureScreenshot(to: URL(fileURLWithPath: capture))
-                    if let report {
-                        model.writeTestReport(to: URL(fileURLWithPath: report))
-                    }
+    }
 
-                }
-            }
-            if let quitAfter {
-                DispatchQueue.main.asyncAfter(deadline: .now() + quitAfter) {
-                    NSApp.terminate(nil)
-                }
+    private func scheduleQuitOnly(arguments: [String]) {
+        if let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + quitAfter) {
+                NSApp.terminate(nil)
             }
         }
     }
@@ -137,6 +198,8 @@ struct RootView: View {
                 } else {
                     HomeView()
                 }
+            case .browser(let source):
+                WebDAVBrowserView(source: source)
             }
         }
         .background(Theme.background)
@@ -148,6 +211,7 @@ enum Theme {
     static let panel = Color(red: 0.082, green: 0.094, blue: 0.118)
     static let elevated = Color(red: 0.114, green: 0.129, blue: 0.157)
     static let accent = Color(red: 0.36, green: 0.78, blue: 0.98)
+    static let warm = Color(red: 0.98, green: 0.72, blue: 0.25)
     static let text = Color(red: 0.93, green: 0.95, blue: 0.98)
     static let secondary = Color(red: 0.58, green: 0.63, blue: 0.70)
     static let stroke = Color.white.opacity(0.08)
@@ -177,6 +241,9 @@ struct HomeView: View {
                         } else {
                             continueWatching
                         }
+                        if !model.sources.isEmpty {
+                            networkSources
+                        }
                         engineCard
                     }
                     .padding(.horizontal, 36)
@@ -197,6 +264,10 @@ struct HomeView: View {
             handleDrop(providers)
         }
         .animation(.easeInOut(duration: 0.2), value: isDropTarget)
+        .sheet(isPresented: $model.showAddSource) {
+            AddSourceSheet()
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -221,6 +292,18 @@ struct HomeView: View {
             }
 
             Spacer()
+
+            Button {
+                model.showAddSource = true
+            } label: {
+                Label("添加来源", systemImage: "network")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Theme.elevated, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
 
             Button {
                 model.presentOpenPanel()
@@ -319,6 +402,59 @@ struct HomeView: View {
                     .font(.system(size: 12.5))
                     .foregroundStyle(Theme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var networkSources: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("网络来源")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Spacer()
+                Button {
+                    model.showAddSource = true
+                } label: {
+                    Label("添加", systemImage: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.accent)
+            }
+            ForEach(model.sources) { source in
+                HStack(spacing: 14) {
+                    Image(systemName: "externaldrive.connected.to.line.below")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(source.name)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(source.baseURL.absoluteString)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(Theme.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Button("浏览") {
+                        model.browse(source)
+                    }
+                    .buttonStyle(.bordered)
+                    Button {
+                        model.removeSource(source)
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(Theme.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("移除来源（不删除服务器文件）")
+                }
+                .padding(14)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
             }
         }
     }
