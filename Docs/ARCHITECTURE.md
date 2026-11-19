@@ -64,6 +64,16 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 元数据（M3b）
+
+- `TMDBClient`（actor）：`/3/search/movie|tv`，标题+年份查询，进程内缓存；`OPENFUSE_TMDB_API_KEY/BASE_URL/IMAGE_BASE` 配置；无 key 时完全离线。
+- `LibraryMetadata.enrich`：本地/WebDAV 扫描后逐作品匹配；Jellyfin 与 NFO 完整作品跳过；写入 TMDB 标题、年份、简介、`remote:` 海报。
+- `NFOReader`：本地 `movie.nfo`、`<video>.nfo`、`tvshow.nfo`、单集 NFO；`title/year/plot/poster/thumb`，相对海报路径解析为本地文件；本地优先于 TMDB。
+- `PosterRef`：`jellyfin:`、`file:`、`remote:`；UI 分别用 Jellyfin token URL、NSImage、AsyncImage。
+- 夹具：`Tools/tmdb_fixture.py`（搜索+海报）、`make_library_fixture.py` 写入 tvshow.nfo。
+
+**待做：** 候选列表/手动 TMDB id、WebDAV NFO 与认证海报缓存、并发/限流/取消、backdrop/演职员/预告片。
+
 ## 远程来源（M2 WebDAV 已实现）
 
 - `WebDAVSource`：名称、根 URL、用户名；id 由 URL+用户名哈希；`sources.json` 持久化，密码存 Keychain。

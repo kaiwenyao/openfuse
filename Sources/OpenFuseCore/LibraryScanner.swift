@@ -27,6 +27,8 @@ public enum LibraryScanner {
         var remotePath: String?
         var posterPath: String?
         var posterURL: String?
+        var nfo: NFOMetadata?
+        var showNFO: NFOMetadata?
     }
 
     // MARK: - Local
@@ -41,7 +43,7 @@ public enum LibraryScanner {
             throw LibraryScanError.invalidFolder
         }
         let sourceID = "local-" + LibraryID.hash(directory.path).replacingOccurrences(of: "local-", with: "")
-        var videoFiles: [(URL, String)] = []
+        var videoFiles: [(URL, String, NFOMetadata?, NFOMetadata?)] = []
         var posterMap: [String: String] = [:]
         var fileCount = 0
         while let file = enumerator.nextObject() as? URL {
@@ -61,16 +63,22 @@ public enum LibraryScanner {
                 posterMap[key] = file.path
                 continue
             }
-            videoFiles.append((file, relative))
+            let showDirectory = file.deletingLastPathComponent().deletingLastPathComponent()
+            let episodeNFO = NFOReader.readEpisode(videoURL: file)
+            let movieNFO = NFOReader.readMovie(videoURL: file)
+            let showNFO = NFOReader.readShow(showDirectory: showDirectory)
+            videoFiles.append((file, relative, movieNFO ?? episodeNFO, showNFO))
         }
-        let candidates = videoFiles.map { file, relative in
+        let candidates = videoFiles.map { file, relative, nfo, showNFO in
             FileCandidate(
                 relativePath: relative,
                 name: file.lastPathComponent,
                 fileURL: file,
                 remotePath: nil,
                 posterPath: findLocalPoster(for: file, relativePath: relative, directory: directory, posterMap: posterMap),
-                posterURL: nil
+                posterURL: nil,
+                nfo: nfo,
+                showNFO: showNFO
             )
         }
         let sourceName = directory.lastPathComponent.isEmpty ? "本地文件夹" : directory.lastPathComponent
@@ -113,6 +121,7 @@ public enum LibraryScanner {
         struct SeriesBucket {
             var title: String
             var year: Int?
+            var overview: String?
             var posterPath: String?
             var posterURL: String?
             var episodes: [(ParsedMediaName, FileCandidate)] = []
@@ -127,10 +136,19 @@ public enum LibraryScanner {
                 var season = parsed.season ?? 1
                 if season < 1 { season = 1 }
                 let key = parsed.showTitle.lowercased()
-                var bucket = series[key] ?? SeriesBucket(title: parsed.showTitle, year: parsed.year)
-                if bucket.year == nil { bucket.year = parsed.year }
-                if bucket.posterPath == nil { bucket.posterPath = candidate.posterPath }
-                if bucket.posterURL == nil { bucket.posterURL = candidate.posterURL }
+                var bucket = series[key] ?? SeriesBucket(
+                    title: candidate.showNFO?.title ?? parsed.showTitle,
+                    year: candidate.showNFO?.year ?? parsed.year,
+                    overview: candidate.showNFO?.overview
+                )
+                if bucket.year == nil { bucket.year = candidate.showNFO?.year ?? parsed.year }
+                if bucket.overview == nil { bucket.overview = candidate.showNFO?.overview }
+                if bucket.posterPath == nil {
+                    bucket.posterPath = candidate.showNFO?.posterPath ?? candidate.posterPath
+                }
+                if bucket.posterURL == nil {
+                    bucket.posterURL = candidate.showNFO?.posterURL?.absoluteString ?? candidate.posterURL
+                }
                 bucket.episodes.append((parsed, candidate))
                 series[key] = bucket
                 _ = episode
@@ -142,11 +160,14 @@ public enum LibraryScanner {
         var works: [ScannedWork] = []
 
         for (parsed, candidate) in movies {
-            let title = parsed.showTitle
+            let title = candidate.nfo?.title ?? parsed.showTitle
             let workID = LibraryID.hash("\(sourceID)|movie|\(candidate.relativePath)", prefix: sourceKind == "local" ? "local-" : "webdav-")
             let episodeID = workID + "-main"
             let versionID = episodeID + "-v0"
-            let poster = candidate.posterPath.map { PosterRef.file($0) } ?? candidate.posterURL.map { PosterRef.remote($0) }
+            let poster = candidate.nfo?.posterPath.map { PosterRef.file($0) }
+                ?? candidate.nfo?.posterURL.map { PosterRef.remote($0.absoluteString) }
+                ?? candidate.posterPath.map { PosterRef.file($0) }
+                ?? candidate.posterURL.map { PosterRef.remote($0) }
             let version = ScannedVersion(
                 id: versionID,
                 name: sourceKind == "local" ? "本地文件" : "WebDAV",
@@ -161,7 +182,7 @@ public enum LibraryScanner {
                 seasonNumber: 0,
                 episodeNumber: 1,
                 title: title,
-                overview: nil,
+                overview: candidate.nfo?.overview,
                 runtime: 0,
                 poster: poster,
                 serverID: nil,
@@ -176,8 +197,8 @@ public enum LibraryScanner {
                     kind: .movie,
                     title: title,
                     sortTitle: title,
-                    year: parsed.year,
-                    overview: nil,
+                    year: candidate.nfo?.year ?? parsed.year,
+                    overview: candidate.nfo?.overview,
                     poster: poster,
                     sourceKind: sourceKind,
                     sourceID: sourceID,
@@ -207,14 +228,14 @@ public enum LibraryScanner {
                     remotePath: candidate.remotePath,
                     fileURL: candidate.fileURL?.absoluteString
                 )
-                var titleText = parsed.episodeTitle ?? ""
+                var titleText = candidate.nfo?.title ?? parsed.episodeTitle ?? ""
                 if titleText.isEmpty { titleText = "第 \(episode) 集" }
                 let ep = ScannedEpisode(
                     id: episodeID,
                     seasonNumber: season,
                     episodeNumber: episode,
                     title: titleText,
-                    overview: nil,
+                    overview: candidate.nfo?.overview,
                     runtime: 0,
                     poster: candidate.posterPath.map { PosterRef.file($0) } ?? candidate.posterURL.map { PosterRef.remote($0) },
                     serverID: nil,
@@ -241,7 +262,7 @@ public enum LibraryScanner {
                     title: title,
                     sortTitle: title,
                     year: bucket.year,
-                    overview: nil,
+                    overview: bucket.overview,
                     poster: poster,
                     sourceKind: sourceKind,
                     sourceID: sourceID,
@@ -494,7 +515,9 @@ public enum LibraryScanner {
                         fileURL: nil,
                         remotePath: entry.path,
                         posterPath: nil,
-                        posterURL: poster
+                        posterURL: poster,
+                        nfo: nil,
+                        showNFO: nil
                     )
                 )
             }

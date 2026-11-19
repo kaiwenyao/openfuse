@@ -48,6 +48,16 @@ def main() -> None:
     season2 = os.path.join(show2, "Season 01")
     link_or_copy(FIXTURE, os.path.join(season2, "另一部剧.S01E01.mkv"))
     link_or_copy(os.path.join(POSTER_DIR, "season.jpg"), os.path.join(show2, "poster.jpg"))
+    nfo = """<?xml version="1.0" encoding="UTF-8"?>
+<tvshow>
+  <title>另一部剧 · 本地 NFO</title>
+  <year>2025</year>
+  <plot>来自 tvshow.nfo 的本地简介，优先于 TMDB。</plot>
+  <poster>poster.jpg</poster>
+</tvshow>
+"""
+    with open(os.path.join(show2, "tvshow.nfo"), "w", encoding="utf-8") as handle:
+        handle.write(nfo)
 
     print(f"library fixture ready: {ROOT}")
 

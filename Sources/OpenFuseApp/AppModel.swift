@@ -418,14 +418,33 @@ final class AppModel: ObservableObject {
             let scanned = try await Task.detached(priority: .userInitiated) {
                 try LibraryScanner.scanLocal(directory: url)
             }.value
-            try libraryStore.replace(source: scanned)
+            let enriched = await enrichWithTMDB(scanned)
+            try libraryStore.replace(source: enriched.library)
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
-            libraryStatus = "已扫描 \(scanned.sourceName)：\(counts.works) 个作品"
+            let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
+            libraryStatus = "已扫描 \(scanned.sourceName)：\(counts.works) 个作品" +
+                (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
         } catch {
             libraryStatus = "扫描失败：\(error.localizedDescription)"
         }
         isScanningLibrary = false
+    }
+
+    private func tmdbClient() -> TMDBClient? {
+        guard let key = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"], !key.isEmpty else {
+            return nil
+        }
+        let base = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_BASE_URL"].flatMap(URL.init(string:))
+            ?? URL(string: "https://api.themoviedb.org/3")!
+        let image = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_IMAGE_BASE"].flatMap(URL.init(string:))
+            ?? URL(string: "https://image.tmdb.org/t/p/w500")!
+        return TMDBClient(apiKey: key, baseURL: base, imageBaseURL: image)
+    }
+
+    private func enrichWithTMDB(_ library: ScannedLibrary) async -> (library: ScannedLibrary, matched: Int) {
+        guard let client = tmdbClient() else { return (library, 0) }
+        return await LibraryMetadata.enrich(library, client: client)
     }
 
     func scanJellyfinSource(_ source: JellyfinSource) async {
@@ -456,10 +475,13 @@ final class AppModel: ObservableObject {
         libraryStatus = "正在扫描 WebDAV：\(source.name)…"
         do {
             let scanned = try await LibraryScanner.scanWebDAV(source: source, client: client)
-            try libraryStore.replace(source: scanned)
+            let enriched = await enrichWithTMDB(scanned)
+            try libraryStore.replace(source: enriched.library)
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
-            libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品"
+            let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
+            libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品" +
+                (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
         } catch {
             libraryStatus = "WebDAV 扫描失败：\(error.localizedDescription)"
         }
@@ -562,6 +584,7 @@ final class AppModel: ObservableObject {
                 "kind": work.kind.rawValue,
                 "title": work.title,
                 "year": work.year ?? 0,
+                "overview": work.overview ?? "",
                 "sourceKind": work.sourceKind,
                 "sourceID": work.sourceID,
                 "poster": work.poster ?? "",

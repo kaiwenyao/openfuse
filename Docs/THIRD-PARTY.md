@@ -10,6 +10,7 @@
 | Noto Sans SC（测试字体） | 2026-11 下载 | 测试片内嵌字体 | SIL Open Font License 1.1 | `Scripts/make_fixtures.sh` 下载，不入库 |
 | 系统字体 PingFang SC / Hiragino Sans | macOS 27.2.1 | 测试字幕样式与回退 | 系统许可 | 本机系统 |
 | SQLite | 系统自带（libsqlite3） | 本地媒体库 | Public Domain | macOS SDK |
+| TMDB API | v3（可选，需用户 key） | 片名/简介/海报元数据 | TMDB API 服务条款，需署名 | 用户环境变量 `OPENFUSE_TMDB_API_KEY`；仓库不含 key |
 
 注意：
 

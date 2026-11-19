@@ -166,6 +166,27 @@ case "version":
     let engine = MPVEngine()
     print("mpv client API \(engine.clientAPIversion), mpv-version \(engine.getPropertyString("mpv-version") ?? "?")")
     exit(0)
+case "tmdb":
+    let title = arguments[2]
+    let year = arguments.count > 3 ? Int(arguments[3]) : nil
+    let kind: LibraryKind = arguments.count > 4 && arguments[4] == "tv" ? .series : .movie
+    let key = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"] ?? ""
+    let base = URL(string: ProcessInfo.processInfo.environment["OPENFUSE_TMDB_BASE_URL"] ?? "https://api.themoviedb.org/3")!
+    let image = URL(string: ProcessInfo.processInfo.environment["OPENFUSE_TMDB_IMAGE_BASE"] ?? "https://image.tmdb.org/t/p/w500")!
+    let client = TMDBClient(apiKey: key, baseURL: base, imageBaseURL: image)
+    let semaphore = DispatchSemaphore(value: 0)
+    Task {
+        let match = await client.match(title: title, year: year, kind: kind)
+        let payload: [String: Any] = match.map { item in
+            ["id": item.id, "title": item.title, "year": item.year ?? 0,
+             "overview": item.overview ?? "", "poster": client.imageURL(path: item.posterPath)?.absoluteString ?? ""]
+        } ?? [:]
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        print(String(data: data, encoding: .utf8)!)
+        semaphore.signal()
+    }
+    semaphore.wait()
+    exit(0)
 case "jellyfin":
     let base = arguments[2]
     let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"

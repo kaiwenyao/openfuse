@@ -30,6 +30,11 @@
 | `23-library-movie-versions.jpg` | 电影详情的 1080p/720p 版本 Picker | 同上 |
 | `24-library-play.jpg` | 从媒体库播放单集的渲染帧 | 播放器 `glReadPixels` |
 | `reports/m3-library-*.json` | 本地/聚合/WebDAV 扫描、媒体库播放报告 | 应用 `--library-report` |
+| `25-tmdb-local.jpg` | 本地扫描 + TMDB + NFO 的媒体库 | 应用内窗口快照 |
+| `26-tmdb-webdav.jpg` | WebDAV 扫描 + TMDB 海报库 | 同上 |
+| `27-tmdb-detail.jpg` | TMDB 电影详情（标题/简介/海报） | 同上 |
+| `28-nfo-detail.jpg` | tvshow.nfo 优先级（标题/年份/简介/本地海报） | 同上 |
+| `reports/m3b-tmdb-*.json` | TMDB/NFO 本地与 WebDAV 报告、TMDB 请求日志 | 应用 `--library-report`、夹具日志 |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |

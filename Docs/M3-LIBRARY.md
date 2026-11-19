@@ -86,4 +86,4 @@ PASS: local/Jellyfin/WebDAV scan, 7 works/9 episodes, search, details, library p
 
 ## 下一项
 
-M3b：TMDB（env API key）与本地 NFO/XML、跨源版本/集级合并、增量扫描与手工纠错、最近添加/继续观看排序、WebDAV 海报缓存；补 T06/T07 的目录、重复版本与 10,000 条目压力记录。随后进入 M4 家庭设备与状态同步。
+M3b 的 TMDB + NFO + 远程海报已记录于 [M3b 元数据验收](M3B-METADATA.md)。剩余 M3c：手动匹配、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、WebDAV NFO/认证海报、T06/T07 压测；随后进入 M4。

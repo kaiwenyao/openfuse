@@ -58,6 +58,14 @@
 | 媒体库播放 | 同上 | 本地/WebDAV/Jellyfin 各一集 | 待采样 | 本地 9.958 s 冻结帧、外挂简体；WebDAV/Jellyfin 从库播放 sourceKind 正确 | `reports/m3-library-play.json`、Evidence 24 | 本地通过；真实服务待验证 |
 | T07（扫描压力） | — | 10,000 条目 | 待采样 | 未执行 | — | 未开始 |
 
+### M3b 元数据执行记录（2026-11-19）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| T06（元数据部分） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地夹具 + tvshow.nfo；TMDB 协议夹具 | Infuse 未安装，待采样 | 本地 3 作品：TMDB 2 匹配、NFO 1 覆盖；标题/年份/简介/海报正确 | `reports/m3b-tmdb-local.json`、Evidence 25、28 | 部分通过（真实 TMDB/手动匹配待做） |
+| 海报库（WebDAV + TMDB） | 同上 | WebDAV 夹具 2 作品，无自带海报 | 待采样 | 扫描后 2 个作品均使用 TMDB 远程海报，海报网格可见 | `reports/m3b-tmdb-webdav.json`、Evidence 26 | 本地通过；真实 OpenList/TMDB 待验证 |
+| 详情元数据 | 同上 | TMDB 电影 | 待采样 | 详情显示 TMDB 标题、简介、海报 | Evidence 27 | 部分通过 |
+
 
 
 

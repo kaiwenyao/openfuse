@@ -1,0 +1,9 @@
+{"path": "/3/search/movie?api_key=REDACTED&query=x", "status": 200, "time": "2026-11-19T23:41:31.034678+00:00"}
+{"path": "/3/search/movie?api_key=REDACTED&query=OpenFuse%20Fixture&language=zh-CN&include_adult=false&year=2026", "status": 200, "time": "2026-11-19T23:41:32.697535+00:00"}
+{"path": "/3/search/tv?api_key=REDACTED&query=%E7%A4%BA%E4%BE%8B%E5%89%A7&language=zh-CN&include_adult=false", "status": 200, "time": "2026-11-19T23:41:32.698874+00:00"}
+{"path": "/poster-movie.jpg", "status": 200, "time": "2026-11-19T23:41:32.728953+00:00"}
+{"path": "/poster-series.jpg", "status": 200, "time": "2026-11-19T23:41:32.728937+00:00"}
+{"path": "/3/search/movie?api_key=REDACTED&query=OpenFuse%20Fixture&language=zh-CN&include_adult=false", "status": 200, "time": "2026-11-19T23:41:45.864292+00:00"}
+{"path": "/3/search/tv?api_key=REDACTED&query=%E7%A4%BA%E4%BE%8B%E5%89%A7&language=zh-CN&include_adult=false", "status": 200, "time": "2026-11-19T23:41:45.864860+00:00"}
+{"path": "/poster-movie.jpg", "status": 200, "time": "2026-11-19T23:41:45.886558+00:00"}
+{"path": "/poster-series.jpg", "status": 200, "time": "2026-11-19T23:41:45.886718+00:00"}

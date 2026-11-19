@@ -12,8 +12,9 @@
 - **M1 Mac 本地播放：首个可用版本。** 可打开 MKV、出画面/出声、切换外挂简繁 ASS、缺字体回退、拖动、全屏、退出后从上次位置续播，关闭播放器再打开可重建会话。构建与实测见 [M1 验收记录](Docs/M1-ACCEPTANCE.md)。
 - **M2 WebDAV + Jellyfin Direct：完成本地验证。** WebDAV 可添加来源、按真实目录浏览、直放、远程 ASS、限速拖动与续播。Jellyfin Direct 可登录、浏览电影/剧/季/集、使用服务器封面与版本、直连播放、保留服务器音轨/字幕命名、回写开始/进度/停止并用服务器位置续播。两者均提供本地协议夹具与端到端脚本。真实 OpenList、百度网盘与真实 Jellyfin 账号未提供，相关组合标为「待验证」。记录：[M2a WebDAV](Docs/M2-WEBDAV.md)、[M2b Jellyfin](Docs/M2-JELLYFIN.md)。
 - **M3a 聚合媒体库：完成本地验证。** SQLite 媒体库、本地/WebDAV/Jellyfin 扫描、电影/剧/季/集、跨来源合并展示、Jellyfin 服务器封面、电影多版本、详情、搜索、从媒体库播放与来源切换。记录：[M3a 媒体库验收](Docs/M3-LIBRARY.md)。
-- **尚未完成：** TMDB/NFO 识别、集级跨源版本合并、增量扫描与手工纠错、最近添加/继续观看排序、WebDAV 海报缓存、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
-- **下一项：** M3b：TMDB（env key）与本地 NFO、跨源版本/集级合并、增量扫描与手工纠错、T06/T07 压测；随后进入 M4 家庭设备与状态同步。
+- **M3b 元数据：完成本地验证。** TMDB 搜索（env key）补片名/年份/简介/海报，本地 NFO（movie/tvshow/episode）优先且可跳过 TMDB，WebDAV 作品扫描后可用 TMDB 海报进入海报库。真实 TMDB key 未提供，夹具验证。记录：[M3b 元数据验收](Docs/M3B-METADATA.md)。
+- **尚未完成：** TMDB 候选/手动匹配、WebDAV NFO 与海报缓存、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
+- **下一项：** M3c：手动匹配与集级版本合并、增量扫描与取消、WebDAV NFO/海报缓存、最近添加/继续观看排序、T06/T07 压测；随后进入 M4 家庭设备与状态同步。
 
 开发入口：
 
@@ -27,10 +28,12 @@ Scripts/run-webdav-acceptance.sh    # WebDAV 播放/拖动/续播端到端
 Scripts/test-jellyfin.sh            # 本地 Jellyfin 协议检查
 Scripts/run-jellyfin-acceptance.sh  # Jellyfin 播放/版本/进度/续播端到端
 Scripts/run-library-acceptance.sh   # 本地/WebDAV/Jellyfin 扫描、合并、详情、搜索、播放
+Scripts/test-tmdb.sh                # TMDB 搜索/海报协议检查
+Scripts/run-tmdb-acceptance.sh      # TMDB + NFO 元数据与 WebDAV 海报库
 open build/OpenFuse.app
 ```
 
-当前分支 `m3-library`（从 `m2-remote-sources` 拉出）。每个里程碑使用独立分支；M3b 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
+当前分支 `m3b-metadata`（从 `m3-library` 拉出）。每个里程碑使用独立分支；M3c 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

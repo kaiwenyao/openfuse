@@ -24,8 +24,11 @@ public struct LibraryWork: Identifiable, Hashable, Sendable {
 
 public extension LibraryWork {
     var normalizedTitle: String {
-        title.replacingOccurrences(of: #"\s*\(\d{4}\)\s*$"#, with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        var value = title.replacingOccurrences(of: #"\s*\(\d{4}\)\s*$"#, with: "", options: .regularExpression)
+        // TMDB titles often add a localized subtitle ("示例剧：TMDB 版"). Ignore
+        // the suffix when grouping so the same work from Jellyfin still merges.
+        value = value.replacingOccurrences(of: #"\s*[:：].*$"#, with: "", options: .regularExpression)
+        return value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var mergeKey: String {

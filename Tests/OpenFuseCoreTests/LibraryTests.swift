@@ -30,6 +30,32 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(episode2.episodeTitle, "Name")
     }
 
+    func testPosterRefsAndMergeKey() {
+        XCTAssertEqual(PosterRef.parse("remote:https://example.com/poster.jpg")?.kind, "remote")
+        XCTAssertEqual(PosterRef.parse("jellyfin:movie-1|tag")?.value, "movie-1")
+        XCTAssertEqual(PosterRef.parse("jellyfin:movie-1|tag")?.extra, "tag")
+        let movie = LibraryWork(
+            id: "m", kind: .movie, title: "OpenFuse Fixture (2026)", sortTitle: "OpenFuse Fixture",
+            year: 2026, overview: nil, poster: nil, sourceKind: "local", sourceID: "s",
+            serverID: nil, seasonCount: 0, episodeCount: 1, addedAt: Date()
+        )
+        let other = LibraryWork(
+            id: "n", kind: .movie, title: "OpenFuse Fixture", sortTitle: "OpenFuse Fixture",
+            year: nil, overview: nil, poster: nil, sourceKind: "webdav", sourceID: "w",
+            serverID: nil, seasonCount: 0, episodeCount: 1, addedAt: Date()
+        )
+        XCTAssertEqual(movie.mergeKey, other.mergeKey)
+        XCTAssertEqual(movie.normalizedTitle, "OpenFuse Fixture")
+        var enriched = movie
+        enriched.title = "OpenFuse Fixture: TMDB Cut"
+        XCTAssertEqual(enriched.mergeKey, movie.mergeKey)
+        var localized = other
+        localized.title = "示例剧：TMDB 版"
+        var plain = other
+        plain.title = "示例剧"
+        XCTAssertEqual(localized.mergeKey, plain.mergeKey)
+    }
+
     func testStoreRoundTripSearchAndReplace() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-library-\(UUID().uuidString)", isDirectory: true)
@@ -71,6 +97,24 @@ final class LibraryTests: XCTestCase {
         try store.replace(source: ScannedLibrary(sourceKind: "local", sourceID: "src1", sourceName: "fixture", works: [movie]))
         XCTAssertEqual(try store.works().map(\.id), ["w1"])
         XCTAssertEqual(try store.counts().episodes, 1)
+    }
+
+    func testNFOReader() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-nfo-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let poster = directory.appendingPathComponent("poster.jpg")
+        try Data().write(to: poster)
+        let nfo = """
+        <tvshow><title>本地 NFO 剧名</title><year>2024</year><plot>本地简介</plot><poster>poster.jpg</poster></tvshow>
+        """
+        try nfo.write(to: directory.appendingPathComponent("tvshow.nfo"), atomically: true, encoding: .utf8)
+        let metadata = try XCTUnwrap(NFOReader.readShow(showDirectory: directory))
+        XCTAssertEqual(metadata.title, "本地 NFO 剧名")
+        XCTAssertEqual(metadata.year, 2024)
+        XCTAssertEqual(metadata.overview, "本地简介")
+        XCTAssertEqual(metadata.posterPath, poster.path)
     }
 
     func testLocalScannerGroupsSeriesAndMovies() throws {

@@ -44,6 +44,21 @@ struct LibraryPoster: View {
                     } else {
                         placeholder
                     }
+                case "remote":
+                    if let url = URL(string: parsed.value) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .clipped()
+                            default:
+                                placeholder
+                            }
+                        }
+                    } else {
+                        placeholder
+                    }
                 default:
                     placeholder
                 }

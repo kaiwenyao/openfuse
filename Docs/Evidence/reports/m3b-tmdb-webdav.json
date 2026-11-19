@@ -1,0 +1,97 @@
+{
+  "episodes": 2,
+  "generatedAt": "2026-11-19T23:41:46Z",
+  "groups": [
+    {
+      "key": "movie|openfuse fixture: tmdb cut",
+      "primary": "OpenFuse Fixture: TMDB Cut",
+      "sources": [
+        "webdav"
+      ],
+      "workIDs": [
+        "webdav-2728bb8ff7b970f9"
+      ]
+    },
+    {
+      "key": "series|示例剧：tmdb 版",
+      "primary": "示例剧：TMDB 版",
+      "sources": [
+        "webdav"
+      ],
+      "workIDs": [
+        "webdav-c2d8ba79e620dbd4"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-2728bb8ff7b970f9-main",
+          "remotePath": "Movies/OpenFuse Fixture (2026)/OpenFuse Fixture.mkv",
+          "season": 0,
+          "sourceKind": "webdav",
+          "title": "OpenFuse Fixture",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-2728bb8ff7b970f9-main-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-2728bb8ff7b970f9",
+      "kind": "movie",
+      "overview": "TMDB fixture overview for the OpenFuse library test.",
+      "poster": "remote:http://127.0.0.1:8112/poster-movie.jpg",
+      "seasons": [],
+      "sourceID": "aba6db7aa90009ce",
+      "sourceKind": "webdav",
+      "title": "OpenFuse Fixture: TMDB Cut",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-c2d8ba79e620dbd4-s1e1-9b44dc06",
+          "remotePath": "Shows/示例剧/Season 01/示例剧.S01E01.mkv",
+          "season": 1,
+          "sourceKind": "webdav",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-c2d8ba79e620dbd4-s1e1-9b44dc06-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-c2d8ba79e620dbd4",
+      "kind": "series",
+      "overview": "TMDB fixture overview for the series test.",
+      "poster": "remote:http://127.0.0.1:8112/poster-series.jpg",
+      "seasons": [
+        {
+          "id": "webdav-c2d8ba79e620dbd4-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "aba6db7aa90009ce",
+      "sourceKind": "webdav",
+      "title": "示例剧：TMDB 版",
+      "year": 2026
+    }
+  ],
+  "rawEpisodes": 2,
+  "rawWorks": 2,
+  "works": 2
+}
