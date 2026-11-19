@@ -23,6 +23,13 @@
 | `17-jellyfin-resume.jpg` | 服务器位置 9.9 s 续播后的帧 | 同上 |
 | `18-jellyfin-player-ui.jpg` | Jellyfin 来源的播放器控制层 | 应用内窗口快照 |
 | `reports/m2-jellyfin-*.json` | 单集/电影/续播报告与服务端事件日志 | 应用 `--report`、夹具日志 |
+| `19-library-local.jpg` | 本地扫描后的媒体库（3 作品/4 集） | 应用内窗口快照 |
+| `20-library-aggregate.jpg` | 本地 + Jellyfin 合并后的媒体库（3 组） | 同上 |
+| `21-library-series-detail.jpg` | 剧集详情、来源胶囊、季/集列表 | 同上 |
+| `22-library-search.jpg` | 媒体库搜索「示例」 | 同上 |
+| `23-library-movie-versions.jpg` | 电影详情的 1080p/720p 版本 Picker | 同上 |
+| `24-library-play.jpg` | 从媒体库播放单集的渲染帧 | 播放器 `glReadPixels` |
+| `reports/m3-library-*.json` | 本地/聚合/WebDAV 扫描、媒体库播放报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |

@@ -48,6 +48,16 @@
 | 服务器续播 | 同上 | 清空本地库，重开同一集 | 待采样 | 从服务器 9.917 s 起播，6 s 后 15.375 s | `reports/m2-jellyfin-resume.json` | 本地通过；跨设备待 M4 |
 | 浏览 UI | 同上 | 电影库/电视剧库 | 待采样 | 封面、服务器名称、来源卡片 | Evidence 13–14 | 部分通过（像素对照待做） |
 
+### M3a 媒体库执行记录（2026-11-19）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| T06（目录与分组，部分） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 1 电影 + 2 剧 4 集；WebDAV/Jellyfin 同结构 | Infuse 未安装，待采样 | 本地扫描 3 作品/4 集；加 Jellyfin 原始 5/7；加 WebDAV 7/9；合并为 3 组，来源胶囊切换 | `reports/m3-library-*.json`、Evidence 19–21 | 部分通过（误匹配/重复版本/手工纠错未测） |
+| T05（Library 聚合部分） | 同上 | Jellyfin 媒体库/剧/季/集 | 待采样 | Recursive 扫描保留服务器 Id/名称/封面/季集；电影 2 个版本；详情与播放 | Evidence 20–23；`m3-library-aggregate.json` | 部分通过（真实服务器、TMDB 待做） |
+| 媒体库详情/搜索 | 同上 | 电影、剧集 | 待采样 | 剧集季选择、S01E01/02、简介；搜索「示例」只剩示例剧 | Evidence 21–22 | 部分通过 |
+| 媒体库播放 | 同上 | 本地/WebDAV/Jellyfin 各一集 | 待采样 | 本地 9.958 s 冻结帧、外挂简体；WebDAV/Jellyfin 从库播放 sourceKind 正确 | `reports/m3-library-play.json`、Evidence 24 | 本地通过；真实服务待验证 |
+| T07（扫描压力） | — | 10,000 条目 | 待采样 | 未执行 | — | 未开始 |
+
 
 
 

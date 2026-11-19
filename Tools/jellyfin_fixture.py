@@ -155,6 +155,18 @@ def children(parent: str | None) -> list[dict]:
     return []
 
 
+def descendants(parent: str | None) -> list[dict]:
+    result: list[dict] = []
+
+    def walk(node: str | None) -> None:
+        for entry in children(node):
+            result.append(entry)
+            walk(entry["Id"])
+
+    walk(parent)
+    return result
+
+
 def all_items() -> dict[str, dict]:
     result = {v["Id"]: v for v in views()}
     for parent in ["lib-movies", "lib-tv", "series-1", "season-1"]:
@@ -316,7 +328,8 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 query = urllib.parse.parse_qs(parsed.query)
                 parent = (query.get("ParentId") or [None])[0]
-                entries = children(parent)
+                recursive = (query.get("Recursive") or ["false"])[0].lower() == "true"
+                entries = descendants(parent) if recursive else children(parent)
                 self._json({"Items": entries, "TotalRecordCount": len(entries)})
                 return
         self._empty(404)

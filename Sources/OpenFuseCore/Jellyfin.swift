@@ -384,6 +384,25 @@ public actor JellyfinClient {
         return response.items
     }
 
+    public func libraryItems(parentID: String) async throws -> [JellyfinItem] {
+        guard let userID = source.userID else { throw JellyfinError.unauthorized }
+        var components = URLComponents(url: url(path: "Users/\(userID)/Items"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [
+            URLQueryItem(name: "ParentId", value: parentID),
+            URLQueryItem(name: "Recursive", value: "true"),
+            URLQueryItem(name: "IncludeItemTypes", value: "Movie,Series,Season,Episode"),
+            URLQueryItem(name: "Fields", value: "Overview,Genres,ParentId,SeriesName,IndexNumber,ParentIndexNumber,RunTimeTicks,ProductionYear,SeriesId,SeasonId"),
+            URLQueryItem(name: "SortBy", value: "SortName"),
+            URLQueryItem(name: "SortOrder", value: "Ascending"),
+            URLQueryItem(name: "ImageTypeLimit", value: "1"),
+            URLQueryItem(name: "EnableImageTypes", value: "Primary"),
+            URLQueryItem(name: "Limit", value: "5000"),
+        ]
+        guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
+        let response = try await perform(request(requestURL), as: JellyfinItemsResponse.self)
+        return response.items
+    }
+
     public func item(id: String) async throws -> JellyfinItem {
         guard let userID = source.userID else { throw JellyfinError.unauthorized }
         return try await perform(

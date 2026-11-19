@@ -59,6 +59,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
         }
+        if let scanLocal = value(after: "--scan-local", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                Task { @MainActor in
+                    await model.scanLocalFolder(URL(fileURLWithPath: scanLocal))
+                    self.finishLibraryLaunch(model: model, arguments: arguments)
+                }
+            }
+            return
+        }
+        if let playID = value(after: "--library-play", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                guard model.playLibraryEpisode(id: playID) else {
+                    self.scheduleQuitOnly(arguments: arguments)
+                    return
+                }
+                self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            }
+            return
+        }
+        let hasRemoteOrLocalLaunch = arguments.contains("--jellyfin-url")
+            || arguments.contains("--webdav-url") || arguments.contains("--open")
+        if !hasRemoteOrLocalLaunch,
+           arguments.contains("--library-work") || arguments.contains("--library-report")
+            || arguments.contains("--library-search") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if let search = self.value(after: "--library-search", in: arguments) {
+                    model.librarySearch = search
+                }
+                if let query = self.value(after: "--library-work", in: arguments),
+                   let work = model.findWork(matching: query) {
+                    model.route = .library(work)
+                }
+                if let report = self.value(after: "--library-report", in: arguments) {
+                    model.writeLibraryReport(to: URL(fileURLWithPath: report))
+                }
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if arguments.contains("--webdav-browse-saved") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 if let source = model.sources.first {
@@ -90,6 +129,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     name: name, urlText: baseURL.absoluteString, username: user, password: password
                 ) else {
                     self.scheduleQuitOnly(arguments: arguments)
+                    return
+                }
+                if arguments.contains("--jellyfin-scan") {
+                    await model.scanJellyfinSource(source)
+                    self.finishLibraryLaunch(model: model, arguments: arguments)
                     return
                 }
                 if let itemID, !arguments.contains("--jellyfin-browse") {
@@ -141,6 +185,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.scheduleQuitOnly(arguments: arguments)
                     return
                 }
+                if arguments.contains("--webdav-scan") {
+                    await model.scanWebDAVSource(source)
+                    self.finishLibraryLaunch(model: model, arguments: arguments)
+                    return
+                }
                 if browseOnly {
                     model.browse(source)
                 } else if let remotePath {
@@ -151,6 +200,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 })
             }
         }
+    }
+
+    private func finishLibraryLaunch(model: AppModel, arguments: [String]) {
+        if let search = value(after: "--library-search", in: arguments) {
+            model.librarySearch = search
+        }
+        if let query = value(after: "--library-work", in: arguments),
+           let work = model.findWork(matching: query) {
+            model.route = .library(work)
+        }
+        if let report = value(after: "--library-report", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                model.writeLibraryReport(to: URL(fileURLWithPath: report))
+            }
+        }
+        scheduleQuitOnly(arguments: arguments)
     }
 
     private func scheduleAutomation(model: AppModel, arguments: [String], reopen: @escaping () -> Void) {
@@ -233,6 +298,8 @@ struct RootView: View {
                 WebDAVBrowserView(source: source)
             case .jellyfinBrowser(let source):
                 JellyfinBrowserView(source: source)
+            case .library(let work):
+                LibraryDetailView(work: work)
             }
         }
         .background(Theme.background)
@@ -270,11 +337,12 @@ struct HomeView: View {
                 header
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
-                        if model.recent.isEmpty {
+                        if model.recent.isEmpty && model.libraryWorks.isEmpty {
                             emptyState
-                        } else {
+                        } else if !model.recent.isEmpty {
                             continueWatching
                         }
+                        mediaLibrary
                         if !model.sources.isEmpty {
                             networkSources
                         }
@@ -333,6 +401,35 @@ struct HomeView: View {
             }
 
             Spacer()
+
+            Menu {
+                Button("扫描文件夹…") { chooseFolderToScan() }
+                if !model.jellyfinSources.isEmpty {
+                    Divider()
+                    ForEach(model.jellyfinSources) { source in
+                        Button("扫描 Jellyfin：\(source.name)") {
+                            Task { await model.scanJellyfinSource(source) }
+                        }
+                    }
+                }
+                if !model.sources.isEmpty {
+                    Divider()
+                    ForEach(model.sources) { source in
+                        Button("扫描 WebDAV：\(source.name)") {
+                            Task { await model.scanWebDAVSource(source) }
+                        }
+                    }
+                }
+            } label: {
+                Label("扫描", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Theme.elevated, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
 
             Button {
                 model.showAddSource = true
@@ -459,6 +556,86 @@ struct HomeView: View {
         }
     }
 
+    private var mediaLibrary: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Text("媒体库")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Text("\(model.libraryWorkCount) 个作品 · \(model.libraryEpisodeCount) 集")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Theme.secondary)
+                Spacer()
+                TextField("搜索片名", text: $model.librarySearch)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 180)
+                if model.isScanningLibrary {
+                    ProgressView().controlSize(.small)
+                }
+            }
+
+            if model.libraryWorks.isEmpty {
+                HStack(spacing: 14) {
+                    Image(systemName: "rectangle.stack.badge.plus")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundStyle(Theme.secondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("还没建立媒体库")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text("扫描本地文件夹、Jellyfin 或 WebDAV 来源，按电影/剧/季/集浏览。")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Theme.secondary)
+                    }
+                    Spacer()
+                    Button("扫描文件夹…") { chooseFolderToScan() }
+                        .buttonStyle(.bordered)
+                }
+                .padding(16)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
+            } else {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 20)],
+                    alignment: .leading,
+                    spacing: 22
+                ) {
+                    ForEach(filteredGroups) { group in
+                        LibraryCard(group: group)
+                    }
+                }
+            }
+
+            if let status = model.libraryStatus {
+                Text(status)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.secondary)
+            }
+        }
+    }
+
+    private var filteredGroups: [LibraryGroup] {
+        let query = model.librarySearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return model.libraryGroups }
+        return model.libraryGroups.filter { group in
+            group.works.contains {
+                $0.title.localizedCaseInsensitiveContains(query) || ($0.overview ?? "").localizedCaseInsensitiveContains(query)
+            }
+        }
+    }
+
+    private func chooseFolderToScan() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "扫描"
+        panel.message = "选择包含电影或剧集文件夹的目录"
+        if panel.runModal() == .OK, let url = panel.url {
+            Task { await model.scanLocalFolder(url) }
+        }
+    }
+
     private var jellyfinSourcesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -492,6 +669,10 @@ struct HomeView: View {
                             .lineLimit(1)
                     }
                     Spacer()
+                    Button("扫描") {
+                        Task { await model.scanJellyfinSource(source) }
+                    }
+                    .buttonStyle(.bordered)
                     Button("浏览") { model.browseJellyfin(source) }
                         .buttonStyle(.bordered)
                     Button {
@@ -543,6 +724,10 @@ struct HomeView: View {
                             .lineLimit(1)
                     }
                     Spacer()
+                    Button("扫描") {
+                        Task { await model.scanWebDAVSource(source) }
+                    }
+                    .buttonStyle(.bordered)
                     Button("浏览") {
                         model.browse(source)
                     }

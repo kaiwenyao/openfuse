@@ -28,6 +28,7 @@ let package = Package(
             linkerSettings: [
                 .unsafeFlags(["-L/opt/homebrew/lib"]),
                 .linkedLibrary("mpv"),
+                .linkedLibrary("sqlite3"),
                 .linkedFramework("OpenGL"),
             ]
         ),

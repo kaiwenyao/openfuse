@@ -9,6 +9,7 @@
 | libass | Homebrew 版本 | ASS/SSA 渲染 | ISC | Homebrew 依赖 |
 | Noto Sans SC（测试字体） | 2026-11 下载 | 测试片内嵌字体 | SIL Open Font License 1.1 | `Scripts/make_fixtures.sh` 下载，不入库 |
 | 系统字体 PingFang SC / Hiragino Sans | macOS 27.2.1 | 测试字幕样式与回退 | 系统许可 | 本机系统 |
+| SQLite | 系统自带（libsqlite3） | 本地媒体库 | Public Domain | macOS SDK |
 
 注意：
 

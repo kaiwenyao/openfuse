@@ -9,6 +9,7 @@ enum AppRoute: Equatable {
     case player
     case browser(WebDAVSource)
     case jellyfinBrowser(JellyfinSource)
+    case library(LibraryWork)
 }
 
 @MainActor
@@ -24,11 +25,19 @@ final class AppModel: ObservableObject {
     @Published var showAddSource = false
     @Published var showAddJellyfin = false
     @Published var jellyfinSources: [JellyfinSource] = []
+    @Published var libraryWorks: [LibraryWork] = []
+    @Published var libraryGroups: [LibraryGroup] = []
+    @Published var libraryWorkCount = 0
+    @Published var libraryEpisodeCount = 0
+    @Published var isScanningLibrary = false
+    @Published var libraryStatus: String?
+    @Published var librarySearch = ""
 
     let supportDirectory: URL
     let store: PlaybackStore
     let sourceStore: SourceStore
     let jellyfinStore: JellyfinSourceStore
+    let libraryStore: LibraryStore
     private var sessionJellyfinTokens: [String: String] = [:]
 
     init(supportDirectory: URL? = nil) {
@@ -38,12 +47,14 @@ final class AppModel: ObservableObject {
             self.store = try PlaybackStore(directory: directory)
             self.sourceStore = try SourceStore(directory: directory)
             self.jellyfinStore = try JellyfinSourceStore(directory: directory)
+            self.libraryStore = try LibraryStore(directory: directory)
         } catch {
             fatalError("cannot open OpenFuse store: \(error)")
         }
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
         refreshRecent()
+        reloadLibrary()
     }
 
     static func defaultSupportDirectory() -> URL {
@@ -379,6 +390,241 @@ final class AppModel: ObservableObject {
             startPlayer(with: mediaItem, serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks))
         } catch {
             statusMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Media library
+
+    func reloadLibrary() {
+        do {
+            libraryWorks = try libraryStore.works()
+            rebuildLibraryGroups()
+            let counts = try libraryStore.counts()
+            libraryWorkCount = libraryGroups.count
+            libraryEpisodeCount = libraryGroups.reduce(0) { $0 + $1.primary.episodeCount }
+        } catch {
+            libraryStatus = error.localizedDescription
+        }
+    }
+
+    func scanLocalFolder(_ url: URL) async {
+        await performLocalScan(url)
+    }
+
+    private func performLocalScan(_ url: URL) async {
+        isScanningLibrary = true
+        libraryStatus = "正在扫描 \(url.lastPathComponent)…"
+        do {
+            let scanned = try await Task.detached(priority: .userInitiated) {
+                try LibraryScanner.scanLocal(directory: url)
+            }.value
+            try libraryStore.replace(source: scanned)
+            reloadLibrary()
+            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+            libraryStatus = "已扫描 \(scanned.sourceName)：\(counts.works) 个作品"
+        } catch {
+            libraryStatus = "扫描失败：\(error.localizedDescription)"
+        }
+        isScanningLibrary = false
+    }
+
+    func scanJellyfinSource(_ source: JellyfinSource) async {
+        guard let client = jellyfinClient(for: source) else {
+            libraryStatus = "缺少 \(source.name) 的登录令牌"
+            return
+        }
+        isScanningLibrary = true
+        libraryStatus = "正在扫描 Jellyfin：\(source.name)…"
+        do {
+            let scanned = try await LibraryScanner.scanJellyfin(source: source, client: client)
+            try libraryStore.replace(source: scanned)
+            reloadLibrary()
+            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+            libraryStatus = "Jellyfin \(source.name)：\(counts.works) 个作品"
+        } catch {
+            libraryStatus = "Jellyfin 扫描失败：\(error.localizedDescription)"
+        }
+        isScanningLibrary = false
+    }
+
+    func scanWebDAVSource(_ source: WebDAVSource) async {
+        guard let client = webdavClient(for: source) else {
+            libraryStatus = "缺少 \(source.name) 的密码"
+            return
+        }
+        isScanningLibrary = true
+        libraryStatus = "正在扫描 WebDAV：\(source.name)…"
+        do {
+            let scanned = try await LibraryScanner.scanWebDAV(source: source, client: client)
+            try libraryStore.replace(source: scanned)
+            reloadLibrary()
+            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+            libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品"
+        } catch {
+            libraryStatus = "WebDAV 扫描失败：\(error.localizedDescription)"
+        }
+        isScanningLibrary = false
+    }
+
+    func librarySeasons(workID: String) -> [LibrarySeason] {
+        (try? libraryStore.seasons(workID: workID)) ?? []
+    }
+
+    func libraryEpisodes(workID: String, seasonID: String? = nil) -> [LibraryEpisode] {
+        (try? libraryStore.episodes(workID: workID, seasonID: seasonID)) ?? []
+    }
+
+    func libraryVersions(itemID: String) -> [LibraryVersion] {
+        (try? libraryStore.versions(itemID: itemID)) ?? []
+    }
+
+    func work(id: String) -> LibraryWork? {
+        libraryWorks.first { $0.id == id }
+    }
+
+    func rebuildLibraryGroups() {
+        let groups = Dictionary(grouping: libraryWorks, by: \.mergeKey)
+        libraryGroups = groups.map { key, works in
+            let sorted = works.sorted { lhs, rhs in
+                let left = preference(lhs), right = preference(rhs)
+                if left != right { return left > right }
+                if lhs.episodeCount != rhs.episodeCount { return lhs.episodeCount > rhs.episodeCount }
+                return lhs.id < rhs.id
+            }
+            return LibraryGroup(id: sorted[0].id, key: key, primary: sorted[0], works: sorted)
+        }.sorted { $0.primary.sortTitle.localizedStandardCompare($1.primary.sortTitle) == .orderedAscending }
+    }
+
+    private func preference(_ work: LibraryWork) -> Int {
+        switch work.sourceKind {
+        case "jellyfin": return 3
+        case "local": return 2
+        case "webdav": return 1
+        default: return 0
+        }
+    }
+
+    func group(for work: LibraryWork) -> LibraryGroup? {
+        libraryGroups.first { $0.key == work.mergeKey }
+    }
+
+    func findWork(matching query: String) -> LibraryWork? {
+        if let direct = libraryWorks.first(where: { $0.id == query }) { return direct }
+        return libraryGroups.first {
+            $0.primary.title.localizedCaseInsensitiveContains(query)
+                || $0.works.contains { $0.title.localizedCaseInsensitiveContains(query) }
+        }?.primary
+    }
+
+    @discardableResult
+    func playLibraryEpisode(id: String) -> Bool {
+        for work in libraryWorks {
+            let seasons = librarySeasons(workID: work.id)
+            if seasons.isEmpty {
+                if let episode = libraryEpisodes(workID: work.id).first(where: { $0.id == id }) {
+                    playLibrary(work: work, episode: episode)
+                    return true
+                }
+            } else {
+                for season in seasons {
+                    if let episode = libraryEpisodes(workID: work.id, seasonID: season.id).first(where: { $0.id == id }) {
+                        playLibrary(work: work, episode: episode)
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    func writeLibraryReport(to url: URL) {
+        let raw = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+        var payload: [String: Any] = [
+            "works": libraryWorkCount,
+            "episodes": libraryEpisodeCount,
+            "rawWorks": raw.works,
+            "rawEpisodes": raw.episodes,
+            "generatedAt": ISO8601DateFormatter().string(from: Date()),
+        ]
+        payload["groups"] = libraryGroups.map { group -> [String: Any] in
+            [
+                "key": group.key,
+                "primary": group.primary.title,
+                "sources": group.sourceKinds,
+                "workIDs": group.works.map(\.id),
+            ]
+        }
+        payload["items"] = libraryWorks.map { work -> [String: Any] in
+            let seasons = librarySeasons(workID: work.id)
+            let episodes = libraryEpisodes(workID: work.id)
+            return [
+                "id": work.id,
+                "kind": work.kind.rawValue,
+                "title": work.title,
+                "year": work.year ?? 0,
+                "sourceKind": work.sourceKind,
+                "sourceID": work.sourceID,
+                "poster": work.poster ?? "",
+                "seasons": seasons.map { ["id": $0.id, "number": $0.number, "title": $0.title] },
+                "episodes": episodes.map { episode -> [String: Any] in
+                    [
+                        "id": episode.id,
+                        "season": episode.seasonNumber,
+                        "episode": episode.episodeNumber,
+                        "title": episode.title,
+                        "sourceKind": episode.sourceKind,
+                        "fileURL": episode.fileURL ?? "",
+                        "remotePath": episode.remotePath ?? "",
+                        "versions": libraryVersions(itemID: episode.id).map { version in
+                            ["id": version.id, "name": version.name, "fileURL": version.fileURL ?? "", "mediaSourceID": version.mediaSourceID ?? ""]
+                        },
+                    ]
+                },
+            ]
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: url)
+            print("[OpenFuse] wrote library report to \(url.path)")
+        }
+    }
+
+    func jellyfinPosterURL(sourceID: String, itemID: String, tag: String?, maxWidth: Int = 360) -> URL? {
+        guard let source = jellyfinSources.first(where: { $0.id == sourceID }),
+              let client = jellyfinClient(for: source)
+        else { return nil }
+        return client.imageURL(itemID: itemID, tag: tag, maxWidth: maxWidth)
+    }
+
+    func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {
+        let version = version ?? libraryVersions(itemID: episode.id).first
+        switch work.sourceKind {
+        case "jellyfin":
+            guard let source = jellyfinSources.first(where: { $0.id == work.sourceID }) else {
+                libraryStatus = "Jellyfin 来源已被移除"
+                return
+            }
+            let itemID = episode.serverID ?? episode.remotePath ?? ""
+            Task {
+                await openJellyfinItem(
+                    source: source,
+                    itemID: itemID,
+                    preferredMediaSourceID: version?.mediaSourceID
+                )
+            }
+        case "webdav":
+            guard let source = sources.first(where: { $0.id == work.sourceID }),
+                  let path = episode.remotePath ?? version?.remotePath
+            else {
+                libraryStatus = "WebDAV 来源已被移除"
+                return
+            }
+            Task { await openRemote(source: source, path: path) }
+        default:
+            if let fileURL = episode.fileURL ?? version?.fileURL, let url = URL(string: fileURL) {
+                open(url: url)
+            } else {
+                libraryStatus = "找不到本地文件"
+            }
         }
     }
 

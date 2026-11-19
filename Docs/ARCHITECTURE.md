@@ -51,6 +51,19 @@ Docs/                   决策、素材、验收、证据
 - 命令加锁；`shutdown` 等待事件线程退出后再销毁 handle。
 - Swift 5 语言模式以减少 C 回调与旧 AppKit 的迁移噪声；后续可评估 Swift 6 严格并发。
 
+## 媒体库（M3a 已实现）
+
+- `LibraryStore`（SQLite/WAL）：works/seasons/episodes/versions；按 `source_kind + source_id` 整源替换，事务写入，其他来源不受影响。
+- `LibraryScanner`：
+  - 本地：递归枚举、文件名解析（`Movie (2026)`、`SxxEyy`、`1x02`、`第N季第M集`）、同目录/父目录海报发现、按剧名分组。
+  - WebDAV：递归 PROPFIND、目录海报映射、远程路径与同名字幕。
+  - Jellyfin：`Recursive=true` 拉取 Movie/Series/Season/Episode；电影额外取 PlaybackInfo 保存多版本。
+- `LibraryGroup`：UI/AppModel 按 `kind + 规范化标题` 合并跨来源作品，优先级 Jellyfin > 本地 > WebDAV；详情用来源胶囊切换，原始行不删除。
+- `LibraryView`：海报网格、搜索、扫描菜单、电影/剧详情、季选择、集列表、版本 Picker、从库播放。
+- 海报引用：`jellyfin:<itemID>|<tag>`、`file:<path>`、`remote:<url>`（WebDAV 远程海报暂未加认证加载器）。
+
+**待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
+
 ## 远程来源（M2 WebDAV 已实现）
 
 - `WebDAVSource`：名称、根 URL、用户名；id 由 URL+用户名哈希；`sources.json` 持久化，密码存 Keychain。
