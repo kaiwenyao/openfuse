@@ -84,6 +84,7 @@ final class AppModel: ObservableObject {
     @Published var browsingSource: WebDAVSource?
     @Published var showAddSource = false
     @Published var showAddJellyfin = false
+    @Published var showSettings = false
     @Published var jellyfinSources: [JellyfinSource] = []
     @Published var plexSources: [PlexSource] = []
     @Published var smbSources: [SMBSource] = []
@@ -94,6 +95,14 @@ final class AppModel: ObservableObject {
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
     @Published var syncStatus: String?
+    @Published var traktClientID = ""
+    @Published var traktClientSecret = ""
+    @Published var traktBaseURL = "https://api.trakt.tv"
+    @Published var traktUserCode: String?
+    @Published var traktVerificationURL: String?
+    @Published var traktDeviceCode: String?
+    @Published var traktMessage: String?
+    @Published var traktBusy = false
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
@@ -136,8 +145,107 @@ final class AppModel: ObservableObject {
         self.plexSources = plexStore.sources
         self.smbSources = smbStore.sources
         self.libraryOverrides = libraryOverrideStore.all
+        loadTraktConfiguration()
         refreshRecent()
         reloadLibrary()
+    }
+
+    var traktConfigured: Bool { TraktService.shared.isConfigured }
+
+    private func loadTraktConfiguration() {
+        let environment = ProcessInfo.processInfo.environment
+        let envBase = environment["OPENFUSE_TRAKT_BASE_URL"]
+        let envClient = environment["OPENFUSE_TRAKT_CLIENT_ID"]
+        let envToken = environment["OPENFUSE_TRAKT_TOKEN"]
+        let defaults = UserDefaults.standard
+        let storedClient = defaults.string(forKey: "openfuse.trakt.clientID") ?? ""
+        let storedBase = defaults.string(forKey: "openfuse.trakt.baseURL") ?? "https://api.trakt.tv"
+        let storedSecret = CredentialStore.load(account: "trakt-secret", service: "com.openfuse.trakt") ?? ""
+        let storedToken = CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
+
+        traktClientID = envClient ?? storedClient
+        traktClientSecret = storedSecret
+        traktBaseURL = envBase ?? storedBase
+        let token = envToken ?? storedToken
+        guard let client = Optional(traktClientID), !client.isEmpty,
+              let base = URL(string: traktBaseURL), token != nil else {
+            traktMessage = "Trakt 未连接"
+            return
+        }
+        TraktService.shared.configure(
+            baseURL: base,
+            clientID: client,
+            clientSecret: traktClientSecret,
+            token: token
+        )
+        traktMessage = envToken != nil ? "Trakt 已连接（环境变量）" : "Trakt 已连接"
+    }
+
+    @discardableResult
+    func saveTraktSettings() -> Bool {
+        let client = traktClientID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !client.isEmpty, let base = URL(string: traktBaseURL) else {
+            traktMessage = "请填写 Client ID 与有效 API 地址"
+            return false
+        }
+        UserDefaults.standard.set(client, forKey: "openfuse.trakt.clientID")
+        UserDefaults.standard.set(base.absoluteString, forKey: "openfuse.trakt.baseURL")
+        if !traktClientSecret.isEmpty {
+            try? CredentialStore.save(
+                password: traktClientSecret,
+                account: "trakt-secret",
+                service: "com.openfuse.trakt"
+            )
+        }
+        let token = CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
+        TraktService.shared.configure(
+            baseURL: base,
+            clientID: client,
+            clientSecret: traktClientSecret,
+            token: token
+        )
+        traktMessage = token == nil ? "配置已保存，请完成设备授权" : "Trakt 配置已更新"
+        return true
+    }
+
+    func beginTraktDeviceCode() async {
+        guard saveTraktSettings() else { return }
+        traktBusy = true
+        defer { traktBusy = false }
+        do {
+            let code = try await TraktService.shared.requestDeviceCode()
+            traktDeviceCode = code.deviceCode
+            traktUserCode = code.userCode
+            traktVerificationURL = code.verificationURL
+            traktMessage = "在浏览器打开 \(code.verificationURL) 输入 \(code.userCode)"
+        } catch {
+            traktMessage = "获取设备码失败：\(error.localizedDescription)"
+        }
+    }
+
+    func pollTraktToken() async {
+        guard let code = traktDeviceCode else {
+            traktMessage = "请先获取设备码"
+            return
+        }
+        traktBusy = true
+        defer { traktBusy = false }
+        do {
+            let token = try await TraktService.shared.pollDeviceToken(code: code)
+            try? CredentialStore.save(
+                password: token.accessToken,
+                account: "trakt-token",
+                service: "com.openfuse.trakt"
+            )
+            traktMessage = "Trakt 授权成功"
+            traktDeviceCode = nil
+            traktUserCode = nil
+            traktVerificationURL = nil
+        } catch TraktError.pending {
+            traktMessage = "尚未授权，请完成网页授权后再检查"
+        } catch {
+            traktMessage = "授权失败：\(error.localizedDescription)"
+        }
     }
 
     static func defaultSupportDirectory() -> URL {
@@ -554,8 +662,6 @@ final class AppModel: ObservableObject {
             thumb: "/library/metadata/\(itemID)/thumb/1"
         )
     }
-
-    var traktConfigured: Bool { TraktService.shared.isConfigured }
 
     func syncTraktHistory() async -> Int {
         let history = await TraktService.shared.history()
@@ -1611,7 +1717,9 @@ final class AppModel: ObservableObject {
     }
 
     func captureUI(to url: URL) {
-        guard let window = NSApp.windows.first, let view = window.contentView else { return }
+        let visible = NSApp.windows.filter { $0.isVisible }
+        let window = visible.last ?? NSApp.keyWindow ?? NSApp.windows.first
+        guard let window, let view = window.contentView else { return }
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         if let data = rep.representation(using: .png, properties: [:]) {

@@ -1,0 +1,21 @@
+OpenFuse M5t Trakt OAuth settings evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Implementation:
+  Settings sheet (gear button / --show-settings): Client ID, Client Secret,
+  API base URL, Trakt status, Save, Get device code, Check authorization.
+  Config saved in UserDefaults; secret/token in Keychain com.openfuse.trakt.
+  TraktService.configure + requestDeviceCode/pollDeviceToken.
+  Env OPENFUSE_TRAKT_* remains a test override and pre-fills fields.
+  captureUI now captures the last visible window so sheets are captured.
+
+Results:
+  Settings sheet rendered with demo-client and http://127.0.0.1:8123,
+  status "Trakt 已连接（环境变量）", buttons 保存配置/获取设备码.
+  Device code/token protocol already verified by M4q acceptance/probe.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Automated UI click of Save/Get code/Check; Keychain prompt in unsigned build;
+  real Trakt account; token refresh; audio.

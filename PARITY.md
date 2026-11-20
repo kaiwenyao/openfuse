@@ -366,3 +366,11 @@
 | 远程 fingerprint | 同上 | Jellyfin | 待采样 | 播放键 jellyfin://source/item/media 标记 | 同上 | 通过 |
 | WebDAV/SMB/Plex | 同上 | 对应来源 | 待采样 | 代码已接，未逐一验收 | — | 待验证 |
 | 真实 Trakt | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |
+
+### M5t Trakt OAuth UI 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 设置页渲染 | MacBook Pro M2 Pro／macOS 27.2.1 | env 预填 | Infuse 未安装 | Client ID/Secret/API/状态/按钮 | Evidence 86 | 通过（UI） |
+| 设备码/轮询 | 同上 | Trakt 夹具 | 待采样 | 协议已在 M4q probe 验证；UI 点击未自动化 | — | 部分通过 |
+| 真实 Trakt/Keychain | 同上 | 真实账号/签名 | 待采样 | 未测 | — | 待验证 |

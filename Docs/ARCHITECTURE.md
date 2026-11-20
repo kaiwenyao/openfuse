@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt OAuth 设置（M5t）
+
+- SettingsView：Client ID/Secret/API/状态 + 设备码/检查；TraktService.configure。
+- 配置 UserDefaults，secret/token Keychain；env 仍为测试覆盖；captureUI 捕获 sheet。
+- UI 渲染/协议通过；按钮点击/真实账号/Keychain 签名未验证。
+
 ## Trakt 远程历史回填（M4t）
 
 - playbackKeys 生成播放器一致的 fingerprint：jellyfin/emby、webdav、smb、plex、本地。

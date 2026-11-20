@@ -40,4 +40,4 @@ M4s 只给本地 fileURL 写已看。本轮生成播放器一致的 fingerprint 
 
 ## 下一项
 
-M5t：Trakt 真实账号/OAuth UI；WebDAV/SMB/Plex 历史验收；音频听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+Trakt OAuth 设置页已在 [M5t 验收](Docs/M5T-TRAKT-OAUTH-UI.md) 完成 UI/协议验证。剩余 M5u：真实账号/自动轮询、音频听测、SMB3/并发、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

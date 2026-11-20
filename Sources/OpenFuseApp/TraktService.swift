@@ -1,13 +1,15 @@
 import Foundation
 import OpenFuseCore
 
-/// Minimal Trakt scrobbler configured from the environment:
-/// OPENFUSE_TRAKT_BASE_URL, OPENFUSE_TRAKT_CLIENT_ID, OPENFUSE_TRAKT_TOKEN.
+/// Trakt scrobbler. Configuration is supplied by AppModel (env or persisted
+/// settings); this type also exposes the device-code flow for the settings UI.
 @MainActor
 final class TraktService {
     static let shared = TraktService()
 
     private var client: TraktClient?
+    private var config: TraktConfig?
+    private var token: String?
     private var match: (ids: TraktIDs, query: TraktQuery)?
     private var pendingQuery: TraktQuery?
     private var activeTitle: String?
@@ -18,14 +20,27 @@ final class TraktService {
 
     var isConfigured: Bool { client != nil }
 
-    private init() {
-        let environment = ProcessInfo.processInfo.environment
-        guard let clientID = environment["OPENFUSE_TRAKT_CLIENT_ID"], !clientID.isEmpty,
-              let token = environment["OPENFUSE_TRAKT_TOKEN"], !token.isEmpty else { return }
-        let base = environment["OPENFUSE_TRAKT_BASE_URL"].flatMap(URL.init(string:))
-            ?? URL(string: "https://api.trakt.tv")!
-        let secret = environment["OPENFUSE_TRAKT_CLIENT_SECRET"] ?? ""
-        client = TraktClient(config: TraktConfig(baseURL: base, clientID: clientID, clientSecret: secret), token: token)
+    private init() {}
+
+    func configure(baseURL: URL, clientID: String, clientSecret: String, token: String?) {
+        let config = TraktConfig(baseURL: baseURL, clientID: clientID, clientSecret: clientSecret)
+        self.config = config
+        self.token = token
+        self.client = token.flatMap { TraktClient(config: config, token: $0) }
+    }
+
+    func requestDeviceCode() async throws -> TraktDeviceCode {
+        guard let config else { throw TraktError.unauthorized }
+        let client = TraktClient(config: config)
+        return try await client.deviceCode()
+    }
+
+    func pollDeviceToken(code: String) async throws -> TraktToken {
+        guard let config else { throw TraktError.unauthorized }
+        let client = TraktClient(config: config)
+        let token = try await client.pollToken(deviceCode: code)
+        configure(baseURL: config.baseURL, clientID: config.clientID, clientSecret: config.clientSecret, token: token.accessToken)
+        return token
     }
 
     func history() async -> [TraktHistoryItem] {

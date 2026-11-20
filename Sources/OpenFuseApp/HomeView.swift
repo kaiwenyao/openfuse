@@ -59,6 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
         }
+        if arguments.contains("--show-settings") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                model.showSettings = true
+            }
+        }
         if arguments.contains("--sync-trakt") {
             Task { @MainActor in
                 _ = await model.syncTraktHistory()
@@ -550,6 +555,10 @@ struct HomeView: View {
             AddSMBSheet()
                 .environmentObject(model)
         }
+        .sheet(isPresented: $model.showSettings) {
+            SettingsView()
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -684,7 +693,7 @@ struct HomeView: View {
             .keyboardShortcut("o", modifiers: .command)
 
             Button {
-                // Settings live in M3; this placeholder is deliberately inert.
+                model.showSettings = true
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 15, weight: .medium))
@@ -693,7 +702,7 @@ struct HomeView: View {
                     .overlay(Circle().stroke(Theme.stroke, lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .help("设置（M3 接入）")
+            .help("设置")
         }
         .padding(.horizontal, 36)
         .padding(.top, 28)
