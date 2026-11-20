@@ -1,3 +1,18 @@
+# OpenFuse
+
+## 安装（macOS）
+
+```bash
+curl -fL --proto '=https' --proto-redir '=https' \
+  -o install-openfuse-macos.sh \
+  https://github.com/kaiwenyao/openfuse/releases/latest/download/install-openfuse-macos.sh \
+  && bash install-openfuse-macos.sh
+```
+
+默认装到 `/Applications`，校验 SHA-256、备份回滚、可重复升级；默认使用持久本地签名身份（无需 Apple Developer 账号）。离线安装：`bash install-openfuse-macos.sh --app OpenFuse-macos.zip`。说明见 [docs/INSTALL.md](Docs/INSTALL.md)。
+
+iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
+
 # OpenFuse 开发计划
 
 **当前先完成 macOS，只做 WebDAV 与 Jellyfin 两种来源。** 以 Infuse 8.5.10 Mac 的找片、播放、选轨、返回和续播行为作为参照，采用 OpenFuse 原创界面。本机构建结果、源码中发现的问题和下一轮验收见[当前 Mac 交付任务](Docs/MAC-FIRST.md)。
