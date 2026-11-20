@@ -15,8 +15,9 @@
 #
 set -Eeuo pipefail
 
-# Ignore caller-controlled executable search paths.
-export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+# Ignore caller-controlled executable search paths, but keep the Homebrew
+# locations so `gh` (needed for this private repository) can be found.
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin
 umask 077
 
 REPO="kaiwenyao/openfuse"
