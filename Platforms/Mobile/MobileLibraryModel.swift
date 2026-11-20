@@ -17,6 +17,8 @@ struct MobilePlaybackItem: Identifiable, Hashable {
     var sidecarSubtitles: [SubtitleTrack] = []
     var serverAudioLabel: String?
     var serverSubtitleLabel: String?
+    var workID: String?
+    var episodeID: String?
 }
 
 @MainActor
@@ -248,7 +250,9 @@ final class MobileLibraryModel: ObservableObject {
             httpHeaders: headers,
             sidecarSubtitles: sidecars,
             serverAudioLabel: audioLabel,
-            serverSubtitleLabel: subtitleLabel
+            serverSubtitleLabel: subtitleLabel,
+            workID: work.id,
+            episodeID: episode.id
         )
     }
 
@@ -321,7 +325,9 @@ final class MobileLibraryModel: ObservableObject {
                 sourceID: work.sourceID,
                 remotePath: episode.remotePath,
                 remoteURL: nil,
-                sidecarSubtitles: SubtitleCatalog.discover(for: url)
+                sidecarSubtitles: SubtitleCatalog.discover(for: url),
+                workID: work.id,
+                episodeID: episode.id
             )
         }
 
@@ -345,7 +351,9 @@ final class MobileLibraryModel: ObservableObject {
                 sourceID: source.id,
                 remotePath: path,
                 remoteURL: url.absoluteString,
-                httpHeaders: ["Authorization": "Basic \(credential)"]
+                httpHeaders: ["Authorization": "Basic \(credential)"],
+                workID: work.id,
+                episodeID: episode.id
             )
         }
         return nil
@@ -492,6 +500,17 @@ final class MobileLibraryModel: ObservableObject {
     func reportPlaybackStopped(_ item: MobilePlaybackItem, position: Double) {
         guard let (client, itemID, mediaID) = jellyfinPlaybackContext(item) else { return }
         Task.detached { await client.reportStopped(itemID: itemID, mediaSourceID: mediaID, playSessionID: nil, position: position) }
+    }
+
+    /// Next episode of the same work, used by the player's auto-advance.
+    func nextEpisodeItem(after item: MobilePlaybackItem) async -> MobilePlaybackItem? {
+        guard let workID = item.workID,
+              let episodeID = item.episodeID,
+              let work = works.first(where: { $0.id == workID }) else { return nil }
+        let episodes = episodes(for: workID)
+        guard let index = episodes.firstIndex(where: { $0.id == episodeID }),
+              index + 1 < episodes.count else { return nil }
+        return await playbackItemAsync(for: work, episode: episodes[index + 1])
     }
 
     func posterURL(for work: LibraryWork) -> URL? {

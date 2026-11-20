@@ -33,6 +33,9 @@ struct MobilePlayerView: View {
     @State private var didPauseAtTarget = false
     @State private var seekError: String?
     @State private var didReportStart = false
+    @State private var activeItem: MobilePlaybackItem?
+    @State private var didAutoAdvance = false
+    @State private var endObserver: NSObjectProtocol?
     @State private var lastReportedAt: TimeInterval = -100
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
@@ -159,7 +162,7 @@ struct MobilePlayerView: View {
         .onAppear { setupPlayer() }
         .onDisappear {
             saveProgress()
-            model.reportPlaybackStopped(item, position: lastPosition)
+            model.reportPlaybackStopped(activeItem ?? item, position: lastPosition)
             player?.pause()
             if let timeObserver, let player {
                 player.removeTimeObserver(timeObserver)
@@ -183,7 +186,7 @@ struct MobilePlayerView: View {
     private func startReportingIfNeeded(_ player: AVPlayer) {
         guard !didReportStart else { return }
         didReportStart = true
-        model.reportPlaybackStart(item, position: player.currentTime().seconds)
+        model.reportPlaybackStart(activeItem ?? item, position: player.currentTime().seconds)
     }
 
     private func configureTracks(_ player: AVPlayer) {
@@ -272,9 +275,15 @@ struct MobilePlayerView: View {
         if time.isFinite {
             currentTime = max(0, time)
         }
+        if !didAutoAdvance,
+           ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] != "0",
+           duration > 0, time.isFinite, time >= duration - 2.5 {
+            didAutoAdvance = true
+            advanceToNextEpisode()
+        }
         if time.isFinite, abs(time - lastReportedAt) >= 10 {
             lastReportedAt = time
-            model.reportPlaybackProgress(item, position: time, isPaused: player.rate == 0)
+            model.reportPlaybackProgress(activeItem ?? item, position: time, isPaused: player.rate == 0)
         }
         if let cue = cues.first(where: { time >= $0.start && time < $0.end }) {
             subtitleText = cue.text
@@ -327,12 +336,25 @@ struct MobilePlayerView: View {
             errorText = "音频会话失败：\(error.localizedDescription)"
         }
 
-        let (player, loader) = model.makePlayer(for: item)
+        let playback = activeItem ?? item
+        let (player, loader) = model.makePlayer(for: playback)
         self.player = player
         self.resourceLoader = loader
         player.appliesMediaSelectionCriteriaAutomatically = false
         configureTracks(player)
         startReportingIfNeeded(player)
+        if let token = endObserver {
+            NotificationCenter.default.removeObserver(token)
+        }
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem,
+            queue: .main
+        ) { _ in
+            guard !didAutoAdvance else { return }
+            didAutoAdvance = true
+            advanceToNextEpisode()
+        }
         duration = 0
         lastPosition = 0
         timeObserver = player.addPeriodicTimeObserver(
@@ -404,6 +426,28 @@ struct MobilePlayerView: View {
         for _ in 0..<40 {
             if player.currentItem?.status == .readyToPlay { return }
             try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+    }
+
+    /// Same behaviour as the Mac player: when an episode ends, load the next one
+    /// in the same season without leaving the player.
+    private func advanceToNextEpisode() {
+        Task { @MainActor in
+            guard let next = await model.nextEpisodeItem(after: activeItem ?? item) else { return }
+            player?.pause()
+            if let token = endObserver { NotificationCenter.default.removeObserver(token) }
+            endObserver = nil
+            if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
+            timeObserver = nil
+            resourceLoader = nil
+            player = nil
+            activeItem = next
+            didAutoAdvance = false
+            didReportStart = false
+            lastReportedAt = -100
+            subtitleText = ""
+            cues = []
+            setupPlayer()
         }
     }
 
