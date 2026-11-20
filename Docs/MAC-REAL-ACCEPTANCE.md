@@ -102,17 +102,17 @@ OpenFuse 自身的上述行为已在第 2、3 节用真实媒体逐项记录。
 - 从 Finder 启动 `build/OpenFuse.app`；
 - 添加两个来源（含「仅本次会话」开关）与假凭据的添加/重开/删除；
 - 逐级浏览 WebDAV 目录、打开 Jellyfin 库/剧/季/集与电影详情；
-- 播放、切字幕（菜单栏「播放 → 字幕」）、跳转时间（「播放 → 跳转到时间…」）、返回来源、从「继续观看」打开。
-
-未能用自动化确认、需要真人点一次：
-
-- 播放器窗口内的底部控制栏（播放/暂停、±10 秒、进度条、字幕/音轨下拉）。本轮把 mpv 的 `MPVGLView.hitTest` 改为返回 `nil`，并验证了浮层**顶部**的「播放日志」按钮可以被合成点击命中（打开「播放会话」日志面板）；但底部控制栏在 x=227/171/688、y=610–685 的网格点击都没有反应，播放继续前进。菜单栏「播放」菜单（同名字幕/音轨/音频输出/跳转/返回）已验证可用，作为等价入口。底部栏的真实鼠标点击仍需人工点一次确认，下一轮可继续定位（怀疑与 GL 视图下方的 hit-test 区域或底部栏的命中矩形有关）。
+- 播放、切字幕、跳转时间、返回来源、从「继续观看」打开。
+- **播放器控制栏本身**（第二轮已确认可点）：暂停按钮（AX 帧 207,769 50×50，点击后按钮从 `pause.fill` 变为 `play.fill`），以及窗口内的字幕下拉（AXMenuButton，弹出 简体/繁體/English，选「中文（繁體）(ASS)」后菜单标题与报告里的 `selectedSubtitle` 同步变为 `zh-Hant`）。
+- 上一轮“底部栏点不动”的原因已定位：一是测试期间 OpenFuse 窗口被 Chrome 窗口盖住（键盘事件仍投递给前台 App，鼠标事件投给最上层窗口）；二是控制栏坐标是从 `cacheDisplay` 截图里换算的，与实际屏幕坐标差了约 140 pt。用 AX 给出的控件帧点击即可正常工作。现在用 `AXUIElement`/`System Events` 点击控制栏、菜单栏「播放」菜单两条路径都验证通过。
 
 ## 7. 已知问题与建议
 
-1. 播放器内嵌控制栏底部按钮的鼠标点击待人工确认；顶部按钮已验证可点（见上）。
+1. 播放器内嵌控制栏已用真实控件帧验证可点（暂停、字幕下拉、菜单栏等价入口）；控制栏 3.2 秒自动隐藏依赖真实鼠标移动事件，自动化环境需要 `OPENFUSE_FORCE_CONTROLS=1` 才能稳定复测。
 2. ad-hoc 重建后 Keychain 旧条目需要一次授权弹窗；正式签名不受影响。
 3. 若把 `OPENFUSE_SUPPORT_DIR` 指到 iCloud/Documents 下的目录，SQLite 初始化偶发卡在 `unixSync/openDirectory`；默认目录（`~/Library/Application Support/OpenFuse`）与 `/tmp` 均正常。本轮验收使用 `/tmp` 下的隔离目录，避免污染用户数据。
+4. 不要同时运行多个 OpenFuse 实例（`open -n`）：它们共用同一个 support 目录与 SQLite，第二轮测试中曾出现一次 `EXC_BAD_ACCESS`（`__swift_closure_destructor`，17:16:16），单实例下连续 3 次“播放→返回→再播放”未复现。日常使用 `open build/OpenFuse.app`（单实例）即可。
+5. 调试开关：`OPENFUSE_FORCE_CONTROLS=1` 保持控制栏常显；`OPENFUSE_DEBUG_HITS=1` 把每次 mouseDown 及其命中的 AppKit 视图写进 `<support>/Acceptance/hits.log`。二者仅用于验收，默认关闭。
 
 ## 8. 复现步骤摘要
 

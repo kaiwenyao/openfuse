@@ -2949,6 +2949,9 @@ final class PlayerModel: ObservableObject {
 
     private func scheduleControlsHide() {
         controlsTimer?.invalidate()
+        // Acceptance switch: keep the control bar on screen so UI hit-testing can
+        // be exercised without a real mouse hover.
+        guard ProcessInfo.processInfo.environment["OPENFUSE_FORCE_CONTROLS"] != "1" else { return }
         guard !isPaused else { return }
         controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.2, repeats: false) { [weak self] _ in
             Task { @MainActor in

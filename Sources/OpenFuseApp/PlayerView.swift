@@ -20,6 +20,7 @@ struct PlayerView: View {
     @State private var scrubValue: Double?
     @State private var keyMonitor: Any?
     @State private var showLog = false
+    @State private var hitDebugMonitor: Any?
 
     var body: some View {
         ZStack {
@@ -47,8 +48,14 @@ struct PlayerView: View {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: player.showControls)
-        .onAppear { installKeyboardMonitor() }
-        .onDisappear { removeKeyboardMonitor() }
+        .onAppear {
+            installKeyboardMonitor()
+            installHitDebugMonitor()
+        }
+        .onDisappear {
+            removeKeyboardMonitor()
+            removeHitDebugMonitor()
+        }
         .onContinuousHover { phase in
             if case .active = phase {
                 player.noteMouseActivity()
@@ -333,6 +340,42 @@ struct PlayerView: View {
         .padding(20)
         .frame(width: 720, height: 420)
         .background(Theme.background)
+    }
+
+    /// `OPENFUSE_DEBUG_HITS=1` logs every mouse-down that reaches the player
+    /// plus the AppKit view that would receive it. Used to work out why the
+    /// in-player control bar ignored synthetic clicks during acceptance.
+    private func installHitDebugMonitor() {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_HITS"] == "1", hitDebugMonitor == nil else { return }
+        hitDebugMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { event in
+            let point = event.locationInWindow
+            let window = event.window
+            let content = window?.contentView
+            let hit = content?.hitTest(point)
+            let describeHit = hit.map { "\(type(of: $0)) frame=\($0.frame)" } ?? "nil"
+            let line = "down window=\(window?.title ?? "?") point=\(point) contentBounds=\(content?.bounds ?? .zero) hit=\(describeHit)\n"
+            PlayerView.appendHitLog(line)
+            return event
+        }
+    }
+
+    private func removeHitDebugMonitor() {
+        if let hitDebugMonitor {
+            NSEvent.removeMonitor(hitDebugMonitor)
+            self.hitDebugMonitor = nil
+        }
+    }
+
+    private static func appendHitLog(_ line: String) {
+        let url = AppModel.shared.acceptanceDirectory().appendingPathComponent("hits.log")
+        let data = Data(line.utf8)
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(data)
+            try? handle.close()
+        } else {
+            try? data.write(to: url)
+        }
     }
 
     private func installKeyboardMonitor() {
