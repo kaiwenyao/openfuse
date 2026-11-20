@@ -225,6 +225,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## iPad 常规布局（M6h）
+
+- regular width 使用 NavigationSplitView；截图 YAVG24.6。
+- 冷启动约15s；点击播放/横屏/多任务未验证。
+
 ## iPhone 同步设置（M6g）
 
 - URL/CA 存 UserDefaults，Token 存 Keychain；无 env 时读设置。

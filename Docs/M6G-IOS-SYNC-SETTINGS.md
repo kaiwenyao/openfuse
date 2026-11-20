@@ -37,4 +37,4 @@ M4z 的 iPhone HTTPS 只靠环境变量。本轮在移动端 Sources 增加“�
 
 ## 下一项
 
-M6h/M5au：物理5.1/HDMI；HDR测量；小时级/DFS；CloudKit/visionOS。
+iPad split-view 布局已在 [M6h 验收](Docs/M6H-IPAD-LAYOUT.md) 完成。剩余 M6i/M5au：iPad点击/横屏/多任务、物理5.1/HDMI、HDR测量、小时级/DFS、CloudKit/visionOS。

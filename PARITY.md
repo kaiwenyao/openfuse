@@ -735,3 +735,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 持久化设置同步 | iPhone 18 Pro 模拟器／iOS 27.2 | HTTPS sync + CA | Infuse 未安装 | 无 env URL/CA，resume11.0 | Evidence 118、`reports/m6g-*` | 通过 |
 | UI点击/公共CA/并发 | 同上 | 生产同步 | 待采样 | 未自动化 | — | 待验证 |
+
+### M6h iPad 布局执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iPad 常规布局 | iPad Pro 模拟器／iOS 27.2 | bundled sample | Infuse 未安装 | split view 侧栏+详情；YAVG24.6 | Evidence 119、`reports/m6h-*` | 通过（布局） |
+| 点击播放/横屏/多任务 | 同上 | 同上 | 待采样 | 未测 | — | 待验证 |

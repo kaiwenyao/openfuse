@@ -1,0 +1,13 @@
+OpenFuse M6h iPad layout evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; iPad Pro simulator (477B8FDD...), iOS 27.2.
+
+Results:
+  Regular width uses NavigationSplitView: sidebar library + detail empty state
+  "选择一部作品". Screenshot YAVG 24.6 (not blank), 177KB.
+  Scripts/run-ipad-layout.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  iPad item tap/playback automation, autoplay test hook on iPad, landscape,
+  Split View multitasking, real iPad.
