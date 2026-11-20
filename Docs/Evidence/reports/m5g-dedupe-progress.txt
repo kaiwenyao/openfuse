@@ -1,0 +1,21 @@
+OpenFuse M5g aggregation + Emby progress evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Dedupe:
+  Two Jellyfin-compatible fixtures (ports 8096/8097) scanned as Jellyfin and
+  Emby into one support dir. Raw 4 works / 6 episodes aggregate to 2 groups;
+  each group sources = ["emby","jellyfin"].
+  Script: Scripts/run-jellyfin-emby-dedupe.sh → PASS.
+
+Emby progress (fixture log):
+  POST /Sessions/Playing 204, event=Playing, PositionTicks=99170000,
+    PlayMethod=DirectPlay, ItemId=ep-1.
+  POST /Sessions/Playing/Progress 204, event=Progress, IsPaused=true,
+    PositionTicks=101670000.
+  Script: Scripts/run-emby-acceptance.sh → PASS.
+  swift test 28/28; builds unchanged from M5f.
+
+Not verified:
+  Real Emby/Jellyfin servers; Stopped event (not asserted); per-source version
+  dedupe labels; Plex direct/audio; SMB/HDR/AirPlay; CloudKit/Trakt; audio.

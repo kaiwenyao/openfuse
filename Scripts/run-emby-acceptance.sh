@@ -12,7 +12,7 @@ if [[ ! -f Fixtures/generated/openfuse-fixture.mkv ]]; then Scripts/make_fixture
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 rm -rf "$OUT"; mkdir -p "$OUT"
-python3 Tools/jellyfin_fixture.py --port "$PORT" --mobile-sample >"$OUT/server.out" 2>&1 &
+python3 Tools/jellyfin_fixture.py --port "$PORT" --mobile-sample --log "$OUT/jellyfin.log" >"$OUT/server.out" 2>&1 &
 PID=$!
 trap 'kill "$PID" 2>/dev/null || true' EXIT
 for _ in {1..40}; do
@@ -51,6 +51,11 @@ if play.get("sourceKind") != "emby" or not 9.8 <= play.get("position", 0) <= 10.
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")
+jf_log = open(os.path.join(out, "jellyfin.log"), encoding="utf-8").read()
+if "/Sessions/Playing" not in jf_log or '"event": "Playing"' not in jf_log:
+    errors.append("Emby Sessions/Playing not reported")
+if "/Sessions/Playing/Progress" not in jf_log:
+    errors.append("Emby progress not reported")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)

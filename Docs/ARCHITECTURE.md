@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Jellyfin+Emby 聚合去重（M5g）
+
+- 分组按 mergeKey（kind+normalizedTitle）；同源/异源重复作品落同组，sources 合并。
+- 兼容夹具实测 raw 4 作品/6 集 → 2 组；组内版本级去重未做。
+- Emby 播放上报 Sessions/Playing 与 Progress；真实服务器/Stopped 未验证。
+
 ## Emby 来源（M5f）
 
 - JellyfinSource.serverKind=jellyfin/emby；扫描 sourceKind 跟随 kind；MediaItem sourceKind 来自 playback context。

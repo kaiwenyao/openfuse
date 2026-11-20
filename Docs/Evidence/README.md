@@ -109,6 +109,10 @@
 | `64-emby-playback.jpg` | Emby 第 1 集播放 9.9s | 播放器抓帧 |
 | `reports/m5f-emby-*.json` | Emby 库/播放报告 | 应用报告 |
 | `reports/m5f-emby.txt` | Emby 验收/构建摘要 | 运行记录 |
+| `65-jellyfin-emby-dedupe.jpg` | 两来源聚合后的媒体库 | 应用内窗口快照 |
+| `reports/m5g-dedupe.json` | 去重后的 2 组/sources | 应用报告 |
+| `reports/m5g-emby-progress.jsonl` | Emby Playing/Progress 事件 | 夹具日志 |
+| `reports/m5g-dedupe-progress.txt` | 聚合/进度摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
