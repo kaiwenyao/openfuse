@@ -1,0 +1,15 @@
+[
+  {
+    "displayTitle": "示例剧 S01E01",
+    "duration": 60,
+    "fileSize": 17654819,
+    "isFinished": false,
+    "lastPlayedAt": "2026-11-20T02:54:44.417Z",
+    "mediaPath": "build/library-fixture/Shows/示例剧/Season 01/示例剧.S01E01.mkv",
+    "playCount": 0,
+    "position": 9.917,
+    "preferredAudioTrackID": "mpv-audio:1",
+    "preferredSubtitleTrackID": "ext:build/library-fixture/Shows/示例剧/Season 01/示例剧.S01E01.zh-Hans.ass",
+    "sourceKind": "local"
+  }
+]

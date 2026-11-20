@@ -59,6 +59,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
         }
+        if arguments.contains("--sync-progress") {
+            Task { @MainActor in
+                await model.syncPlaybackProgressFromEnvironment()
+                print(model.syncStatus ?? "sync finished")
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if let scanLocal = value(after: "--scan-local", in: arguments) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 if let cancelAfter = self.value(after: "--cancel-scan-after", in: arguments).flatMap(Double.init) {

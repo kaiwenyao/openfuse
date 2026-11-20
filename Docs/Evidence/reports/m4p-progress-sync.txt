@@ -1,0 +1,26 @@
+OpenFuse M4p cross-device progress sync evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Transport:
+  LocalProgressTransport (shared JSON file) used to simulate two devices;
+  CloudKitProgressTransport (private DB, PlaybackProgress record) implemented
+  and compiles for all Apple targets. Real iCloud requires entitlements/account.
+
+Run:
+  Device A support dir -> scan local fixture -> play 示例剧 S01E01, freeze 9.9s.
+  A sync to build/progress-sync/shared-progress.json.
+  Device B support dir -> scan same fixture -> sync from shared file.
+  B play same episode, report after 5s.
+
+Results:
+  A position 9.917s.
+  B position 14.417s (resumed from A's position, not 0).
+  Second B playback capture at position 21.917s (Evidence 57).
+  shared-progress.json contains the record.
+  swift test 28/28 (new sync merge test).
+  iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real CloudKit/iCloud entitlements/account/network; Trakt; conflict ties
+  beyond newest-timestamp; audio.

@@ -90,6 +90,7 @@ final class AppModel: ObservableObject {
     @Published var libraryEpisodeCount = 0
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
+    @Published var syncStatus: String?
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
     @Published var libraryKindFilter: LibraryKind?
@@ -138,6 +139,26 @@ final class AppModel: ObservableObject {
 
     func refreshRecent() {
         recent = store.recentlyPlayed(limit: 24)
+    }
+
+    func syncPlaybackProgressFromEnvironment() async {
+        let environment = ProcessInfo.processInfo.environment
+        let transport: ProgressSyncTransport
+        if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
+            transport = LocalProgressTransport(fileURL: URL(fileURLWithPath: path))
+        } else if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {
+            transport = CloudKitProgressTransport(containerIdentifier: container)
+        } else {
+            syncStatus = "未配置同步（OPENFUSE_SYNC_FILE / OPENFUSE_CLOUDKIT_CONTAINER）"
+            return
+        }
+        do {
+            let result = try await ProgressSyncService(store: store, transport: transport).sync()
+            syncStatus = "同步完成：远端 \(result.remoteCount) 条，本地 \(result.localCount) 条，更新 \(result.changed) 条"
+            refreshRecent()
+        } catch {
+            syncStatus = "同步失败：\(error.localizedDescription)"
+        }
     }
 
     func presentOpenPanel() {

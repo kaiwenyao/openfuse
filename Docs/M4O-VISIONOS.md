@@ -36,4 +36,4 @@ visionOS 27.2 runtime 安装完成。本轮实际启动 Apple Vision Pro 模拟�
 
 ## 下一项
 
-M5：SMB/Plex/Emby、HDR/AirPlay、自包含打包；同步/账号；音频主观听测；M3 尾项与真实服务验证。
+跨设备进度同步已在 [M4p 验收](Docs/M4P-PROGRESS-SYNC.md) 完成本地两设备验证。剩余 M5：CloudKit 真实账号/自动同步/离线队列/Trakt、SMB/Plex/Emby、HDR/AirPlay、自包含打包、音频听测、M3 尾项。

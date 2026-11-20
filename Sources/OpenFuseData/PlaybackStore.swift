@@ -120,6 +120,23 @@ public final class PlaybackStore: @unchecked Sendable {
         Array(allRecords().prefix(limit))
     }
 
+    /// Merge remote records with local state. Newer lastPlayedAt wins; local
+    /// wins ties so an in-flight local pause is not clobbered.
+    @discardableResult
+    public func merge(records: [PlaybackRecord]) throws -> Int {
+        lock.lock(); defer { lock.unlock() }
+        var changed = 0
+        for record in records {
+            if let local = snapshot.records[record.mediaPath] {
+                guard record.lastPlayedAt > local.lastPlayedAt else { continue }
+            }
+            snapshot.records[record.mediaPath] = record
+            changed += 1
+        }
+        if changed > 0 { isDirty = true; try flushLocked() }
+        return changed
+    }
+
     /// Persist a progress update. A finished position wins over an older
     /// unfinished one, but an explicitly unfinished update (user restarted)
     /// clears the finished flag.
@@ -207,7 +224,10 @@ public final class PlaybackStore: @unchecked Sendable {
 extension JSONEncoder {
     public static var openFuse: JSONEncoder {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(Self.openFuseISO.string(from: date))
+        }
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return encoder
     }
@@ -216,7 +236,34 @@ extension JSONEncoder {
 extension JSONDecoder {
     public static var openFuse: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            if let date = ISO8601DateFormatter.openFuseFractional.date(from: value) { return date }
+            if let date = ISO8601DateFormatter.openFusePlain.date(from: value) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "invalid ISO8601 date: \(value)")
+        }
         return decoder
     }
+}
+
+private extension ISO8601DateFormatter {
+    static let openFuseFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    static let openFusePlain: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+}
+
+private extension JSONEncoder {
+    static let openFuseISO: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 }

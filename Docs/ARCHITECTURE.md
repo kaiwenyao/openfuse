@@ -91,6 +91,14 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## 跨设备进度同步（M4p）
+
+- `PlaybackStore.merge(records:)`：新 `lastPlayedAt` 优先；JSON 日期改为带毫秒 ISO8601。
+- `ProgressSyncTransport`：`LocalProgressTransport`（共享文件，验收）/ `CloudKitProgressTransport`（私有库 `PlaybackProgress` CKRecord）。
+- `ProgressSyncService`：拉取 → 合并 → 推送；App `--sync-progress` + env 配置。
+- 两 support 目录实测 A 9.917s → B 14.417s；真实 CloudKit 需 entitlements/账号，未验证。
+- 未做自动同步/离线队列/Trakt/移动端同步 UI。
+
 ## Vision Pro 实际运行（M4o）
 
 - visionOS 27.2 runtime；`OpenFuseVision` target 以 `NavigationSplitView` 侧栏/详情启动。

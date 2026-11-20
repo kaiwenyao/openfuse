@@ -31,6 +31,7 @@ let package = Package(
                 .linkedLibrary("sqlite3"),
                 .linkedFramework("Security"),
                 .linkedFramework("AVFoundation"),
+                .linkedFramework("CloudKit"),
             ]
         ),
         .target(
