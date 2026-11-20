@@ -6,6 +6,9 @@ public struct LibraryOverride: Codable, Hashable, Sendable {
     public var year: Int?
     public var overview: String?
     public var poster: String?
+    /// Manual grouping key. When set, the work joins this group instead of
+    /// its heuristic kind+title key; "split:<id>" forces it out of a group.
+    public var mergeGroupID: String?
     public var updatedAt: Date
 
     public init(
@@ -14,6 +17,7 @@ public struct LibraryOverride: Codable, Hashable, Sendable {
         year: Int? = nil,
         overview: String? = nil,
         poster: String? = nil,
+        mergeGroupID: String? = nil,
         updatedAt: Date = Date()
     ) {
         self.workID = workID
@@ -21,6 +25,7 @@ public struct LibraryOverride: Codable, Hashable, Sendable {
         self.year = year
         self.overview = overview
         self.poster = poster
+        self.mergeGroupID = mergeGroupID
         self.updatedAt = updatedAt
     }
 }

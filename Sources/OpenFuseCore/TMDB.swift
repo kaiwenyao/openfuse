@@ -65,15 +65,19 @@ public actor TMDBClient {
         return URL(string: cleaned, relativeTo: imageBaseURL)?.absoluteURL
     }
 
+    public func candidates(title: String, year: Int?, kind: LibraryKind, limit: Int = 5) async -> [TMDBMatch] {
+        await searchResults(title: title, year: year, kind: kind, limit: limit)
+    }
+
     public func match(title: String, year: Int?, kind: LibraryKind) async -> TMDBMatch? {
         let key = "\(kind.rawValue)|\(title.lowercased())|\(year ?? 0)"
         if let cached = cache[key] { return cached }
-        let result = await performSearch(title: title, year: year, kind: kind)
+        let result = await searchResults(title: title, year: year, kind: kind, limit: 1).first
         cache[key] = result
         return result
     }
 
-    private func performSearch(title: String, year: Int?, kind: LibraryKind) async -> TMDBMatch? {
+    private func searchResults(title: String, year: Int?, kind: LibraryKind, limit: Int) async -> [TMDBMatch] {
         var components = URLComponents(
             url: baseURL.appendingPathComponent(kind == .movie ? "search/movie" : "search/tv"),
             resolvingAgainstBaseURL: false
@@ -88,27 +92,26 @@ public actor TMDBClient {
             query.append(URLQueryItem(name: kind == .movie ? "year" : "first_air_date_year", value: String(year)))
         }
         components?.queryItems = query
-        guard let url = components?.url else { return nil }
+        guard let url = components?.url else { return [] }
         do {
             let (data, response) = try await session.data(from: url)
-            guard let http = response as? HTTPURLResponse else { return nil }
-            guard (200..<300).contains(http.statusCode) else { return nil }
+            guard let http = response as? HTTPURLResponse else { return [] }
+            guard (200..<300).contains(http.statusCode) else { return [] }
             let decoded = try JSONDecoder().decode(TMDBSearchResponse.self, from: data)
-            return decoded.results.first.flatMap { result in
+            return decoded.results.prefix(limit).map { result in
                 let name = (kind == .movie ? result.title : result.name) ?? title
                 let date = (kind == .movie ? result.releaseDate : result.firstAirDate) ?? ""
-                let year = Int(date.prefix(4))
                 return TMDBMatch(
                     id: result.id,
                     title: name,
-                    year: year,
+                    year: Int(date.prefix(4)),
                     overview: result.overview,
                     posterPath: result.posterPath
                 )
             }
         } catch {
             FileHandle.standardError.write("TMDB error: \(error)\n".data(using: .utf8)!)
-            return nil
+            return []
         }
     }
 }

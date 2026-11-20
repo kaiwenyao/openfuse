@@ -80,6 +80,14 @@
 | 手动元数据 | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 3 作品 | Infuse 未安装，待采样 | 改标题/2024/简介/海报，重启后仍生效；清除恢复原值 | Evidence 31、`reports/m3d-edit-*.json` | 本地通过；合并/拆分未做 |
 | 扫描取消/进度 | 同上 | 10,000 条目 | 待采样 | 扫描中显示 10,000 项与取消；取消空库 0、已有库保留 10,000 | Evidence 32、`reports/m3d-scan-stress.json` | 本地通过 |
 
+### M3e 手动整理执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 手动合并 | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 3 组（电影 + 2 剧） | Infuse 未安装，待采样 | 将《示例剧》并入《另一部剧》组，3→2 组；S01E01 出现 2 个版本 | Evidence 33、`reports/m3e-merge-applied.json` | 本地通过 |
+| 拆分/恢复 | 同上 | 合并后的组 | 待采样 | 拆分当前作品，2→3 组；分组键与元数据覆盖可持久化 | `reports/m3e-merge-split.json` | 本地通过；扫描后保留未单测 |
+| TMDB 候选 | 同上 | 编辑信息 sheet | 待采样 | `test-tmdb.sh` PASS，movie/tv 候选各 1 条；UI 点击填入字段 | 终端 | 部分通过（sheet 未截图、真实 key 未验证） |
+
 
 
 

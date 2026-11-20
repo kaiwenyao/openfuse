@@ -474,6 +474,19 @@ final class AppModel: ObservableObject {
         if activeScanToken === token { isScanningLibrary = false }
     }
 
+    var tmdbAvailable: Bool {
+        !(ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"] ?? "").isEmpty
+    }
+
+    func tmdbImageURL(path: String?) -> URL? {
+        tmdbClient()?.imageURL(path: path)
+    }
+
+    func searchTMDBCandidates(title: String, year: Int?, kind: LibraryKind) async -> [TMDBMatch] {
+        guard let client = tmdbClient() else { return [] }
+        return await client.candidates(title: title, year: year, kind: kind)
+    }
+
     private func tmdbClient() -> TMDBClient? {
         guard let key = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"], !key.isEmpty else {
             return nil
@@ -585,7 +598,9 @@ final class AppModel: ObservableObject {
     }
 
     func rebuildLibraryGroups() {
-        let groups = Dictionary(grouping: libraryWorks, by: \.mergeKey)
+        let groups = Dictionary(grouping: libraryWorks) { work in
+            libraryOverrides[work.id]?.mergeGroupID ?? work.mergeKey
+        }
         libraryGroups = groups.map { key, works in
             let sorted = works.sorted { lhs, rhs in
                 let left = preference(lhs), right = preference(rhs)
@@ -628,14 +643,17 @@ final class AppModel: ObservableObject {
         overview: String?,
         poster: String?
     ) {
+        let existing = libraryOverrides[workID]
         let override = LibraryOverride(
             workID: workID,
             title: title?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             year: year,
             overview: overview?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
-            poster: normalizePoster(poster)
+            poster: normalizePoster(poster),
+            mergeGroupID: existing?.mergeGroupID
         )
-        if override.title == nil, override.year == nil, override.overview == nil, override.poster == nil {
+        if override.title == nil, override.year == nil, override.overview == nil,
+           override.poster == nil, override.mergeGroupID == nil {
             clearOverride(workID: workID)
             return
         }
@@ -663,6 +681,56 @@ final class AppModel: ObservableObject {
             return PosterRef.file(value)
         }
         return nil
+    }
+
+    func groupKey(for work: LibraryWork) -> String {
+        libraryOverrides[work.id]?.mergeGroupID ?? work.mergeKey
+    }
+
+    func mergeWork(_ work: LibraryWork, into target: LibraryWork) {
+        guard work.kind == target.kind else {
+            libraryStatus = "只能合并同类型作品（电影合并电影、剧集合并剧集）"
+            return
+        }
+        let key = groupKey(for: target)
+        guard key != groupKey(for: work) else { return }
+        upsertGrouping(workID: work.id, mergeGroupID: key)
+    }
+
+    func splitWork(_ work: LibraryWork) {
+        upsertGrouping(workID: work.id, mergeGroupID: "split:\(work.id)")
+    }
+
+    func clearGrouping(workID: String) {
+        upsertGrouping(workID: workID, mergeGroupID: nil)
+    }
+
+    private func upsertGrouping(workID: String, mergeGroupID: String?) {
+        let existing = libraryOverrides[workID]
+        let override = LibraryOverride(
+            workID: workID,
+            title: existing?.title,
+            year: existing?.year,
+            overview: existing?.overview,
+            poster: existing?.poster,
+            mergeGroupID: mergeGroupID
+        )
+        do {
+            if override.title == nil, override.year == nil, override.overview == nil,
+               override.poster == nil, override.mergeGroupID == nil {
+                try libraryOverrideStore.remove(workID: workID)
+                libraryOverrides.removeValue(forKey: workID)
+            } else {
+                try libraryOverrideStore.upsert(override)
+                libraryOverrides[workID] = override
+            }
+            reloadLibrary()
+            if let updated = currentWork(id: workID) {
+                route = .library(updated)
+            }
+        } catch {
+            libraryStatus = "保存分组失败：\(error.localizedDescription)"
+        }
     }
 
     func clearOverride(workID: String) {

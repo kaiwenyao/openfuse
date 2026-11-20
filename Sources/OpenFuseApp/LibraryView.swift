@@ -153,6 +153,7 @@ struct LibraryDetailView: View {
     @State private var selectedVersionID: String?
     @State private var isLoading = true
     @State private var showEdit = false
+    @State private var showMerge = false
 
     private var group: LibraryGroup? { model.group(for: work) }
     private var primary: LibraryWork {
@@ -239,6 +240,10 @@ struct LibraryDetailView: View {
             LibraryEditView(work: primary)
                 .environmentObject(model)
         }
+        .sheet(isPresented: $showMerge) {
+            LibraryMergeView(current: primary)
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -256,14 +261,44 @@ struct LibraryDetailView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Theme.secondary)
             Spacer()
-            Button {
-                showEdit = true
-            } label: {
-                Label("编辑信息", systemImage: "pencil")
-                    .font(.system(size: 12, weight: .medium))
+            HStack(spacing: 12) {
+                if let group, group.works.count > 1 || model.libraryOverrides[primary.id]?.mergeGroupID != nil {
+                    Button {
+                        model.splitWork(primary)
+                    } label: {
+                        Label("拆分", systemImage: "scissors")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.secondary)
+                }
+                if model.libraryOverrides[primary.id]?.mergeGroupID != nil {
+                    Button {
+                        model.clearGrouping(workID: primary.id)
+                    } label: {
+                        Label("恢复自动", systemImage: "arrow.uturn.backward")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.secondary)
+                }
+                Button {
+                    showMerge = true
+                } label: {
+                    Label("合并到…", systemImage: "arrow.triangle.merge")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.secondary)
+                Button {
+                    showEdit = true
+                } label: {
+                    Label("编辑信息", systemImage: "pencil")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.secondary)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Theme.secondary)
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 14)
@@ -401,6 +436,8 @@ struct LibraryEditView: View {
     @State private var year: String
     @State private var overview: String
     @State private var poster: String
+    @State private var candidates: [TMDBMatch] = []
+    @State private var isSearching = false
 
     init(work: LibraryWork) {
         self.work = work
@@ -439,6 +476,61 @@ struct LibraryEditView: View {
             .scrollContentBackground(.hidden)
 
             HStack {
+                Button {
+                    Task { await searchTMDB() }
+                } label: {
+                    Label("搜索 TMDB 候选", systemImage: "sparkle.magnifyingglass")
+                }
+                .disabled(isSearching || !model.tmdbAvailable)
+                if isSearching { ProgressView().controlSize(.small) }
+                if !model.tmdbAvailable {
+                    Text("设置 OPENFUSE_TMDB_API_KEY 后可用")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+
+            if !candidates.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("候选（点击填入字段）")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(Theme.secondary)
+                    ForEach(candidates, id: \.id) { match in
+                        Button {
+                            title = match.title
+                            if let matchYear = match.year { year = String(matchYear) }
+                            if let overview = match.overview { self.overview = overview }
+                            if let url = model.tmdbImageURL(path: match.posterPath) {
+                                poster = url.absoluteString
+                            }
+                        } label: {
+                            HStack(alignment: .top, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("\(match.title) \(match.year.map { "(\($0))" } ?? "")")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(Theme.text)
+                                    if let overview = match.overview {
+                                        Text(overview)
+                                            .font(.system(size: 10.5))
+                                            .foregroundStyle(Theme.secondary)
+                                            .lineLimit(2)
+                                    }
+                                }
+                                Spacer()
+                                Text("#\(match.id)")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                            .padding(8)
+                            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            HStack {
                 Button("清除本地覆盖", role: .destructive) {
                     model.clearOverride(workID: work.id)
                     dismiss()
@@ -459,6 +551,89 @@ struct LibraryEditView: View {
         }
         .padding(22)
         .frame(width: 600)
+        .background(Theme.background)
+    }
+
+    private func searchTMDB() async {
+        isSearching = true
+        let yearValue = Int(year)
+        candidates = await model.searchTMDBCandidates(
+            title: title,
+            year: yearValue,
+            kind: work.kind
+        )
+        isSearching = false
+    }
+}
+
+
+struct LibraryMergeView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+
+    let current: LibraryWork
+    @State private var search = ""
+
+    private var currentKey: String { model.groupKey(for: current) }
+
+    private var candidates: [LibraryWork] {
+        model.libraryWorks
+            .filter { $0.kind == current.kind }
+            .filter { model.groupKey(for: $0) != currentKey }
+            .filter {
+                search.isEmpty
+                    || $0.title.localizedCaseInsensitiveContains(search)
+                    || ($0.overview ?? "").localizedCaseInsensitiveContains(search)
+            }
+            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("合并到另一部作品")
+                        .font(.system(size: 17, weight: .semibold))
+                    Text("把《\(current.title)》及其来源/版本并入所选作品；不会修改文件或服务器。")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("取消") { dismiss() }
+            }
+            TextField("搜索作品", text: $search)
+                .textFieldStyle(.roundedBorder)
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                    ForEach(candidates) { candidate in
+                        Button {
+                            model.mergeWork(current, into: candidate)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(candidate.title)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(Theme.text)
+                                    Text("\(candidate.kind == .movie ? "电影" : "剧集") · \(candidate.sourceKind)")
+                                        .font(.system(size: 10.5))
+                                        .foregroundStyle(Theme.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.triangle.merge")
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            .padding(10)
+                            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(maxHeight: 360)
+        }
+        .padding(22)
+        .frame(width: 560)
         .background(Theme.background)
     }
 }

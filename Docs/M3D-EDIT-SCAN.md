@@ -55,4 +55,4 @@ PASS: manual title/year/overview/poster override, persistence, clear
 
 ## 下一项
 
-M3e：手动合并/拆分、TMDB 候选选择、WebDAV NFO/认证海报、最近添加/继续观看排序；补 T07 的扫描中播放/超时恢复。完成后进入 M4 家庭设备与状态同步。
+手动合并/拆分与 TMDB 候选已在 [M3e 手动整理验收](M3E-MANUAL.md) 完成。剩余 M3f：WebDAV NFO/认证海报、最近添加/继续观看排序、筛选/防剧透、T07 扫描中播放/超时；完成后再进入 M4。

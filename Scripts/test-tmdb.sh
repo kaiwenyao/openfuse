@@ -25,11 +25,14 @@ assert movie["title"] == "OpenFuse Fixture: TMDB Cut", movie
 assert movie["poster"].endswith("/poster-movie.jpg"), movie
 assert tv["title"] == "示例剧：TMDB 版", tv
 assert tv["poster"].endswith("/poster-series.jpg"), tv
+assert len(movie["candidates"]) == 1, movie
+assert len(tv["candidates"]) == 1, tv
 print("PASS: TMDB movie/TV search, poster URLs")
 PY
 OPENFUSE_TMDB_API_KEY=wrong "$PROBE" tmdb "OpenFuse Fixture" 2026 > build/tmdb-wrong.json
 python3 - <<'PY'
 import json
-assert json.load(open("build/tmdb-wrong.json")) == {}
+wrong = json.load(open("build/tmdb-wrong.json"))
+assert "id" not in wrong and wrong.get("candidates") == [], wrong
 print("PASS: invalid API key returns no match")
 PY

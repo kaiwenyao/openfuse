@@ -177,10 +177,14 @@ case "tmdb":
     let semaphore = DispatchSemaphore(value: 0)
     Task {
         let match = await client.match(title: title, year: year, kind: kind)
-        let payload: [String: Any] = match.map { item in
+        let candidates = await client.candidates(title: title, year: year, kind: kind)
+        var payload: [String: Any] = match.map { item in
             ["id": item.id, "title": item.title, "year": item.year ?? 0,
              "overview": item.overview ?? "", "poster": client.imageURL(path: item.posterPath)?.absoluteString ?? ""]
         } ?? [:]
+        payload["candidates"] = candidates.map { item in
+            ["id": item.id, "title": item.title, "year": item.year ?? 0]
+        }
         let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
         print(String(data: data, encoding: .utf8)!)
         semaphore.signal()

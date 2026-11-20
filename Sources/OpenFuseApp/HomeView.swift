@@ -96,6 +96,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                    let work = model.findWork(matching: query) {
                     if arguments.contains("--library-clear-override") {
                         model.clearOverride(workID: work.id)
+                    } else if let targetQuery = self.value(after: "--library-merge", in: arguments),
+                              let target = model.findWork(matching: targetQuery) {
+                        model.mergeWork(work, into: target)
+                    } else if arguments.contains("--library-split") {
+                        model.splitWork(work)
                     } else if arguments.contains("--library-edit-title")
                                 || arguments.contains("--library-edit-year")
                                 || arguments.contains("--library-edit-overview")

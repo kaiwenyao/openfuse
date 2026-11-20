@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 手动合并/拆分与 TMDB 候选（M3e）
+
+- `LibraryOverride.mergeGroupID`：作品加入指定分组键，或 `split:<id>` 强制独立；`library-overrides.json` 持久化，扫描替换来源后仍生效。
+- AppModel 分组使用 `mergeGroupID ?? 启发式键`；合并只允许同类型（电影/剧集），UI「合并到…」「拆分」「恢复自动」。
+- 编辑 sheet 通过 `TMDBClient.candidates` 搜索多条结果，点击填入标题/年份/简介/海报 URL；无 `OPENFUSE_TMDB_API_KEY` 时禁用。
+- 待做：WebDAV NFO/认证海报、最近添加排序、筛选/防剧透、T07 扫描中播放/超时。
+
 ## 手动纠错与可取消扫描（M3d）
 
 - `LibraryOverrideStore`（`library-overrides.json`）：按 work id 保存 title/year/overview/poster；读取库后 `apply(to:)` 合并，扫描替换来源不影响覆盖；详情「编辑信息」sheet 保存/清除。
