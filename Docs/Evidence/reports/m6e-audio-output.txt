@@ -1,0 +1,17 @@
+OpenFuse M6e actual audio output evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Output device: coreaudio/BlackHole2ch_UID_IFLYREC (iFlyrecAudioDevice)
+Recorder: ffmpeg -f avfoundation -i :0, 48kHz/2ch.
+
+Results:
+  Source: E-AC-3 6ch (OpenFuse report).
+  Virtual output recording: mean -24.5 dB / max -5.6 dB (real signal).
+  Control with BuiltInSpeakerDevice while recording virtual: mean -91.0 dB
+  (silence). Proves CoreAudio routing and actual output, not only PCM callbacks.
+  Scripts/run-audio-output.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Physical 6-channel speaker/AVR, human listening, 5.1 channel separation;
+  virtual device is 2ch (downmix).

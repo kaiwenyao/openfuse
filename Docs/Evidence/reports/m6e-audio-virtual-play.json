@@ -1,0 +1,96 @@
+{
+  "app" : "OpenFuse",
+  "arguments" : [
+    "build\/OpenFuse.app\/Contents\/MacOS\/OpenFuse",
+    "--open",
+    "Fixtures\/generated\/openfuse-fixture.mkv",
+    "--report",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/audio-output\/virtual-play.json",
+    "--quit-after",
+    "12"
+  ],
+  "audio" : [
+    {
+      "channels" : 6,
+      "codec" : "eac3",
+      "engineID" : 1,
+      "id" : "mpv-audio:1",
+      "label" : "E-AC-3 5.1",
+      "name" : "中文 · E-AC-3 5.1 测试音轨"
+    }
+  ],
+  "audioChannels" : "6",
+  "audioCodec" : "eac3",
+  "audioDevice" : "coreaudio\/BlackHole2ch_UID_IFLYREC",
+  "audioDeviceActive" : "coreaudio\/BlackHole2ch_UID_IFLYREC",
+  "audioOutParams" : "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams" : "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "currentAO" : "coreaudio",
+  "currentVO" : "libmpv",
+  "duration" : 60,
+  "engine" : "libmpv",
+  "file" : "file:\/\/\/Users\/ykw\/Documents\/openfuse\/Fixtures\/generated\/openfuse-fixture.mkv",
+  "generatedAt" : "2026-11-20T12:39:21Z",
+  "hdrComputePeak" : "yes",
+  "hwdecCurrent" : "videotoolbox",
+  "isFullScreen" : false,
+  "libraryStatus" : "",
+  "logs" : [
+    "[warn] libmpv_render: Disabling HDR peak computation (one or more of the following is not supported: compute shaders=0, SSBO=0).",
+    "[warn] libmpv_render: Tone mapping curve unsupported by vo_gpu, falling back."
+  ],
+  "mpv" : "mpv v0.42.0",
+  "paused" : false,
+  "position" : 2.4579999999999997,
+  "remotePath" : "",
+  "screenEDR" : 16,
+  "selectedAudio" : "mpv-audio:1",
+  "selectedSubtitle" : "ext:\/Users\/ykw\/Documents\/openfuse\/Fixtures\/generated\/openfuse-fixture.zh-Hans.ass",
+  "sourceID" : "",
+  "sourceKind" : "local",
+  "sourceName" : "本地文件",
+  "subtitles" : [
+    {
+      "engineID" : 2,
+      "format" : "ass",
+      "id" : "ext:\/Users\/ykw\/Documents\/openfuse\/Fixtures\/generated\/openfuse-fixture.zh-Hans.ass",
+      "language" : "zh-Hans",
+      "name" : "中文（简体） (ASS)",
+      "source" : "external"
+    },
+    {
+      "engineID" : 3,
+      "format" : "ass",
+      "id" : "ext:\/Users\/ykw\/Documents\/openfuse\/Fixtures\/generated\/openfuse-fixture.zh-Hant.ass",
+      "language" : "zh-Hant",
+      "name" : "中文（繁體） (ASS)",
+      "source" : "external"
+    },
+    {
+      "engineID" : 4,
+      "format" : "ass",
+      "id" : "ext:\/Users\/ykw\/Documents\/openfuse\/Fixtures\/generated\/openfuse-fixture.ass",
+      "language" : "und",
+      "name" : "未知语言 (ASS)",
+      "source" : "external"
+    },
+    {
+      "engineID" : 1,
+      "format" : "ass",
+      "id" : "mpv:1",
+      "language" : "zh",
+      "name" : "中文（简体） · 中日双语",
+      "source" : "embedded"
+    }
+  ],
+  "targetColorspaceHint" : "yes",
+  "title" : "openfuse-fixture",
+  "toneMapping" : "spline",
+  "videoCodec" : "hevc \/ Main 10",
+  "videoDescription" : "H.265 \/ HEVC (High Efficiency Video Coding)",
+  "videoGamma" : "bt.1886",
+  "videoOutParams" : "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1920,\"h\":1080,\"dw\":1920,\"dh\":1080,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1920,\"crop-h\":1080,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2\/4\/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "videoPrimaries" : "bt.709",
+  "videoSigPeak" : "0.000000",
+  "windowFrame" : "{{137, 141}, {1180, 760}}"
+}

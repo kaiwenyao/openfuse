@@ -225,6 +225,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## 实际音频输出验证（M6e）
+
+- BlackHole/iFlyrec 2ch 录回放；有声 -24.5dB，扬声器对照 -91dB。
+- 证明 CoreAudio 路由/真实输出；物理5.1/人耳/HDMI 未验证。
+
 ## SMB 16 并发（M5aq）
 
 - 3×16=48 Range 全部206，播放继续1202；RSS128→112MB。

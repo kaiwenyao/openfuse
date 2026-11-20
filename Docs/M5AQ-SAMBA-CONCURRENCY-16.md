@@ -31,4 +31,4 @@ M5ap 修复背压后 8 并发通过。本轮把并发提高到 16，连续 3 批
 
 ## 下一项
 
-M5ar/M6d：>16/长稳/DFS；CA 导入 UI/同步并发/CloudKit；音频/HDR/visionOS。
+实际音频输出已在 [M6e 验收](Docs/M6E-AUDIO-OUTPUT.md) 完成2ch实录。剩余 M6f/M5ar：物理5.1/人耳/HDMI、HDR测量、>16并发/长稳/DFS、CloudKit真机。
