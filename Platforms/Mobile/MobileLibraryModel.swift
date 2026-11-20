@@ -518,6 +518,10 @@ final class MobileLibraryModel: ObservableObject {
         }
     }
 
+    /// Mirrors the Mac scan policy: a transient failure (timeout / HTTP 5xx)
+    /// keeps the last complete index instead of replacing it with a partial
+    /// one, cancellation leaves the library untouched, and an explicit 401/403
+    /// removes the source.
     func scanJellyfin(_ source: JellyfinSource) async throws {
         guard let token = jellyfinToken(for: source) else {
             status = "Jellyfin 缺少 Keychain token"
@@ -526,10 +530,29 @@ final class MobileLibraryModel: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         let client = JellyfinClient(source: source, token: token)
-        let scanned = try await LibraryScanner.scanJellyfin(source: source, client: client)
-        try libraryStore.replace(source: scanned)
-        reload()
-        status = "Jellyfin \(source.name)：\(scanned.works.count) 个作品"
+        do {
+            let result = try await LibraryScanner.scanJellyfin(source: source, client: client)
+            if result.hasTransientFailure {
+                let names = result.transientFailures.map(\.libraryName).joined(separator: "、")
+                status = "Jellyfin \(source.name)：\(names) 读取不完整，已保留上次完整索引，可重试"
+                return
+            }
+            try libraryStore.replace(source: result.library)
+            reload()
+            var text = "Jellyfin \(source.name)：\(result.library.works.count) 个作品"
+            if !result.revokedLibraryNames.isEmpty {
+                text += "，已移除无权访问的 \(result.revokedLibraryNames.joined(separator: "、"))"
+            }
+            status = text
+        } catch LibraryScanError.cancelled {
+            status = "Jellyfin 扫描已取消，媒体库保持原样"
+        } catch JellyfinError.unauthorized {
+            try? libraryStore.removeSource(kind: source.kind, sourceID: source.id)
+            reload()
+            status = "Jellyfin \(source.name)：服务器撤回了访问权限，请重新登录该来源"
+        } catch {
+            status = "Jellyfin 扫描失败：\(error.localizedDescription)，媒体库保持原样"
+        }
     }
 
     func removeWebDAV(_ source: WebDAVSource) {

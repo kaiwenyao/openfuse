@@ -385,8 +385,14 @@ public enum CredentialStore {
     /// to "no UI" so a stale item from another build fails fast instead of
     /// blocking the main thread behind a dialog the user cannot see.
     private static func withKeychainInteraction<T>(_ allowed: Bool, _ body: () -> T) -> T {
+        #if os(macOS)
+        // macOS-only: suppresses the classic login-keychain ACL dialog so a
+        // stale item from another build fails fast instead of blocking the
+        // main thread. iOS has no equivalent switch; the system handles
+        // Keychain access prompts itself.
         SecKeychainSetUserInteractionAllowed(allowed)
         defer { SecKeychainSetUserInteractionAllowed(true) }
+        #endif
         return body()
     }
 }
