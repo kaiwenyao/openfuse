@@ -40,4 +40,4 @@ SMB 此前只有裸文件名/占位海报。本轮让 SMB 扫描读取 NFO 与 p
 
 ## 下一项
 
-M5o：真实 SMB3/大文件/并发、tvshow NFO 继承；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
+SMB 跨季 tvshow NFO/重连已在 [M5o 验收](Docs/M5O-SMB-SHOW-NFO.md) 完成。剩余 M5p：真实 SMB3/并发/大文件、HDR/AirPlay 实机、CloudKit/Trakt、音频、版本级去重、M3 多根/损坏过滤。

@@ -156,6 +156,18 @@ public final class SMBClient: @unchecked Sendable {
         return handle
     }
 
+    public func reconnect() {
+        lock.lock(); defer { lock.unlock() }
+        if let context {
+            for (_, handle) in handles {
+                _ = smb2_close(context, handle)
+            }
+            smb2_destroy_context(context)
+        }
+        handles.removeAll()
+        context = nil
+    }
+
     public func closeHandles() {
         lock.lock(); defer { lock.unlock() }
         guard let context else { handles.removeAll(); return }
@@ -294,6 +306,8 @@ public enum SMBLibraryScanner {
         var visited = 0
         var failedPaths: [String] = []
         var downloadedPosters = 0
+        var showNFOByDirectory: [String: NFOMetadata] = [:]
+        var showPosterByDirectory: [String: String] = [:]
         if let posterCacheDirectory {
             try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
         }
@@ -313,12 +327,27 @@ public enum SMBLibraryScanner {
             return target.path
         }
 
+        func listDirectory(_ path: String) throws -> [SMBEntry] {
+            do {
+                return try client.list(path: path)
+            } catch {
+                client.reconnect()
+                return try client.list(path: path)
+            }
+        }
+
+        func fetchWithRetry(_ path: String) -> Data? {
+            if let data = try? client.fetch(path: path) { return data }
+            client.reconnect()
+            return try? client.fetch(path: path)
+        }
+
         while !queue.isEmpty {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let directory = queue.removeFirst()
             let entries: [SMBEntry]
             do {
-                entries = try client.list(path: directory)
+                entries = try listDirectory(directory)
             } catch {
                 failedPaths.append(directory)
                 continue
@@ -329,7 +358,6 @@ public enum SMBLibraryScanner {
             }
 
             let directoryKey = directory
-            let parentKey = (directory as NSString).deletingLastPathComponent
             var movieNFO: NFOMetadata?
             var showNFO: NFOMetadata?
             var nfoByBase: [String: NFOMetadata] = [:]
@@ -339,7 +367,7 @@ public enum SMBLibraryScanner {
             for entry in entries where !entry.isDirectory {
                 let ext = (entry.name as NSString).pathExtension.lowercased()
                 let base = (entry.name as NSString).deletingPathExtension.lowercased()
-                if ext == "nfo", let data = try? client.fetch(path: entry.path) {
+                if ext == "nfo", let data = fetchWithRetry(entry.path) {
                     let metadata = NFOReader.parse(
                         data: data,
                         baseURL: URL(fileURLWithPath: "/smb/" + entry.path.deletingLeadingSlash)
@@ -357,6 +385,24 @@ public enum SMBLibraryScanner {
                 }
             }
 
+            if let showNFO {
+                showNFOByDirectory[directory] = showNFO
+            }
+            if let directoryPoster {
+                showPosterByDirectory[directory] = directoryPoster
+            }
+
+            func showContext(for start: String) -> (metadata: NFOMetadata, directory: String)? {
+                var current = start
+                while !current.isEmpty, current != "/" {
+                    if let metadata = showNFOByDirectory[current] {
+                        return (metadata, current)
+                    }
+                    current = (current as NSString).deletingLastPathComponent
+                }
+                return nil
+            }
+
             for entry in entries where !entry.isDirectory {
                 guard LibraryScanner.videoExtensions.contains(
                     (entry.name as NSString).pathExtension.lowercased()
@@ -365,15 +411,17 @@ public enum SMBLibraryScanner {
                 let base = (entry.name as NSString).deletingPathExtension
                 let lowerBase = base.lowercased()
                 let nfo = nfoByBase[lowerBase] ?? movieNFO
-                let effectiveShowNFO = showNFO ?? nfoByBase["tvshow"]
-                var posterPath = directoryPoster
+                let context = showContext(for: directory)
+                let effectiveShowNFO = context?.metadata
+                let showDirectory = context?.directory ?? directory
+                var posterPath = directoryPoster ?? showPosterByDirectory[showDirectory]
                 var posterURL: String?
                 if let reference = nfo?.posterReference ?? effectiveShowNFO?.posterReference, !reference.isEmpty {
                     if reference.hasPrefix("http://") || reference.hasPrefix("https://") {
                         posterURL = reference
                     } else {
-                        let showDirectory = (nfo == nil && effectiveShowNFO != nil) ? parentKey : directory
-                        let remotePoster = showDirectory + "/" + reference
+                        let baseDirectory = nfo != nil ? directory : showDirectory
+                        let remotePoster = baseDirectory + "/" + reference
                         if let cached = cachePoster(remotePoster) {
                             posterPath = cached
                         } else {

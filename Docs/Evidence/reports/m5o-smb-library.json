@@ -1,0 +1,173 @@
+{
+  "episodes": 3,
+  "generatedAt": "2026-11-20T05:14:29Z",
+  "groups": [
+    {
+      "key": "movie|smb nfo 电影",
+      "primary": "SMB NFO 电影",
+      "sources": [
+        "smb"
+      ],
+      "workIDs": [
+        "smb-3dec7137ef31bfe3"
+      ]
+    },
+    {
+      "key": "series|smb 示例剧",
+      "primary": "SMB 示例剧",
+      "sources": [
+        "smb"
+      ],
+      "workIDs": [
+        "smb-a1de357ec49b11a3"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "smb-3dec7137ef31bfe3-main",
+          "remotePath": "/Movie/OpenFuse.SMB.mkv",
+          "season": 0,
+          "sourceKind": "smb",
+          "title": "SMB NFO 电影",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "smb-3dec7137ef31bfe3-main-v0",
+              "mediaSourceID": "",
+              "name": "SMB",
+              "resolution": ""
+            }
+          ]
+        }
+      ],
+      "id": "smb-3dec7137ef31bfe3",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "SMB NFO/海报/字幕验收。",
+      "poster": "file:build/smb-acceptance/support/SMBPosterCache/af072794ec279abe.jpg",
+      "seasons": [],
+      "sourceID": "bdebc1099012fbb7",
+      "sourceKind": "smb",
+      "title": "SMB NFO 电影",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "smb-a1de357ec49b11a3-s1e1-f4b5cf99",
+          "remotePath": "/Shows/SMB 示例剧/Season 01/SMB 示例剧.S01E01.mkv",
+          "season": 1,
+          "sourceKind": "smb",
+          "title": "NFO 第一集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "smb-a1de357ec49b11a3-s1e1-f4b5cf99-v0",
+              "mediaSourceID": "",
+              "name": "SMB",
+              "resolution": ""
+            }
+          ]
+        },
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "smb-a1de357ec49b11a3-s2e1-ed97522f",
+          "remotePath": "/Shows/SMB 示例剧/Season 02/SMB 示例剧.S02E01.mkv",
+          "season": 2,
+          "sourceKind": "smb",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "smb-a1de357ec49b11a3-s2e1-ed97522f-v0",
+              "mediaSourceID": "",
+              "name": "SMB",
+              "resolution": ""
+            }
+          ]
+        }
+      ],
+      "id": "smb-a1de357ec49b11a3",
+      "kind": "series",
+      "overridden": false,
+      "overview": "SMB tvshow.nfo 跨季继承验收。",
+      "poster": "file:build/smb-acceptance/support/SMBPosterCache/33b2f6b8426fea33.jpg",
+      "seasons": [
+        {
+          "id": "smb-a1de357ec49b11a3-s1",
+          "number": 1,
+          "title": "第 1 季"
+        },
+        {
+          "id": "smb-a1de357ec49b11a3-s2",
+          "number": 2,
+          "title": "第 2 季"
+        }
+      ],
+      "sourceID": "bdebc1099012fbb7",
+      "sourceKind": "smb",
+      "title": "SMB 示例剧",
+      "year": 2026
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "SMB NFO 电影",
+          "versions": [
+            "SMB · SMB"
+          ]
+        }
+      ],
+      "key": "movie|smb nfo 电影",
+      "sources": [
+        "smb"
+      ],
+      "title": "SMB NFO 电影"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "NFO 第一集",
+          "versions": [
+            "SMB · SMB"
+          ]
+        },
+        {
+          "episode": 1,
+          "season": 2,
+          "title": "第 1 集",
+          "versions": [
+            "SMB · SMB"
+          ]
+        }
+      ],
+      "key": "series|smb 示例剧",
+      "sources": [
+        "smb"
+      ],
+      "title": "SMB 示例剧"
+    }
+  ],
+  "rawEpisodes": 3,
+  "rawWorks": 2,
+  "status": "SMB SMB：2 个作品",
+  "visible": [
+    "SMB NFO 电影",
+    "SMB 示例剧"
+  ],
+  "works": 2
+}

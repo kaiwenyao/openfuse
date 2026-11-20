@@ -1,0 +1,24 @@
+OpenFuse M5o SMB cross-season tvshow NFO evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: impacket SMB2, movie + "SMB 示例剧" with Season 01/S02,
+tvshow.nfo/poster, episode NFO, SRT.
+
+Implementation:
+  Scanner keeps showNFOByDirectory/showPosterByDirectory and resolves the
+  nearest ancestor for videos in season folders. Episode/base NFO wins over
+  show NFO. SMB reconnect() retries list/fetch once on STATUS_SHUTDOWN; stream
+  reads also reconnect/retry.
+
+Results:
+  Library: raw 2 works / 3 episodes.
+    SMB NFO 电影 (1)
+    SMB 示例剧 (2 seasons): S01E01 title "NFO 第一集", S02E01 "第 1 集".
+  Show poster cached file: SMBPosterCache.
+  Play S01E01: sourceKind=smb, position 31.0, SRT selected mpv:1,
+  file=http://127.0.0.1:..., no SMBCache.
+  Scripts/run-smb-acceptance.sh PASS.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real SMB3/DFS, deep show roots, concurrent Range/large files, audio, iOS SMB.

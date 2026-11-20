@@ -145,6 +145,10 @@
 | `78-smb-subtitle.jpg` | SMB 外挂字幕 + seek 31s | 播放器抓帧 |
 | `reports/m5n-smb-*.json` | SMB 元数据/播放报告 | 应用报告 |
 | `reports/m5n-smb.txt` | SMB NFO/字幕摘要 | 运行记录 |
+| `79-smb-show-seasons.jpg` | SMB 两季剧集/NFO 海报 | 应用内窗口快照 |
+| `80-smb-show-play.jpg` | SMB 跨季剧集播放 31s | 播放器抓帧 |
+| `reports/m5o-smb-*.json` | SMB 跨季库/播放报告 | 应用报告 |
+| `reports/m5o-smb-show.txt` | 跨季 NFO/重连摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

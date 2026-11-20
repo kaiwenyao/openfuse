@@ -27,6 +27,29 @@ cat > "$SHARE_DIR/Movie/OpenFuse.SMB.nfo" <<'NFO'
 </movie>
 NFO
 cp Fixtures/mobile/openfuse-mobile.zh-Hans.srt "$SHARE_DIR/Movie/OpenFuse.SMB.zh-Hans.srt"
+mkdir -p "$SHARE_DIR/Shows/SMB 示例剧/Season 01" "$SHARE_DIR/Shows/SMB 示例剧/Season 02"
+cp build/jellyfin-fixture/series.jpg "$SHARE_DIR/Shows/SMB 示例剧/poster.jpg"
+cat > "$SHARE_DIR/Shows/SMB 示例剧/tvshow.nfo" <<'NFO'
+<?xml version="1.0" encoding="UTF-8"?>
+<tvshow>
+  <title>SMB 示例剧</title>
+  <year>2026</year>
+  <plot>SMB tvshow.nfo 跨季继承验收。</plot>
+  <poster>poster.jpg</poster>
+</tvshow>
+NFO
+cp Fixtures/generated/openfuse-fixture.mkv "$SHARE_DIR/Shows/SMB 示例剧/Season 01/SMB 示例剧.S01E01.mkv"
+cp Fixtures/mobile/openfuse-mobile.zh-Hans.srt "$SHARE_DIR/Shows/SMB 示例剧/Season 01/SMB 示例剧.S01E01.zh-Hans.srt"
+cp Fixtures/generated/openfuse-fixture.mkv "$SHARE_DIR/Shows/SMB 示例剧/Season 02/SMB 示例剧.S02E01.mkv"
+cat > "$SHARE_DIR/Shows/SMB 示例剧/Season 01/SMB 示例剧.S01E01.nfo" <<'NFO'
+<?xml version="1.0" encoding="UTF-8"?>
+<episodedetails>
+  <title>NFO 第一集</title>
+  <plot>单集 NFO 优先。</plot>
+  <season>1</season>
+  <episode>1</episode>
+</episodedetails>
+NFO
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 build/impacket-venv/bin/smbserver.py -port "$PORT" -username test -password test -smb2support \
@@ -45,7 +68,9 @@ sleep 0.5
 EPISODE=$(python3 - "$OUT" <<'PY'
 import json, sys
 data = json.load(open(f"{sys.argv[1]}/library.json"))
-print(data["items"][0]["episodes"][0]["id"])
+for item in data["items"]:
+    if item["title"] == "SMB 示例剧":
+        print(item["episodes"][0]["id"]); break
 PY
 )
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test "$APP" \
@@ -57,14 +82,19 @@ import json, os, sys
 out = sys.argv[1]
 errors = []
 library = json.load(open(os.path.join(out, "library.json")))
-if library["rawWorks"] != 1 or library["rawEpisodes"] != 1:
+if library["rawWorks"] != 2 or library["rawEpisodes"] != 3:
     errors.append(f"counts {library['rawWorks']}/{library['rawEpisodes']}")
+series = next((item for item in library["items"] if item["title"] == "SMB 示例剧"), None)
+if series is None or len(series["episodes"]) != 2:
+    errors.append("SMB show seasons not inherited")
+elif not series.get("poster", "").startswith("file:"):
+    errors.append(f"show poster {series.get('poster')}")
 if library["items"][0]["sourceKind"] != "smb":
     errors.append("sourceKind not smb")
 play = json.load(open(os.path.join(out, "play.json")))
 if play.get("sourceKind") != "smb" or not 30.8 <= play.get("position", 0) <= 31.2:
     errors.append(f"play/seek {play.get('sourceKind')} {play.get('position')}")
-if "OpenFuse.SMB.mkv" not in play.get("remotePath", ""):
+if "S01E01.mkv" not in play.get("remotePath", ""):
     errors.append(f"remotePath {play.get('remotePath')}")
 if not any("中文（简体）" in item.get("name", "") for item in play.get("subtitles", [])):
     errors.append("SMB external subtitle not loaded")
@@ -90,5 +120,5 @@ if errors:
     print("FAIL")
     for error in errors: print(" -", error)
     sys.exit(1)
-print("PASS: SMB NFO/poster/subtitle, loopback Range seek 31s, no file cache")
+print("PASS: SMB movie+2-season show NFO/poster/subtitle, seek 31s, no cache")
 PY

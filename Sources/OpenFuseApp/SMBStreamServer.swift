@@ -144,7 +144,14 @@ final class SMBStreamServer: @unchecked Sendable {
         var remaining = length
         while remaining > 0 {
             let count = Int(min(64 * 1024, remaining))
-            guard let data = try? client.read(path: path, offset: offset, length: count), !data.isEmpty else {
+            var chunk: Data?
+            do {
+                chunk = try client.read(path: path, offset: offset, length: count)
+            } catch {
+                client.reconnect()
+                chunk = try? client.read(path: path, offset: offset, length: count)
+            }
+            guard let data = chunk, !data.isEmpty else {
                 return
             }
             guard sendAll(fd, data) else { return }

@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## SMB 跨季 tvshow NFO/重连（M5o）
+
+- showNFOByDirectory/showPosterByDirectory + showContext 祖先查找；单集/电影 NFO 优先。
+- SMBClient.reconnect；扫描 list/fetch、流读取在 STATUS_SHUTDOWN 后重连重试一次。
+- 实测 2 作品/3 集、S01E01 NFO 标题、show poster、seek31、无缓存。
+- 真实 SMB3/DFS/并发大文件未验证。
+
 ## SMB NFO/海报/字幕与句柄复用（M5n）
 
 - SMBClient 按路径缓存 smb2fh，避免每 64KiB open/close。
