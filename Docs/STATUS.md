@@ -14,11 +14,11 @@
 
 ## 当前分支
 
-`m6e-audio-output`（基于 M5aq 提交）。M6f/M5ar 从该分支继续。
+`m5ar-samba-concurrency-32`（基于 M6e 提交）。M5as/M6f 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M6f/M5ar：物理5.1/人耳/HDMI；HDR测量；>16并发/长稳/DFS；CloudKit真机。
+1. M5as/M6f：>32/长稳/DFS；物理5.1/人耳/HDMI；HDR测量；CloudKit/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

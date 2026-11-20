@@ -1,0 +1,18 @@
+OpenFuse M5ar 32-way SMB concurrency evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 2.4GB file.
+
+Bug: listen backlog was 16; 32 simultaneous clients gave 21 success / 11
+connection refused.
+Fix: listen(fd, 128); excess clients queue, accept loop drains with 4 active.
+
+Results:
+  32/32 Range HTTP 206, 1048576 bytes each.
+  Playback continued at 1200/1800.
+  RSS 211MB -> 211MB.
+  Scripts/run-samba-concurrency-32.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  >32 clients, long soak, DFS/domain, real NAS; audio.

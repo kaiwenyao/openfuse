@@ -700,3 +700,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 实际输出/路由 | Mac M2 Pro／macOS 27.2.1 | 6ch E-AC-3 + BlackHole 2ch | Infuse 未安装 | 虚拟 -24.5dB；扬声器对照 -91dB | Evidence 113、`reports/m6e-audio-*` | 通过（2ch实录） |
 | 物理5.1/人耳/HDMI | 同上 | AVR/耳机 | 待采样 | 未测 | — | 待验证 |
+
+### M5ar 32 并发执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 32 Range 并发 | Mac M2 Pro／macOS 27.2.1 | 2.4GB over Samba | Infuse 未安装 | backlog128后 32/32 206；播放1200；RSS211稳定 | Evidence 114、`reports/m5ar-*` | 通过 |
+| >32/长稳/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |

@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T12:45:56Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse concurrency32",
+      "primary" : "OpenFuse Concurrency32",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-12b89b929cf8cfaa"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-12b89b929cf8cfaa-main",
+          "remotePath" : "\/OpenFuse.Concurrency32.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Concurrency32",
+          "versions" : [
+            {
+              "contentKey" : "85126a4acca336dae952425a2da87146",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-12b89b929cf8cfaa-main-v0",
+              "mediaSourceID" : "",
+              "name" : "720p · SMB",
+              "resolution" : "720p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-12b89b929cf8cfaa",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Concurrency32",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Concurrency32",
+          "versions" : [
+            "SMB · 720p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse concurrency32",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Concurrency32"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse Concurrency32"
+  ],
+  "works" : 1
+}
