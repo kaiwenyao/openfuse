@@ -215,6 +215,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## SMB >1GB 流式（M5an）
+
+- 1200s/1.4GB Samba 文件 seek902、RSS≈154MB；无整文件缓存。
+- >2GB/并发/DFS/域未验证。
+
 ## SMB 大文件流式（M5am）
 
 - 120s/90MB Samba 文件 seek62、RSS≈100MB；仅海报/字幕缓存。

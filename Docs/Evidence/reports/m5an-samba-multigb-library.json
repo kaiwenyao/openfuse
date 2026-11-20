@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T11:36:52Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse long",
+      "primary" : "OpenFuse Long",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-0bb1d8810d6c4ee7"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-0bb1d8810d6c4ee7-main",
+          "remotePath" : "\/OpenFuse.Long.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Long",
+          "versions" : [
+            {
+              "contentKey" : "0ff176362a14d296ec1c9c7ee417bf5c",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-0bb1d8810d6c4ee7-main-v0",
+              "mediaSourceID" : "",
+              "name" : "720p · SMB",
+              "resolution" : "720p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-0bb1d8810d6c4ee7",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Long",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Long",
+          "versions" : [
+            "SMB · 720p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse long",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Long"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse Long"
+  ],
+  "works" : 1
+}

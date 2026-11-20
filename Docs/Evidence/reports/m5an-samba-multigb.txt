@@ -1,0 +1,16 @@
+OpenFuse M5an >1GB SMB evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7 Docker; 1200s 1280x720 HEVC/E-AC-3, 1.4GB.
+
+Results:
+  Scan: 1 work, 720p version.
+  Play seek900 -> position 902.04/1200.
+  sourceKind smb, loopback URL.
+  Process RSS ~154MB; no whole-file cache.
+  Scripts/run-samba-multigb.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Multi-GB (>2GB), concurrent range/backpressure, DFS/domain, real NAS;
+  audio listening.
