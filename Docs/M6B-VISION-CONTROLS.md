@@ -35,4 +35,4 @@ M6a 只证明沉浸空间能打开。本轮加拖动/缩放空间屏幕手势，
 
 ## 下一项
 
-M6c：真机 VideoMaterial/手势/空间音频；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+Full immersion 与 3D 控件已在 [M6c 验收](Docs/M6C-VISION-IMMERSION.md) 完成。剩余 M6d：真机 3D 控件/空间音频/HDR、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

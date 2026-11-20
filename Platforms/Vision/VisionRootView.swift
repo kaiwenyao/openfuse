@@ -6,6 +6,7 @@ struct VisionRootView: View {
     @EnvironmentObject private var model: MobileLibraryModel
     @EnvironmentObject private var playback: VisionImmersiveModel
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+    @Environment(\.dismissWindow) private var dismissWindow
     @State private var selectedWork: LibraryWork?
 
     var body: some View {
@@ -55,7 +56,9 @@ struct VisionRootView: View {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 let result = await openImmersiveSpace(id: VisionImmersiveModel.spaceID)
                 print("OpenFuse immersive result: \(result)")
-                if result != .opened {
+                if result == .opened {
+                    dismissWindow(id: "main")
+                } else {
                     playback.status = "沉浸空间未打开：\(result)"
                 }
             }
@@ -97,6 +100,7 @@ private struct VisionDetailView: View {
     @EnvironmentObject private var model: MobileLibraryModel
     @EnvironmentObject private var playback: VisionImmersiveModel
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+    @Environment(\.dismissWindow) private var dismissWindow
     let work: LibraryWork
     @State private var item: MobilePlaybackItem?
 
@@ -135,7 +139,10 @@ private struct VisionDetailView: View {
                         Button {
                             Task {
                                 await playback.prepare(item: item, model: model)
-                                _ = await openImmersiveSpace(id: VisionImmersiveModel.spaceID)
+                                let result = await openImmersiveSpace(id: VisionImmersiveModel.spaceID)
+                                if result == .opened {
+                                    dismissWindow(id: "main")
+                                }
                             }
                         } label: {
                             Label("沉浸式播放", systemImage: "visionpro")

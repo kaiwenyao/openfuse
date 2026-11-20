@@ -1,0 +1,17 @@
+{
+  "records" : {
+    "\/Users\/ykw\/Library\/Developer\/CoreSimulator\/Devices\/E3993B10-EDE9-42F3-87FE-E1D6F61D788A\/data\/Containers\/Data\/Application\/4BA4DA98-82DC-4F54-BC44-04634452F8F5\/Documents\/OpenFuse Mobile Sample (2026)\/OpenFuse Mobile Sample.mp4" : {
+      "displayTitle" : "OpenFuse Mobile Sample",
+      "duration" : 20.105,
+      "fileSize" : 3533564,
+      "isFinished" : false,
+      "lastPlayedAt" : "2026-11-20T08:21:04.558Z",
+      "mediaPath" : "\/Users\/ykw\/Library\/Developer\/CoreSimulator\/Devices\/E3993B10-EDE9-42F3-87FE-E1D6F61D788A\/data\/Containers\/Data\/Application\/4BA4DA98-82DC-4F54-BC44-04634452F8F5\/Documents\/OpenFuse Mobile Sample (2026)\/OpenFuse Mobile Sample.mp4",
+      "playCount" : 0,
+      "position" : 7.585786583,
+      "sourceID" : "local-e3ab6be44297e17c",
+      "sourceKind" : "local"
+    }
+  },
+  "version" : 1
+}

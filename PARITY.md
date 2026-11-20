@@ -532,3 +532,11 @@
 | 沉浸退出进度 | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | autoclose 6s → position 7.517s；续播按钮 | Evidence 93、`reports/m6b-vision-playback.json` | 通过 |
 | 手势 | 同上 | 同上 | 待真机 | 代码编译，未自动化 | — | 待验证 |
 | VideoMaterial/空间音频 | 同上 | 同上 | 待真机 | 模拟器 Metal 黑屏 | — | 待验证 |
+
+### M6c full immersion 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Full immersion | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | 测试图 11:22 出画；星点/3D 控件/进度条 | Evidence 94、`reports/m6c-vision-environment.txt` | 通过（模拟器） |
+| 窗口/进度 | 同上 | 同上 | 待真机 | 沉浸关窗；autoclose 写回进度 | `reports/m6c-vision-playback.json` | 通过 |
+| 3D 点击/空间音频 | 同上 | 同上 | 待真机 | 代码已接，未自动化/未听测 | — | 待验证 |

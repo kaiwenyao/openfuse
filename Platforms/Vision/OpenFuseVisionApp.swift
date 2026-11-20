@@ -6,7 +6,7 @@ struct OpenFuseVisionApp: App {
     @StateObject private var playback = VisionImmersiveModel()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             VisionRootView()
                 .environmentObject(model)
                 .environmentObject(playback)
@@ -19,6 +19,6 @@ struct OpenFuseVisionApp: App {
                 .environmentObject(model)
                 .environmentObject(playback)
         }
-        .immersionStyle(selection: .constant(.mixed), in: .mixed)
+        .immersionStyle(selection: .constant(.full), in: .full)
     }
 }

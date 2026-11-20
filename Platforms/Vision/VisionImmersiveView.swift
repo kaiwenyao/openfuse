@@ -1,21 +1,43 @@
 import AVFoundation
 import RealityKit
 import SwiftUI
+import UIKit
 
 struct VisionImmersiveView: View {
     @EnvironmentObject private var playback: VisionImmersiveModel
     @EnvironmentObject private var model: MobileLibraryModel
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+    @Environment(\.openWindow) private var openWindow
     @State private var screenOffset = CGSize.zero
     @State private var screenScale: CGFloat = 1
     @State private var didAutoClose = false
 
     var body: some View {
         RealityView { content in
+            addEnvironment(to: &content)
             addScreen(to: &content)
+            addControls(to: &content)
         } update: { content in
+            addEnvironment(to: &content)
             addScreen(to: &content)
+            addControls(to: &content)
         }
+        .gesture(
+            TapGesture().targetedToAnyEntity().onEnded { value in
+                switch value.entity.name {
+                case "openfuse.control.close":
+                    Task {
+                        playback.finish(model: model)
+                        await dismissImmersiveSpace()
+                        openWindow(id: "main")
+                    }
+                case "openfuse.control.play":
+                    playback.togglePlay()
+                default:
+                    break
+                }
+            }
+        )
         .gesture(
             DragGesture()
                 .onChanged { value in
@@ -45,9 +67,92 @@ struct VisionImmersiveView: View {
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             playback.finish(model: model)
             await dismissImmersiveSpace()
+            openWindow(id: "main")
         }
         .onDisappear {
             playback.finish(model: model)
+        }
+    }
+
+    private func addEnvironment(to content: inout RealityViewContent) {
+        if let floor = content.entities.first(where: { $0.name == "openfuse.floor" }) as? ModelEntity {
+            floor.position.y = -0.6 + Float(screenOffset.height * 0.5)
+            return
+        }
+        let floor = ModelEntity(
+            mesh: .generatePlane(width: 14, height: 14),
+            materials: [SimpleMaterial(color: UIColor(white: 0.045, alpha: 1), roughness: 0.95, isMetallic: false)]
+        )
+        floor.name = "openfuse.floor"
+        floor.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
+        floor.position = SIMD3<Float>(0, -0.6, -3)
+        content.add(floor)
+
+        let frame = ModelEntity(
+            mesh: .generatePlane(width: 4.18, height: 2.42, cornerRadius: 0.06),
+            materials: [SimpleMaterial(color: UIColor(white: 0.09, alpha: 1), roughness: 0.4, isMetallic: false)]
+        )
+        frame.name = "openfuse.frame"
+        frame.position = SIMD3<Float>(0, 1.45, -3.04)
+        content.add(frame)
+
+        let starMaterial = UnlitMaterial(color: UIColor(white: 0.9, alpha: 1))
+        for index in 0..<48 {
+            let star = ModelEntity(
+                mesh: .generateSphere(radius: 0.012),
+                materials: [starMaterial]
+            )
+            let angle = Float(index) * 2.399963
+            let radius = Float(5.5 + Double(index % 5) * 0.7)
+            star.position = SIMD3<Float>(
+                cos(angle) * radius,
+                1.2 + sin(Float(index) * 1.7) * 2.2,
+                sin(angle) * radius - 2
+            )
+            content.add(star)
+        }
+    }
+
+    private func addControls(to content: inout RealityViewContent) {
+        if let play = content.entities.first(where: { $0.name == "openfuse.control.play" }) as? ModelEntity {
+            play.model?.materials = [SimpleMaterial(
+                color: playback.isPlaying ? UIColor.systemOrange : UIColor.systemBlue,
+                roughness: 0.3, isMetallic: false
+            )]
+        } else {
+            let play = ModelEntity(
+                mesh: .generateSphere(radius: 0.11),
+                materials: [SimpleMaterial(color: UIColor.systemBlue, roughness: 0.3, isMetallic: false)]
+            )
+            play.name = "openfuse.control.play"
+            play.position = SIMD3<Float>(-2.15, 2.72, -3.0)
+            play.components.set(InputTargetComponent())
+            play.generateCollisionShapes(recursive: true)
+            content.add(play)
+
+            let close = ModelEntity(
+                mesh: .generateSphere(radius: 0.11),
+                materials: [SimpleMaterial(color: UIColor.systemRed, roughness: 0.3, isMetallic: false)]
+            )
+            close.name = "openfuse.control.close"
+            close.position = SIMD3<Float>(2.15, 2.72, -3.0)
+            close.components.set(InputTargetComponent())
+            close.generateCollisionShapes(recursive: true)
+            content.add(close)
+        }
+
+        let progress = playback.duration > 0 ? min(1, max(0, playback.position / playback.duration)) : 0
+        if let bar = content.entities.first(where: { $0.name == "openfuse.control.progress" }) as? ModelEntity {
+            bar.scale.x = Float(max(0.001, progress))
+        } else {
+            let bar = ModelEntity(
+                mesh: .generateBox(size: SIMD3<Float>(4.0, 0.025, 0.012)),
+                materials: [SimpleMaterial(color: UIColor.systemYellow, roughness: 0.4, isMetallic: false)]
+            )
+            bar.name = "openfuse.control.progress"
+            bar.position = SIMD3<Float>(-2.0, 0.30, -2.99)
+            bar.scale.x = Float(max(0.001, progress))
+            content.add(bar)
         }
     }
 
@@ -79,6 +184,9 @@ struct VisionImmersiveView: View {
             if let item = playback.item {
                 Text(item.title)
                     .font(.headline)
+                Text(playback.spatialAudio)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             HStack(spacing: 18) {
                 Button {
@@ -105,6 +213,7 @@ struct VisionImmersiveView: View {
                     Task {
                         playback.finish(model: model)
                         await dismissImmersiveSpace()
+                        openWindow(id: "main")
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")

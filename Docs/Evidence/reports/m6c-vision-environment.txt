@@ -1,0 +1,21 @@
+OpenFuse M6c visionOS full immersion evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; Apple Vision Pro simulator visionOS 27.2.
+
+Implementation:
+  Full immersion (.full), dark floor/frame, star points, 4×2.25m VideoMaterial
+  screen. 3D play/pause and close spheres with InputTarget/Collision and a
+  yellow progress bar. Main WindowGroup dismissed on open and reopened on
+  close/auto-close. AVAudioSession intended spatial experience
+  headTracked/medium (status).
+  OPENFUSE_IMMERSIVE_AUTOCLOSE=6 still writes resume position.
+
+Results:
+  Screenshot: full test pattern at 00:00:11:22 with HEVC Main 10 / E-AC-3 5.1,
+  star points, 3D controls, progress bar; no app window.
+  Auto-close playback.json retains position; acceptance PASS.
+  34/34 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real Vision Pro rendering/spatial audio/hand-eye tap accuracy; 3D button tap
+  not automated; audio listening.

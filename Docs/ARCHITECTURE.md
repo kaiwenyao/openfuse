@@ -103,6 +103,13 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## visionOS full immersion/3D 控件（M6c）
+
+- .full immersion；地板/边框/星点；VideoMaterial 实际出画。
+- 3D play/close sphere + InputTarget/Collision/TapGesture；3D 进度条。
+- 主窗口 dismiss/openWindow；AVAudioSession headTracked/medium intended experience。
+- 真机点击/空间音频/HDR 未验证。
+
 ## visionOS 手势/进度（M6b）
 
 - DragGesture/MagnificationGesture 平移缩放空间屏幕；finish 幂等。

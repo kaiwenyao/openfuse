@@ -12,6 +12,7 @@ final class VisionImmersiveModel: ObservableObject {
     @Published var duration: Double = 0
     @Published var isPlaying = false
     @Published var status: String?
+    @Published var spatialAudio = "未配置"
 
     private var loader: AuthenticatedAssetLoader?
     private var observer: Any?
@@ -21,6 +22,7 @@ final class VisionImmersiveModel: ObservableObject {
         stopObserver()
         self.item = item
         hasFinished = false
+        configureSpatialAudio()
         let (player, loader) = model.makePlayer(for: item)
         self.player = player
         self.loader = loader
@@ -85,6 +87,22 @@ final class VisionImmersiveModel: ObservableObject {
         }
         player.pause()
         stopObserver()
+    }
+
+    private func configureSpatialAudio() {
+        #if os(visionOS)
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .moviePlayback)
+            try session.setIntendedSpatialExperience(
+                .headTracked(soundStageSize: .medium, anchoringStrategy: .front)
+            )
+            try session.setActive(true)
+            spatialAudio = "head-tracked · medium"
+        } catch {
+            spatialAudio = "空间音频不可用：\(error.localizedDescription)"
+        }
+        #endif
     }
 
     private func stopObserver() {
