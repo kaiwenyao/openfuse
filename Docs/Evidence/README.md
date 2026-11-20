@@ -181,6 +181,8 @@
 | `89-hdr-playback.jpg` | HDR10 SDR 色调映射画面 | 播放器抓帧 |
 | `reports/m5y-hdr-playback.json` | HDR 播放属性报告 | 应用报告 |
 | `reports/m5y-hdr-playback.txt` | HDR 播放摘要 | 运行记录 |
+| `reports/m3n-corrupt-filter.json` | 损坏过滤后的库报告 | 应用报告 |
+| `reports/m3n-corrupt-filter.txt` | 损坏过滤摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

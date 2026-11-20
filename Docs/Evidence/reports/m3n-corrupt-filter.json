@@ -1,0 +1,238 @@
+{
+  "episodes": 4,
+  "generatedAt": "2026-11-20T06:41:46Z",
+  "groups": [
+    {
+      "key": "movie|openfuse fixture",
+      "primary": "OpenFuse Fixture",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-2149e60833bca0aa"
+      ]
+    },
+    {
+      "key": "series|另一部剧",
+      "primary": "另一部剧 · 本地 NFO",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-78c9d33cdfd712e6"
+      ]
+    },
+    {
+      "key": "series|示例剧",
+      "primary": "示例剧",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-ae7915b5dcf53b5f"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Movies/OpenFuse%20Fixture%20(2026)/OpenFuse%20Fixture%20(2026).mkv",
+          "id": "local-2149e60833bca0aa-main",
+          "remotePath": "",
+          "season": 0,
+          "sourceKind": "local",
+          "title": "OpenFuse Fixture",
+          "versions": [
+            {
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Movies/OpenFuse%20Fixture%20(2026)/OpenFuse%20Fixture%20(2026).mkv",
+              "id": "local-2149e60833bca0aa-main-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-2149e60833bca0aa",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "file:/Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Movies/OpenFuse Fixture (2026)/poster.jpg",
+      "seasons": [],
+      "sourceID": "local-0847d3494fb250e4",
+      "sourceKind": "local",
+      "title": "OpenFuse Fixture",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
+          "id": "local-78c9d33cdfd712e6-s1e1-a2256088",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
+              "id": "local-78c9d33cdfd712e6-s1e1-a2256088-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-78c9d33cdfd712e6",
+      "kind": "series",
+      "overridden": false,
+      "overview": "来自 tvshow.nfo 的本地简介，优先于 TMDB。",
+      "poster": "file:/Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/另一部剧/poster.jpg",
+      "seasons": [
+        {
+          "id": "local-78c9d33cdfd712e6-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "local-0847d3494fb250e4",
+      "sourceKind": "local",
+      "title": "另一部剧 · 本地 NFO",
+      "year": 2025
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E01.mkv",
+          "id": "local-ae7915b5dcf53b5f-s1e1-9b44dc06",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E01.mkv",
+              "id": "local-ae7915b5dcf53b5f-s1e1-9b44dc06-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        },
+        {
+          "episode": 2,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E02.mkv",
+          "id": "local-ae7915b5dcf53b5f-s1e2-f5538ac6",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 2 集",
+          "versions": [
+            {
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E02.mkv",
+              "id": "local-ae7915b5dcf53b5f-s1e2-f5538ac6-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-ae7915b5dcf53b5f",
+      "kind": "series",
+      "overridden": false,
+      "overview": "",
+      "poster": "file:/Users/ykw/Documents/openfuse/build/scan-while-playing/corrupt/Shows/示例剧/poster.jpg",
+      "seasons": [
+        {
+          "id": "local-ae7915b5dcf53b5f-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "local-0847d3494fb250e4",
+      "sourceKind": "local",
+      "title": "示例剧",
+      "year": 0
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Fixture",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "movie|openfuse fixture",
+      "sources": [
+        "local"
+      ],
+      "title": "OpenFuse Fixture"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|另一部剧",
+      "sources": [
+        "local"
+      ],
+      "title": "另一部剧 · 本地 NFO"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        },
+        {
+          "episode": 2,
+          "season": 1,
+          "title": "第 2 集",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|示例剧",
+      "sources": [
+        "local"
+      ],
+      "title": "示例剧"
+    }
+  ],
+  "rawEpisodes": 4,
+  "rawWorks": 3,
+  "status": "已扫描 corrupt：3 个作品",
+  "visible": [
+    "OpenFuse Fixture",
+    "另一部剧 · 本地 NFO",
+    "示例剧"
+  ],
+  "works": 3
+}

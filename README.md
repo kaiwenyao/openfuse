@@ -67,7 +67,8 @@
 - **M5w HDR10 元数据：完成本地验证。** 1080p10bit HDR10 样片经 ffprobe 识别 bt2020/smpte2084，版本/UI 显示 HDR10；SQLite 迁移 dynamic_range。实际 HDR 输出未验证；WebDAV/Jellyfin HDR 未解析。记录：[M5w 验收](Docs/M5W-HDR.md)。
 - **M5x 远程 HDR：完成本地验证。** Jellyfin VideoRange/VideoRangeType 与 WebDAV 远程 MKV ffprobe 均解析 HDR10；版本/报告显示 dynamicRange=HDR10。实际 HDR 输出未验证。记录：[M5x 验收](Docs/M5X-REMOTE-HDR.md)。
 - **M5y HDR10 播放：完成色调映射验证。** libmpv 读入 bt.2020/pq（sig-peak 4.93），spline + compute-peak 输出 SDR 彩色条正常；播放报告暴露 HDR 属性。真实 HDR 直通/显示器未验证。记录：[M5y 验收](Docs/M5Y-HDR-PLAYBACK.md)。
-- **下一项：** M5z：HDR 直通/真实显示器；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+- **M3n 损坏过滤：完成本地验证。** ffprobe 判定本地版本可播放性，Broken.Movie 不再入库；空作品逐级移除，扫描中播放仍通过。SMB/WebDAV 损坏过滤未做。记录：[M3n 验收](Docs/M3N-CORRUPT-FILTER.md)。
+- **下一项：** M5z/M3o：HDR 直通/真实显示器；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；多根本地库/SMB/WebDAV 损坏过滤。
 
 开发入口：
 
@@ -98,7 +99,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5y-hdr-playback`（基于 M5x 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3-corrupt-filter`（基于 M5y 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

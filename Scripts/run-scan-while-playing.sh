@@ -11,10 +11,10 @@ python3 Tools/make_library_fixture.py >/dev/null
 # A corrupt sibling must not abort the scan.
 cp -R build/library-fixture/* "$OUT/corrupt/"
 printf 'not a video' > "$OUT/corrupt/Movies/Broken.Movie.2026.mkv"
-OPENFUSE_SUPPORT_DIR="$OUT/support-corrupt" "$APP" --scan-local "$OUT/corrupt" \
+OPENFUSE_SUPPORT_DIR="$OUT/support-corrupt" OPENFUSE_TRAKT_TOKEN=test "$APP" --scan-local "$OUT/corrupt" \
   --library-report "$OUT/corrupt-report.json" --quit-after 3 >"$OUT/corrupt.log" 2>&1 || true
 sleep 0.5
-OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" --scan-local build/library-fixture \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test "$APP" --scan-local build/library-fixture \
   --library-report "$OUT/library.json" --quit-after 3 >"$OUT/scan.log" 2>&1 || true
 sleep 0.5
 EPISODE=$(python3 - "$OUT" <<'PY'
@@ -25,7 +25,7 @@ for item in data["items"]:
         print(item["episodes"][0]["id"]); break
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" --library-play "$EPISODE" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test "$APP" --library-play "$EPISODE" \
   --rescan-local build/library-fixture --freeze-at 12 \
   --capture "$OUT/playing.png" --capture-after 15 \
   --report "$OUT/playing.json" --quit-after 17 >"$OUT/play.log" 2>&1 || true
@@ -35,6 +35,8 @@ import json, os, sys
 out = sys.argv[1]
 errors = []
 corrupt = json.load(open(os.path.join(out, "corrupt-report.json")))
+if any("Broken" in item.get("title", "") for item in corrupt.get("items", [])):
+    errors.append("corrupt file was not filtered")
 if corrupt["works"] < 1:
     errors.append(f"corrupt scan produced no works: {corrupt['works']}")
 play = json.load(open(os.path.join(out, "playing.json")))

@@ -2,47 +2,55 @@ import Foundation
 import OpenFuseCore
 
 enum MediaProbe {
+    private struct VideoInfo {
+        var height: String?
+        var dynamicRange: String?
+        var playable: Bool?
+    }
+
     static func enrichLocalResolutions(_ library: ScannedLibrary) -> ScannedLibrary {
         var result = library
-        for workIndex in result.works.indices {
-            if let movie = result.works[workIndex].movie {
-                var updated = movie
-                updated.versions = movie.versions.map { version in
-                    var copy = version
-                    if let path = copy.fileURL.flatMap(URL.init(string:)) {
-                        let probe = probeVideo(path)
-                        if copy.resolution == nil { copy.resolution = probe.height }
-                        if copy.dynamicRange == nil { copy.dynamicRange = probe.dynamicRange }
-                    }
-                    return copy
-                }
-                result.works[workIndex].movie = updated
+        var works: [ScannedWork] = []
+        for var work in result.works {
+            if var movie = work.movie {
+                movie.versions = filtered(movie.versions)
+                work.movie = movie.versions.isEmpty ? nil : movie
             }
-            for seasonIndex in result.works[workIndex].seasons.indices {
-                for episodeIndex in result.works[workIndex].seasons[seasonIndex].episodes.indices {
-                    var episode = result.works[workIndex].seasons[seasonIndex].episodes[episodeIndex]
-                    episode.versions = episode.versions.map { version in
-                        var copy = version
-                        if let path = copy.fileURL.flatMap(URL.init(string:)) {
-                            let probe = probeVideo(path)
-                            if copy.resolution == nil { copy.resolution = probe.height }
-                            if copy.dynamicRange == nil { copy.dynamicRange = probe.dynamicRange }
-                        }
-                        return copy
-                    }
-                    result.works[workIndex].seasons[seasonIndex].episodes[episodeIndex] = episode
+            work.seasons = work.seasons.compactMap { season in
+                var season = season
+                season.episodes = season.episodes.compactMap { episode in
+                    var episode = episode
+                    episode.versions = filtered(episode.versions)
+                    return episode.versions.isEmpty ? nil : episode
                 }
+                return season.episodes.isEmpty ? nil : season
+            }
+            if work.movie != nil || !work.seasons.isEmpty {
+                works.append(work)
             }
         }
+        result.works = works
         return result
     }
 
-    private static func probeVideo(_ url: URL) -> (height: String?, dynamicRange: String?) {
+    private static func filtered(_ versions: [ScannedVersion]) -> [ScannedVersion] {
+        versions.compactMap { version in
+            guard let path = version.fileURL.flatMap(URL.init(string:)) else { return version }
+            let probe = probeVideo(path)
+            if probe.playable == false { return nil }
+            var copy = version
+            if copy.resolution == nil { copy.resolution = probe.height }
+            if copy.dynamicRange == nil { copy.dynamicRange = probe.dynamicRange }
+            return copy
+        }
+    }
+
+    private static func probeVideo(_ url: URL) -> VideoInfo {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        guard size > 1_048_576 else { return (nil, nil) }
+        guard size > 1024 else { return VideoInfo(playable: false) }
         let candidates = ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe", "/usr/bin/ffprobe"]
         guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            return (nil, nil)
+            return VideoInfo()
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -57,14 +65,14 @@ enum MediaProbe {
             try process.run()
             process.waitUntilExit()
         } catch {
-            return (nil, nil)
+            return VideoInfo()
         }
         guard process.terminationStatus == 0,
               let data = try? pipe.fileHandleForReading.readToEnd(),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let streams = object["streams"] as? [[String: Any]],
               let stream = streams.first else {
-            return (nil, nil)
+            return VideoInfo(playable: false)
         }
         var height: String?
         if let value = stream["height"] as? Int, value > 0 {
@@ -78,6 +86,6 @@ enum MediaProbe {
         } else if transfer == "arib-std-b67" {
             dynamicRange = "HLG"
         }
-        return (height, dynamicRange)
+        return VideoInfo(height: height, dynamicRange: dynamicRange, playable: true)
     }
 }

@@ -37,4 +37,4 @@ M5x 只把 HDR 元数据入库。本轮配置 libmpv 对 HDR10 做 SDR 色调映
 
 ## 下一项
 
-M5z：HDR 直通/真实显示器；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+本地损坏文件过滤已在 [M3n 验收](Docs/M3N-CORRUPT-FILTER.md) 完成。剩余 M5z/M3o：HDR 直通/真实显示器、音频听测、真实 SMB3/Trakt、AirPlay 实机、CloudKit、多根本地库/SMB/WebDAV 损坏过滤。

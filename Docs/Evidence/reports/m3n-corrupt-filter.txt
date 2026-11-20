@@ -1,0 +1,20 @@
+OpenFuse M3n corrupt-file filtering evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: build/library-fixture + Broken.Movie.2026.mkv (plain text).
+
+Implementation:
+  MediaProbe probes every local version with ffprobe; missing/zero video stream
+  or ffprobe failure removes the version; empty movies/episodes/seasons/works
+  are dropped. Missing ffprobe keeps files (unknown, not corrupt).
+  Existing size<=1KB files are treated unplayable.
+
+Results:
+  Corrupt scan: 3 works, titles OpenFuse Fixture / 另一部剧 · 本地 NFO / 示例剧;
+  Broken.Movie absent. Scripts/run-scan-while-playing.sh PASS (scan while
+  playing position 12s and corrupt scan survived).
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  ffprobe transient failures could over-filter; SMB/WebDAV corrupt files not
+  filtered here; very small valid clips; audio.

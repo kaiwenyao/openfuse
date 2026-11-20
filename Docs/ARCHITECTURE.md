@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## 本地损坏文件过滤（M3n）
+
+- MediaProbe ffprobe 返回 playable；过滤损坏版本并移除空 movie/episode/season/work。
+- ≤1KB 判损坏；ffprobe 缺失保留；瞬时失败可能误删。
+- SMB/WebDAV 损坏过滤未做。
+
 ## HDR10 播放/色调映射（M5y）
 
 - MPVEngine tone-mapping=spline、hdr-compute-peak=yes、target-peak=auto。

@@ -413,3 +413,11 @@
 | HDR10 解码 | MacBook Pro M2 Pro／macOS 27.2.1 | bt2020/smpte2084 | Infuse 未安装 | primaries bt.2020、gamma pq、sig-peak 4.926 | Evidence 89、`reports/m5y-hdr-playback.json` | 通过 |
 | SDR tone map | 同上 | 同上 | 待采样 | spline/compute-peak，截图正常 | 同上 | 通过 |
 | HDR 直通/显示器 | 同上 | 真实 HDR 屏 | 待采样 | 未验证 | — | 待验证 |
+
+### M3n 损坏过滤执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 损坏过滤 | MacBook Pro M2 Pro／macOS 27.2.1 | 本地库 + 文本 .mkv | Infuse 未安装 | Broken 不入库；3 个正常作品 | `reports/m3n-corrupt-filter.json` | 通过 |
+| 扫描中播放 | 同上 | 同上 | 待采样 | position 12s 继续；损坏扫描不崩 | 脚本 PASS | 通过 |
+| 远程损坏 | 同上 | SMB/WebDAV | 待采样 | 未过滤 | — | 待验证 |
