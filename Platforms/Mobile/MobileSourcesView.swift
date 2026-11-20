@@ -117,7 +117,7 @@ struct MobileSourcesView: View {
                 }
 
                 Section("说明") {
-                    Text("凭据存入 iOS Keychain；密码/token 不写入 sources.json。WebDAV MP4/MOV 走认证资源加载器；Jellyfin MP4 直连，MKV 走服务器 HLS 转码 URL。")
+                    Text("凭据存入 iOS Keychain；密码/token 不写入 sources.json。WebDAV 的 MKV 由 libmpv 直放（外挂 ASS、E-AC-3 下混），MP4/MOV 与 Jellyfin HLS 走 AVPlayer。扫描整个根目录较慢，可把地址填到剧集或季目录（例如 …/电视剧/Attack on Titan (2013)/Season 03）来加快。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

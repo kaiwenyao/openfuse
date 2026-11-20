@@ -8,7 +8,7 @@ struct MobileAboutView: View {
         NavigationStack {
             Form {
                 Section("播放") {
-                    LabeledContent("引擎", value: "AVPlayer")
+                    LabeledContent("引擎", value: "libmpv + AVPlayer")
                     LabeledContent("容器", value: "MP4 / MOV")
                     LabeledContent("MKV", value: "待接入 libmpv")
                     LabeledContent("音频", value: "AAC / 立体声")

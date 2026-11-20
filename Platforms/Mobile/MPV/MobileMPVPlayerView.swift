@@ -10,6 +10,7 @@ struct MobileMPVPlayerView: View {
 
     let item: MobilePlaybackItem
     @StateObject private var engine = MobileMPVEngine()
+    @State private var activeItem: MobilePlaybackItem?
     @State private var didStart = false
     @State private var lastSaved: TimeInterval = 0
 
@@ -21,7 +22,7 @@ struct MobileMPVPlayerView: View {
             VStack {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(item.title)
+                        Text((activeItem ?? item).title)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
@@ -132,7 +133,23 @@ struct MobileMPVPlayerView: View {
     private func startIfNeeded() {
         guard !didStart else { return }
         didStart = true
-        var sidecars = item.sidecarSubtitles.compactMap { track -> (String, URL, String?)? in
+        engine.onEndOfFile = { advanceToNextEpisode() }
+        play(item)
+    }
+
+    private func advanceToNextEpisode() {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] != "0" else { return }
+        let finished = activeItem ?? item
+        save()
+        Task { @MainActor in
+            guard let next = await model.nextEpisodeItem(after: finished) else { return }
+            activeItem = next
+            play(next)
+        }
+    }
+
+    private func play(_ playback: MobilePlaybackItem) {
+        var sidecars = playback.sidecarSubtitles.compactMap { track -> (String, URL, String?)? in
             guard let url = track.url else { return nil }
             return (track.displayName, url, track.language)
         }
@@ -140,14 +157,15 @@ struct MobileMPVPlayerView: View {
            index > 0, index <= sidecars.count {
             sidecars = [sidecars[index - 1]]
         }
-        engine.start(url: item.url, headers: item.httpHeaders,
-                     startAt: item.resumePosition ?? 0,
-                     externalSubtitles: sidecars)
+        engine.reopen(url: playback.url, headers: playback.httpHeaders,
+                      startAt: playback.resumePosition ?? 0,
+                      externalSubtitles: sidecars)
     }
 
     private func save() {
         guard engine.duration > 0 else { return }
+        let playback = activeItem ?? item
         let finished = ResumePolicy.isFinished(position: engine.position, duration: engine.duration)
-        model.recordProgress(item: item, duration: engine.duration, position: engine.position, finished: finished)
+        model.recordProgress(item: playback, duration: engine.duration, position: engine.position, finished: finished)
     }
 }

@@ -38,6 +38,8 @@ final class MobileMPVEngine: ObservableObject {
     @Published var audioTracks: [MobileMPVTrack] = []
     @Published var selectedSubtitleID: Int64?
     @Published var selectedAudioID: Int64?
+    /// Called when the file reaches its end (mpv `end-file`), used to load the next episode.
+    var onEndOfFile: (() -> Void)?
 
     let metalLayer = MPVMetalLayer()
     private(set) var mpv: OpaquePointer?
@@ -46,6 +48,7 @@ final class MobileMPVEngine: ObservableObject {
     private var didApplyStart = false
     private var pendingSubtitles: [(title: String, url: URL, language: String?)] = []
     private var didAddSubtitles = false
+    private var didSignalEnd = false
 
     init() {
         metalLayer.contentsScale = UIScreen.main.nativeScale
@@ -95,6 +98,7 @@ final class MobileMPVEngine: ObservableObject {
         mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG)
         mpv_observe_property(mpv, 0, "track-list", MPV_FORMAT_NONE)
         mpv_observe_property(mpv, 0, "eof-reached", MPV_FORMAT_FLAG)
+        mpv_observe_property(mpv, 0, "eof-reached", MPV_FORMAT_FLAG)
         mpv_set_wakeup_callback(mpv, { context in
             guard let context else { return }
             let engine = Unmanaged<MobileMPVEngine>.fromOpaque(context).takeUnretainedValue()
@@ -112,6 +116,28 @@ final class MobileMPVEngine: ObservableObject {
     }
 
     // MARK: - control
+
+    /// Tears the mpv instance down and starts a new file (used by auto-advance).
+    func reopen(url: URL, headers: [String: String], startAt: TimeInterval,
+                externalSubtitles: [(title: String, url: URL, language: String?)] = []) {
+        if let mpv {
+            mpv_terminate_destroy(mpv)
+            self.mpv = nil
+        }
+        isReady = false
+        position = 0
+        duration = 0
+        isPaused = false
+        subtitleTracks = []
+        audioTracks = []
+        selectedSubtitleID = nil
+        selectedAudioID = nil
+        didApplyStart = false
+        didAddSubtitles = false
+        didSignalEnd = false
+        pendingSubtitles = []
+        start(url: url, headers: headers, startAt: startAt, externalSubtitles: externalSubtitles)
+    }
 
     func togglePause() { setFlag("pause", !isPaused) }
     func pause() { setFlag("pause", true) }
@@ -222,9 +248,17 @@ final class MobileMPVEngine: ObservableObject {
                             self.didApplyStart = true
                             self.seek(to: self.startAt)
                         }
+                        if let raw = ProcessInfo.processInfo.environment["OPENFUSE_TEST_MPV_SEEK"],
+                           let seconds = Double(raw), self.position < seconds {
+                            self.seek(to: seconds)
+                        }
                     }
                 case MPV_EVENT_END_FILE:
-                    Task { @MainActor in self.isReady = false }
+                    let reason = event.pointee.data.map { UnsafePointer<mpv_event_end_file>(OpaquePointer($0))?.pointee.reason }
+                    Task { @MainActor in
+                        self.isReady = false
+                        if reason == MPV_END_FILE_REASON_EOF { self.onEndOfFile?() }
+                    }
                 case MPV_EVENT_LOG_MESSAGE:
                     if let message = UnsafeMutablePointer<mpv_event_log_message>(OpaquePointer(event.pointee.data)) {
                         let text = String(cString: message.pointee.text)
@@ -259,6 +293,16 @@ final class MobileMPVEngine: ObservableObject {
             guard property.format == MPV_FORMAT_FLAG, let data = property.data else { return }
             let value = data.assumingMemoryBound(to: Int32.self).pointee != 0
             Task { @MainActor in self.isPaused = value }
+        case "eof-reached":
+            guard property.format == MPV_FORMAT_FLAG, let data = property.data else { return }
+            let reached = data.assumingMemoryBound(to: Int32.self).pointee != 0
+            if reached {
+                Task { @MainActor in
+                    guard !self.didSignalEnd else { return }
+                    self.didSignalEnd = true
+                    self.onEndOfFile?()
+                }
+            }
         case "track-list":
             refreshTracks()
         case "eof-reached":

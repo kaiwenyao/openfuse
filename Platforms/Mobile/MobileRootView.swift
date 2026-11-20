@@ -281,7 +281,7 @@ struct MobileRootView: View {
             Text("移动端首版")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("AVPlayer · 本地 MP4/MOV · WebDAV 认证 MP4 · Jellyfin HLS 转码 · 字幕/音轨待接入")
+            Text("libmpv 直放 MKV（HEVC / 外挂 ASS / E-AC-3 下混）· AVPlayer 播 HLS 与 MP4 · 字幕与音轨可在播放器里切换")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
