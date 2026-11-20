@@ -31,7 +31,8 @@
 - **M4h 移动端远程实际播放：完成。** iOS 模拟器添加/扫描 WebDAV 与 Jellyfin 并实际播放：WebDAV Basic Auth MP4 HUD 11.0/20s；Jellyfin 选 MKV 后走 HLS，HUD 9.0/60.0s。测试 bootstrap 用内存凭据绕过未签名模拟器 Keychain；生产仍走 Keychain。记录：[M4h 移动远程验收](Docs/M4H-MOBILE-REMOTE.md)。
 - **M3j 本地分辨率：完成。** MP4 用 AVFoundation、MKV 用 Mac ffprobe 补齐 1080p；画质筛选「1080p」现显示本地电影与两部剧。记录：[M3j 分辨率验收](Docs/M3J-RESOLUTION.md)。
 - **M3k 流分辨率：完成。** WebDAV MP4 用认证 loader 读 720p；Jellyfin 扫描 PlaybackInfo 得到单集 1080p；1080p 筛选现覆盖 Jellyfin 剧集，720p 覆盖 WebDAV MP4。记录：[M3k 流分辨率验收](Docs/M3K-STREAM-RESOLUTION.md)。
-- **下一项：** M4i：tvOS runtime 实际启动与焦点截图；移动端字幕/音轨/音频听测；WebDAV MKV 分辨率；CloudKit/Trakt；T07 其他场景。
+- **M4i 移动轨道与 tvOS：完成构建/运行验证。** 移动样本升级为 HEVC Main10 + E-AC-3 5.1 + AAC + 简繁 mov_text；播放器有音轨/字幕菜单，HUD 实测 E-AC-3/简体选中。tvOS 27.2 runtime 安装后 Apple TV 模拟器实际启动、焦点网格与全屏播放（帧 5.625s）。字幕文字与音频输出未确认。记录：[M4i 验收](Docs/M4I-TRACKS-TVOS.md)。
+- **下一项：** M4j：字幕自绘（SRT/ASS）与音频听测；visionOS runtime；远程来源新样本回归；CloudKit/Trakt；M3 T07/WebDAV MKV 分辨率。
 
 开发入口：
 
@@ -61,7 +62,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m3k-stream-resolution`（基于 M3j 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4i-tracks`（基于 M3k 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

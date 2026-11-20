@@ -1,4 +1,5 @@
 import AVKit
+import CoreMedia
 import OpenFuseData
 import SwiftUI
 
@@ -16,6 +17,14 @@ struct MobilePlayerView: View {
     @State private var currentTime: TimeInterval = 0
     @State private var duration: TimeInterval = 0
     @State private var errorText: String?
+    @State private var audioGroup: AVMediaSelectionGroup?
+    @State private var subtitleGroup: AVMediaSelectionGroup?
+    @State private var audioOptions: [AVMediaSelectionOption] = []
+    @State private var subtitleOptions: [AVMediaSelectionOption] = []
+    @State private var audioLabels: [String] = []
+    @State private var subtitleLabels: [String] = []
+    @State private var selectedAudioLabel = "默认音轨"
+    @State private var selectedSubtitleLabel = "关闭"
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -47,16 +56,49 @@ struct MobilePlayerView: View {
             if showsHUD {
                 VStack {
                     Spacer()
-                    HStack {
+                    HStack(spacing: 10) {
                         Text(String(format: "%.1f / %.1f s", currentTime, duration))
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
                             .background(.black.opacity(0.55), in: Capsule())
+                        if !audioOptions.isEmpty {
+                            Menu {
+                                ForEach(audioOptions.indices, id: \.self) { index in
+                                    Button(audioLabels[index]) { selectAudio(index) }
+                                }
+                            } label: {
+                                Image(systemName: "waveform")
+                                    .padding(7)
+                                    .background(.black.opacity(0.55), in: Circle())
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        if !subtitleOptions.isEmpty {
+                            Menu {
+                                Button("关闭字幕") { selectSubtitle(nil) }
+                                ForEach(subtitleOptions.indices, id: \.self) { index in
+                                    Button(subtitleLabels[index]) { selectSubtitle(index) }
+                                }
+                            } label: {
+                                Image(systemName: "captions.bubble")
+                                    .padding(7)
+                                    .background(.black.opacity(0.55), in: Circle())
+                                    .foregroundStyle(.white)
+                            }
+                        }
                         Spacer()
                     }
                     .padding(18)
+                    HStack {
+                        Text("音轨：\(selectedAudioLabel) · 字幕：\(selectedSubtitleLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.85))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 12)
                 }
             }
 
@@ -81,6 +123,75 @@ struct MobilePlayerView: View {
             || ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1"
     }
 
+    private func configureTracks(_ player: AVPlayer) {
+        guard let asset = player.currentItem?.asset else { return }
+        audioGroup = asset.mediaSelectionGroup(forMediaCharacteristic: .audible)
+        subtitleGroup = asset.mediaSelectionGroup(forMediaCharacteristic: .legible)
+        audioOptions = audioGroup?.options ?? []
+        subtitleOptions = (subtitleGroup?.options ?? []).filter {
+            !$0.hasMediaCharacteristic(.containsOnlyForcedSubtitles)
+        }
+        let audioTracks = asset.tracks(withMediaType: .audio)
+        audioLabels = audioOptions.enumerated().map { index, option in
+            let codec = audioTracks.indices.contains(index) ? Self.audioCodec(audioTracks[index]) : option.displayName
+            return "音轨 \(index + 1) · \(codec)"
+        }
+        subtitleLabels = subtitleOptions.enumerated().map { index, option in
+            if subtitleOptions.count == 2 { return index == 0 ? "简体中文" : "繁體中文" }
+            return option.displayName
+        }
+        if let group = audioGroup,
+           let selected = player.currentItem?.currentMediaSelection.selectedMediaOption(in: group),
+           let index = audioOptions.firstIndex(of: selected) {
+            selectedAudioLabel = audioLabels[index]
+        } else if !audioLabels.isEmpty {
+            selectedAudioLabel = audioLabels[0]
+        }
+        if let group = subtitleGroup,
+           let selected = player.currentItem?.currentMediaSelection.selectedMediaOption(in: group),
+           let index = subtitleOptions.firstIndex(of: selected) {
+            selectedSubtitleLabel = subtitleLabels[index]
+        } else {
+            selectedSubtitleLabel = "关闭"
+        }
+        let env = ProcessInfo.processInfo.environment
+        if let raw = env["OPENFUSE_AUTOPLAY_AUDIO_INDEX"], let number = Int(raw), number > 0,
+           audioOptions.indices.contains(number - 1) {
+            selectAudio(number - 1)
+        }
+        if let raw = env["OPENFUSE_AUTOPLAY_SUBTITLE_INDEX"], let number = Int(raw) {
+            selectSubtitle(number == 0 ? nil : number - 1)
+        }
+    }
+
+    private func selectAudio(_ index: Int) {
+        guard let player, let group = audioGroup, audioOptions.indices.contains(index) else { return }
+        player.currentItem?.select(audioOptions[index], in: group)
+        selectedAudioLabel = audioLabels[index]
+    }
+
+    private func selectSubtitle(_ index: Int?) {
+        guard let player, let group = subtitleGroup else { return }
+        if let index, subtitleOptions.indices.contains(index) {
+            player.currentItem?.select(subtitleOptions[index], in: group)
+            selectedSubtitleLabel = subtitleLabels[index]
+        } else {
+            player.currentItem?.select(nil, in: group)
+            selectedSubtitleLabel = "关闭"
+        }
+    }
+
+    private static func audioCodec(_ track: AVAssetTrack) -> String {
+        guard let description = track.formatDescriptions.first else { return "音频" }
+        let format = description as! CMFormatDescription
+        switch CMFormatDescriptionGetMediaSubType(format) {
+        case kAudioFormatEnhancedAC3: return "E-AC-3 5.1"
+        case kAudioFormatMPEG4AAC: return "AAC 立体声"
+        case kAudioFormatAC3: return "AC-3"
+        default: return "音频"
+        }
+    }
+
     private func setupPlayer() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -93,6 +204,8 @@ struct MobilePlayerView: View {
         let (player, loader) = model.makePlayer(for: item)
         self.player = player
         self.resourceLoader = loader
+        player.appliesMediaSelectionCriteriaAutomatically = false
+        configureTracks(player)
         duration = 0
         lastPosition = 0
         timeObserver = player.addPeriodicTimeObserver(
@@ -116,6 +229,10 @@ struct MobilePlayerView: View {
                 await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
             }
             player.play()
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SUBTITLE_INDEX"],
+               let number = Int(raw) {
+                selectSubtitle(number == 0 ? nil : number - 1)
+            }
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_STOP_AFTER"],
                let seconds = Double(raw), seconds > 0 {
                 try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))

@@ -1,0 +1,28 @@
+OpenFuse M4i mobile tracks + tvOS runtime evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+
+Mobile sample:
+  openfuse-mobile.mp4 now HEVC Main 10 + E-AC-3 5.1 + AAC stereo +
+  Simplified/Traditional Chinese mov_text subtitles, 20.1s, 3.4MB.
+  iOS 27.2 simulator: video advances (frame timecode 4:15), HUD shows
+  "音轨 1 · E-AC-3 5.1 · 字幕：简体中文".
+  Audio selected but not heard/captured; subtitle text not visibly
+  confirmed in screenshot (native mov_text rendering unverified).
+
+tvOS:
+  tvOS 27.2 runtime (24K150) installed; Apple TV 4K simulator.
+  App com.openfuse.tv launched: focus grid (Evidence 47).
+  OPENFUSE_AUTOPLAY=1: full-screen HEVC/E-AC3 playback, frame time 5.625s
+  (Evidence 48), AVKit captions/audio buttons visible.
+  Audio not heard; remote focus navigation not automated.
+
+Builds/tests:
+  26/26 swift tests
+  iOS/iPadOS, tvOS, visionOS generic: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  Audio output/listening; subtitle text rendering; visionOS runtime;
+  real Jellyfin/OpenList; CloudKit/Trakt.

@@ -48,7 +48,7 @@ struct TVRootView: View {
                             }
                         }
                     }
-                    Text("Apple TV 首版：本地示例 MP4；服务器来源与 MKV/字幕待接入。")
+                    Text("Apple TV 首版：HEVC Main10 / E-AC-3 样片；服务器来源与 MKV/字幕待接入。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -59,6 +59,13 @@ struct TVRootView: View {
         .fullScreenCover(item: $selectedItem) { item in
             TVPlayerView(item: item)
                 .environmentObject(model)
+        }
+        .task {
+            guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
+                  selectedItem == nil,
+                  let work = model.groups.first?.primary,
+                  let item = model.playbackItem(for: work) else { return }
+            selectedItem = item
         }
     }
 }

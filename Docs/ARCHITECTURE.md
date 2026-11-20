@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 移动端音轨/字幕轨道（M4i）
+
+- 新 `openfuse-mobile.mp4`：HEVC Main10 + E-AC-3 5.1 + AAC + 简繁 mov_text，20.1s。
+- `MobilePlayerView` 用 AVMediaSelectionGroup 枚举 audible/legible；过滤 forced 字幕；菜单选择音轨/字幕；HUD 测试显示当前选择。
+- tvOS 27.2 runtime 实际启动 Apple TV 模拟器；`TVRootView` 焦点网格 + autoplay 全屏播放。
+- 未确认：字幕文字实际渲染、音频输出、visionOS runtime。
+
 ## 流分辨率探测（M3k）
 
 - WebDAV MP4/M4V/MOV：`AuthenticatedAssetLoader` + AVAsset video track naturalSize；MKV 跳过。

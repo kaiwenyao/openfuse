@@ -350,6 +350,38 @@ case "jellyfin-hls":
     }
     RunLoop.main.run(until: Date().addingTimeInterval(12))
     exit(1)
+case "track-list":
+    let raw = arguments[2]
+    let url = raw.hasPrefix("http") ? URL(string: raw)! : URL(fileURLWithPath: raw)
+    let asset = AVURLAsset(url: url)
+    Task {
+        var payload: [String: Any] = ["url": url.absoluteString]
+        do {
+            let audio = try await asset.loadTracks(withMediaType: .audio)
+            let subtitles = try await asset.loadTracks(withMediaType: .subtitle)
+            payload["audioTracks"] = audio.count
+            payload["subtitleTracks"] = subtitles.count
+            if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .audible) {
+                payload["audible"] = group.options.map { option in
+                    ["name": option.displayName, "locale": option.locale?.identifier ?? ""]
+                }
+            }
+            if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .legible) {
+                payload["legible"] = group.options.map { option in
+                    ["name": option.displayName, "locale": option.locale?.identifier ?? ""]
+                }
+            }
+            let duration = try await asset.load(.duration)
+            payload["duration"] = duration.seconds
+        } catch {
+            payload["error"] = error.localizedDescription
+        }
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        print(String(data: data, encoding: .utf8)!)
+        exit(0)
+    }
+    RunLoop.main.run(until: Date().addingTimeInterval(8))
+    exit(1)
 case "jellyfin":
     let base = arguments[2]
     let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"
