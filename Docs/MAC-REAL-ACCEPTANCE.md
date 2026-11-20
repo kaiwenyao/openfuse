@@ -77,6 +77,19 @@ swift test
 
 证据：`01-jellyfin-libraries.jpg`、`02-jellyfin-season3.jpg`、`03-jellyfin-movie-detail.jpg`、`04-jellyfin-zh-hant-305s.jpg`。
 
+## 3b. 生产路径：Keychain 存密码 + 退出应用后续播（第三轮补测）
+
+这一节走的是正式使用路径，不使用“仅本次会话”：
+
+1. 窗口内添加 WebDAV 来源，**不勾**“仅本次会话”。`security find-generic-password -s com.openfuse.webdav -a 589461f02c2ceef6` 有条目，support 目录无 `credentials.json`。
+2. 播放 S03E13 → 菜单「播放 → 字幕 → 中文（繁體）」→「跳转到时间」10:00 →「返回来源」回到 Season 03。
+   本地记录：`position=612.946`、`preferredSubtitleTrackID=…zh-Hant.ass`。
+3. **完全退出应用**（⌘Q，进程归零）后重新启动：来源仍在（密码从 Keychain 读取，未再次输入），首页“继续观看”卡片显示 `10:13 / 23:57`。
+4. 点卡片续播：报告 `position=618.7`、`selectedSubtitle=…zh-Hant.ass`、`videoCodec=hevc / Main 10`。
+5. 收尾：删除来源后 `security find-generic-password` 返回 `44`（条目已删），`sources.json` 为空，support 目录仍无明文文件。
+
+来源 id 由（服务器地址 + 用户名）确定，重复添加同一来源会得到同一个 id，因此旧观看记录能继续对上。
+
 ## 4. 《性爱自修室》S01E01：HEVC Main 10 + 唯一 E-AC-3 5.1
 
 WebDAV `…/电视剧/Sex Education (2019)/Season 01/Sex Education (2019) - S01E01 - Episode 1 (1080p NF WEBRip x265 t3nzin).mkv`：
