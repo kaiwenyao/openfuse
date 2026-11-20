@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## Jellyfin 移动端远程播放（M4e）
+
+- `MobileLibraryModel.remotePlaybackItem`：Keychain token → PlaybackInfo → 优先匹配版本 mediaSourceID → streamURL + api_key → `jellyfin://source/item/mediaSource` 续播键；loader 带 `X-Emby-Token`/MediaBrowser Authorization。
+- iPhone/iPad 详情「播放服务器版本」异步获取；失败提示 MKV/HEVC 需转码/libmpv。
+- 夹具 `jellyfin_fixture.py --mobile-sample` 增加 MP4 movie-mobile；测试 auth→PlaybackInfo→token URL→loader→AVPlayer 6s 5.866s。
+- 未做：Jellyfin HLS 转码、MKV/libmpv、字幕/音轨、tvOS/visionOS 调用该路径。
+
 ## 认证资源加载与移动端远程播放（M4d）
 
 - `AuthenticatedAssetLoader`（OpenFuseData）：`openfuse-auth://` 自定义 scheme + AVAssetResourceLoader；HEAD 取长度/类型/Accept-Ranges，GET 带 Range 与 Authorization/X-Emby-Token，处理 206/200、偏移与取消。

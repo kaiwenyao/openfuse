@@ -307,6 +307,8 @@ struct MobileDetailView: View {
     @EnvironmentObject private var model: MobileLibraryModel
     let work: LibraryWork
     @State private var selectedItem: MobilePlaybackItem?
+    @State private var isLoadingRemote = false
+    @State private var remoteError: String?
 
     private var currentWork: LibraryWork { model.works.first { $0.id == work.id } ?? work }
     private var episodes: [LibraryEpisode] { model.episodes(for: currentWork.id) }
@@ -347,8 +349,33 @@ struct MobileDetailView: View {
                                     .foregroundStyle(.black)
                             }
                             .buttonStyle(.plain)
+                        } else if currentWork.sourceKind == "jellyfin" {
+                            Button {
+                                isLoadingRemote = true
+                                remoteError = nil
+                                Task {
+                                    if let item = await model.remotePlaybackItem(for: currentWork) {
+                                        selectedItem = item
+                                    } else {
+                                        remoteError = "Jellyfin 未返回可播放流；MKV/HEVC 需要转码或 libmpv。"
+                                    }
+                                    isLoadingRemote = false
+                                }
+                            } label: {
+                                Label(isLoadingRemote ? "正在获取…" : "播放服务器版本", systemImage: "play.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 10)
+                                    .background(.cyan, in: Capsule())
+                                    .foregroundStyle(.black)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isLoadingRemote)
+                            if let remoteError {
+                                Text(remoteError).font(.caption).foregroundStyle(.orange)
+                            }
                         } else if currentWork.sourceKind != "local" {
-                            Text("Jellyfin 远程播放需转码/代理；WebDAV 仅 MP4/MOV 可播，MKV 待 libmpv。")
+                            Text("WebDAV 仅 MP4/MOV 可播，MKV 待 libmpv。")
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                         } else {

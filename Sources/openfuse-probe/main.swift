@@ -249,6 +249,63 @@ case "authed-play":
     player.pause()
     _ = loader
     exit(seconds > 0.3 ? 0 : 1)
+case "jellyfin-remote":
+    let base = URL(string: arguments[2])!
+    let user = arguments[3]
+    let password = arguments[4]
+    let itemID = arguments[5]
+    let source = JellyfinSource(name: "fixture", baseURL: base, username: user)
+    Task { @MainActor in
+        var payload: [String: Any] = [:]
+        do {
+            let session = try await JellyfinClient.authenticate(source: source, password: password)
+            var authenticated = source
+            authenticated.userID = session.userID
+            authenticated.serverID = session.serverID
+            let client = JellyfinClient(source: authenticated, token: session.accessToken)
+            let info = try await client.playbackInfo(itemID: itemID)
+            guard let media = info.mediaSources.first,
+                  let stream = client.streamURL(itemID: itemID, mediaSource: media) else {
+                throw NSError(domain: "probe", code: 1, userInfo: [NSLocalizedDescriptionKey: "no media source"])
+            }
+            var components = URLComponents(url: stream, resolvingAgainstBaseURL: false)
+            var query = components?.queryItems ?? []
+            query.append(URLQueryItem(name: "api_key", value: session.accessToken))
+            components?.queryItems = query
+            let url = components?.url ?? stream
+            let loader = AuthenticatedAssetLoader(
+                url: url,
+                headers: [
+                    "X-Emby-Token": session.accessToken,
+                    "Authorization": "MediaBrowser Token=\"\(session.accessToken)\"",
+                ]
+            )
+            let asset = loader.makeAsset()
+            let duration = try await asset.load(.duration)
+            let tracks = try await asset.loadTracks(withMediaType: .video)
+            let item = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: item)
+            player.play()
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            payload = [
+                "duration": duration.seconds,
+                "videoTracks": tracks.count,
+                "position": player.currentTime().seconds.isFinite ? player.currentTime().seconds : 0,
+                "status": item.status.rawValue,
+                "error": item.error?.localizedDescription ?? "",
+                "url": url.absoluteString,
+            ]
+            player.pause()
+            _ = loader
+        } catch {
+            payload = ["error": error.localizedDescription]
+        }
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        print(String(data: data, encoding: .utf8)!)
+        exit(0)
+    }
+    RunLoop.main.run(until: Date().addingTimeInterval(12))
+    exit(1)
 case "jellyfin":
     let base = arguments[2]
     let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"

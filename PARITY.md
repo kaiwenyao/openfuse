@@ -145,6 +145,14 @@
 | 错误密码 | 同上 | 同上 | — | asset load 报错 | 测试脚本 | 通过 |
 | 移动端 UI/播放 | 同上 | iOS/tvOS/visionOS | 待采样 | Simulator/device 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
+### M4e Jellyfin 移动远程执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jellyfin 远程 MP4 | MacBook Pro M2 Pro／macOS 27.2.1 | 夹具 movie-mobile，H.264/AAC 20s | Infuse 未安装 | 认证/PlaybackInfo/api_key URL/loader；AVAsset 20s/1 轨；AVPlayer 6s 到 5.866s | `reports/m4e-jellyfin-remote.json`、`m4e-jellyfin-remote.txt` | 通过（桌面同链路） |
+| 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | Simulator/device 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
+| MKV/字幕/音轨 | 同上 | 现有 MKV 夹具 | 待采样 | 未接转码/libmpv/字幕/音轨 | — | 待验证/未完成 |
+
 
 
 

@@ -41,6 +41,8 @@ LOG_LOCK = threading.Lock()
 POSITIONS: dict[str, int] = {}
 
 RUN_TIME_TICKS = 600_000_000
+MOBILE_SAMPLE = False
+MOBILE_MP4 = os.path.abspath("Fixtures/mobile/openfuse-mobile.mp4")
 
 
 def setup_posters() -> None:
@@ -125,13 +127,22 @@ def children(parent: str | None) -> list[dict]:
     if parent is None:
         return views()
     if parent == "lib-movies":
-        return [
+        movies = [
             item(
                 "movie-1", "OpenFuse Fixture (2026)", "Movie", parent=parent, year=2026,
                 overview="OpenFuse 自制的 HEVC Main 10、E-AC-3 5.1 与中日双语 ASS 测试片。",
                 image_tag="movie", run_time=RUN_TIME_TICKS,
             )
         ]
+        if MOBILE_SAMPLE:
+            movies.append(
+                item(
+                    "movie-mobile", "OpenFuse Mobile Sample (2026)", "Movie", parent=parent, year=2026,
+                    overview="H.264/AAC 20 秒样片，用于移动端 AVPlayer 远程播放测试。",
+                    image_tag="movie", run_time=20 * 10_000_000,
+                )
+            )
+        return movies
     if parent == "lib-tv":
         return [
             item(
@@ -191,6 +202,27 @@ def media_streams() -> list[dict]:
 
 
 def playback_info(item_id: str) -> dict:
+    if item_id == "movie-mobile":
+        return {
+            "PlaySessionId": "play-" + os.urandom(4).hex(),
+            "MediaSources": [
+                {
+                    "Id": "ms-mobile",
+                    "Name": "Mobile H.264 720p",
+                    "Container": "mp4",
+                    "RunTimeTicks": 20 * 10_000_000,
+                    "SupportsDirectPlay": True,
+                    "SupportsDirectStream": True,
+                    "DirectStreamUrl": "/Videos/movie-mobile/stream?Static=true&MediaSourceId=ms-mobile",
+                    "MediaStreams": [
+                        {"Type": "Video", "Index": 0, "Codec": "h264", "Profile": "High", "Width": 1280, "Height": 720,
+                         "DisplayTitle": "720p H.264", "IsDefault": True},
+                        {"Type": "Audio", "Index": 1, "Codec": "aac", "Language": "und", "Channels": 2,
+                         "DisplayTitle": "AAC 立体声", "IsDefault": True},
+                    ],
+                }
+            ],
+        }
     if item_id.startswith("ep-"):
         sources = [
             {
@@ -384,6 +416,7 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_image(self, item_id: str) -> None:
         mapping = {
             "movie-1": "movie.jpg",
+            "movie-mobile": "movie.jpg",
             "series-1": "series.jpg",
             "season-1": "season.jpg",
             "ep-1": "episode.jpg",
@@ -409,10 +442,11 @@ class Handler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def _serve_stream(self, item_id: str) -> None:
-        if not os.path.exists(FIXTURE):
+        path = MOBILE_MP4 if item_id == "movie-mobile" else FIXTURE
+        if not os.path.exists(path):
             self._empty(404)
             return
-        size = os.path.getsize(FIXTURE)
+        size = os.path.getsize(path)
         range_header = self.headers.get("Range")
         start, end = 0, size - 1
         status = 200
@@ -443,7 +477,7 @@ class Handler(BaseHTTPRequestHandler):
             status = 206
         length = end - start + 1
         self.send_response(status)
-        self.send_header("Content-Type", "video/x-matroska")
+        self.send_header("Content-Type", "video/mp4" if item_id == "movie-mobile" else "video/x-matroska")
         self.send_header("Content-Length", str(length))
         self.send_header("Accept-Ranges", "bytes")
         if status == 206:
@@ -453,7 +487,7 @@ class Handler(BaseHTTPRequestHandler):
             self._record(status, {"bytes": 0, "size": size, "start": start})
             return
         sent = 0
-        with open(FIXTURE, "rb") as handle:
+        with open(path, "rb") as handle:
             handle.seek(start)
             remaining = length
             try:
@@ -485,6 +519,7 @@ def main() -> None:
     parser.add_argument("--password", default=PASSWORD)
     parser.add_argument("--setup", action="store_true")
     parser.add_argument("--throttle-kbps", type=int, default=0)
+    parser.add_argument("--mobile-sample", action="store_true")
     args = parser.parse_args()
     ROOT = os.path.abspath(args.root)
     LOG_PATH = os.path.abspath(args.log)
@@ -492,6 +527,7 @@ def main() -> None:
     USERNAME = args.user
     PASSWORD = args.password
     THROTTLE_KBPS = args.throttle_kbps
+    MOBILE_SAMPLE = args.mobile_sample
     if args.setup or not os.path.isdir(ROOT):
         setup_posters()
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)

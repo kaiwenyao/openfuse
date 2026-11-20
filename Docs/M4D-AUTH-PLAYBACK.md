@@ -49,4 +49,4 @@ PASS: wrong credentials fail asset load
 
 ## 下一项
 
-M4e：Jellyfin 远程（转码/HLS + token loader）、MKV/libmpv、字幕/音轨；runtime 完成后三端实际启动截图；tvOS/visionOS 来源/焦点；CloudKit/Trakt。
+Jellyfin 移动端远程 MP4 已在 [M4e Jellyfin 验收](M4E-JELLYFIN-MOBILE.md) 完成（PlaybackInfo/api_key/loader，AVPlayer 6s 5.866s）。剩余 M4f：HLS 转码/MKV、字幕/音轨、runtime 后三端截图、tvOS/visionOS 来源/焦点、CloudKit/Trakt。

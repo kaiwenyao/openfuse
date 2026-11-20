@@ -52,6 +52,8 @@
 | `reports/m4d-auth-asset.txt` | WebDAV Basic Auth AVAsset/AVPlayer 实测摘要 | `test-auth-asset.sh` |
 | `reports/m4d-auth-asset.json` | 认证加载时长/轨道/尺寸 | probe 输出 |
 | `reports/m4d-auth-play.json` | AVPlayer 实际播放进度 | probe 输出 |
+| `reports/m4e-jellyfin-remote.txt` | Jellyfin PlaybackInfo/token/AVPlayer 摘要 | `test-jellyfin-mobile.sh` |
+| `reports/m4e-jellyfin-remote.json` | Jellyfin 远程 20s/5.866s 结果 | probe 输出 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

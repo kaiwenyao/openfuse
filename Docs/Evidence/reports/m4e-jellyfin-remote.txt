@@ -1,0 +1,20 @@
+OpenFuse M4e Jellyfin mobile remote playback evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Server: Tools/jellyfin_fixture.py --port 8116 --mobile-sample (test/test)
+Item: movie-mobile, H.264/AAC MP4, 20s, 1280x720
+
+Command:
+  Scripts/test-jellyfin-mobile.sh
+
+Results:
+  Jellyfin authenticate + PlaybackInfo + DirectStreamUrl + api_key
+  AVAsset duration 20.0s, 1 video track
+  AVPlayer after 6s: position 5.866s, item ready, no error
+  swift test: 25/25
+  iOS/iPadOS, tvOS, visionOS generic simulator builds: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+
+Not verified:
+  No mobile simulator runtime installed; mobile UI/touch/focus/space playback not run.
+  Real Jellyfin MKV/HEVC needs transcoding or libmpv; WebDAV MKV same.

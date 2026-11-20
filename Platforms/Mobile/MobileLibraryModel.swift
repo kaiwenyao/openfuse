@@ -87,6 +87,43 @@ final class MobileLibraryModel: ObservableObject {
         return min(max(record.position / record.duration, 0), 1)
     }
 
+    func remotePlaybackItem(for work: LibraryWork, episode: LibraryEpisode? = nil) async -> MobilePlaybackItem? {
+        guard let episode = episode ?? episodes(for: work.id).first,
+              let source = jellyfinSources.first(where: { $0.id == work.sourceID }),
+              let token = jellyfinToken(for: source) else { return nil }
+        guard let itemID = episode.serverID ?? episode.remotePath else { return nil }
+        let client = JellyfinClient(source: source, token: token)
+        guard let info = try? await client.playbackInfo(itemID: itemID),
+              !info.mediaSources.isEmpty else { return nil }
+        let versions = (try? libraryStore.versions(itemID: episode.id)) ?? []
+        let preferredID = versions.first?.mediaSourceID
+        let media = info.mediaSources.first(where: { $0.id == preferredID }) ?? info.mediaSources[0]
+        guard let stream = client.streamURL(itemID: itemID, mediaSource: media) else { return nil }
+        var components = URLComponents(url: stream, resolvingAgainstBaseURL: false)
+        var query = components?.queryItems ?? []
+        query.append(URLQueryItem(name: "api_key", value: token))
+        components?.queryItems = query
+        guard let url = components?.url else { return nil }
+        let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
+        let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
+        let record = playbackStore.record(forPath: key)
+        return MobilePlaybackItem(
+            url: url,
+            title: work.title,
+            subtitle: episode.episodeLabel,
+            fingerprint: fingerprint,
+            resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
+            sourceKind: "jellyfin",
+            sourceID: source.id,
+            remotePath: "\(itemID)|\(media.id)",
+            remoteURL: url.absoluteString,
+            httpHeaders: [
+                "X-Emby-Token": token,
+                "Authorization": "MediaBrowser Token=\"\(token)\"",
+            ]
+        )
+    }
+
     func episodes(for workID: String) -> [LibraryEpisode] {
         (try? libraryStore.episodes(workID: workID)) ?? []
     }
