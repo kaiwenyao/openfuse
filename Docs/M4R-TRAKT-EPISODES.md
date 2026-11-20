@@ -39,4 +39,4 @@ M4q 只会 movie 搜索。现在 AppModel 在播放剧集前准备 `TraktQuery(s
 
 ## 下一项
 
-M5s：Trakt 真实账号/OAuth UI/历史；音频人工听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+Trakt 历史导入已在 [M4s 验收](Docs/M4S-TRAKT-HISTORY.md) 完成（本地库）。剩余 M5t：真实账号/OAuth UI/远程来源历史、音频听测、SMB3/并发、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

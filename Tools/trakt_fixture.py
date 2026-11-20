@@ -59,6 +59,38 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path.startswith("/sync/history/movies"):
+            self._json([{
+                "watched_at": "2026-11-20T00:00:00Z",
+                "action": "watch",
+                "movie": {
+                    "title": "OpenFuse Fixture",
+                    "year": 2026,
+                    "ids": {"trakt": 1001, "tmdb": 1001},
+                },
+            }])
+            return
+        if parsed.path.startswith("/sync/history/shows"):
+            self._json([{
+                "watched_at": "2026-11-20T00:00:00Z",
+                "action": "watch",
+                "show": {
+                    "title": "示例剧",
+                    "year": 2026,
+                    "ids": {"trakt": 2001, "tmdb": 2001},
+                },
+                "episode": {"season": 1, "number": 1, "title": "第 1 集"},
+            }, {
+                "watched_at": "2026-11-20T00:00:01Z",
+                "action": "watch",
+                "show": {
+                    "title": "示例剧",
+                    "year": 2026,
+                    "ids": {"trakt": 2001, "tmdb": 2001},
+                },
+                "episode": {"season": 1, "number": 2, "title": "第 2 集"},
+            }])
+            return
         if parsed.path.startswith("/search/show"):
             query = (urllib.parse.parse_qs(parsed.query).get("query") or [""])[0]
             self._json([{

@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt 历史导入（M4s）
+
+- TraktClient.history 拉取 movies/shows；AppModel 规范化标题匹配库，按本地 fileURL 标记 finished。
+- CLI --sync-trakt/菜单；watched 筛选验证电影+整剧；仅本地、limit100、无分页/ID 严格匹配。
+- 真实 Trakt/OAuth UI/远程来源历史未验证。
+
 ## Trakt 剧集匹配（M4r）
 
 - TraktQuery(movie/show, season/episode)；AppModel 播放前 prepare；TraktService 使用 prepared query。

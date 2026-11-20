@@ -1,0 +1,21 @@
+OpenFuse M4s Trakt history import evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/trakt_fixture.py, port 8123
+
+Implementation:
+  TraktClient.history GET /sync/history/movies|shows?limit=100.
+  AppModel.syncTraktHistory normalizes title (strip year/punctuation), matches
+  library works, marks local episodes finished in PlaybackStore.
+  CLI --sync-trakt, menu item, watched filter.
+
+Results:
+  History requests: movies + shows.
+  Sync: "Trakt 历史：匹配 3 集" (movie + 示例剧 S01E01/S01E02).
+  Watched report visible: ["OpenFuse Fixture", "示例剧"].
+  Scripts/run-trakt-history.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Trakt; OAuth UI; remote Jellyfin/Emby/WebDAV/SMB progress marking (local
+  fileURL only); title collisions; history pagination; audio.

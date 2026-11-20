@@ -59,6 +59,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
         }
+        if arguments.contains("--sync-trakt") {
+            Task { @MainActor in
+                _ = await model.syncTraktHistory()
+                print(model.statusMessage ?? "trakt history synced")
+                if let report = self.value(after: "--library-report", in: arguments) {
+                    model.writeLibraryReport(to: URL(fileURLWithPath: report))
+                }
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if arguments.contains("--sync-progress") {
             Task { @MainActor in
                 await model.syncPlaybackProgressFromEnvironment()
@@ -573,6 +584,12 @@ struct HomeView: View {
                             model.startJellyfinScan(source)
                         }
                     }
+                }
+                if model.traktConfigured {
+                    Button("同步 Trakt 历史") {
+                        Task { _ = await model.syncTraktHistory() }
+                    }
+                    Divider()
                 }
                 if !model.plexSources.isEmpty {
                     ForEach(model.plexSources) { source in

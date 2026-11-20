@@ -555,6 +555,57 @@ final class AppModel: ObservableObject {
         )
     }
 
+    var traktConfigured: Bool { TraktService.shared.isConfigured }
+
+    func syncTraktHistory() async -> Int {
+        let history = await TraktService.shared.history()
+        guard !history.isEmpty else {
+            statusMessage = "Trakt 历史为空或未配置"
+            return 0
+        }
+        var marked = 0
+        for item in history {
+            let target = libraryWorks.first {
+                normalizedTraktTitle($0.title) == normalizedTraktTitle(item.title)
+            }
+            guard let work = target else { continue }
+            let episodes: [LibraryEpisode]
+            if item.kind == .movie {
+                episodes = libraryEpisodes(workID: work.id).filter { $0.seasonNumber == 0 }
+            } else {
+                episodes = libraryEpisodes(workID: work.id).filter {
+                    $0.seasonNumber == (item.season ?? 1) && $0.episodeNumber == (item.episode ?? 1)
+                }
+            }
+            for episode in episodes {
+                guard let fileURL = episode.fileURL else { continue }
+                let path = URL(string: fileURL)?.path ?? fileURL
+                store.update(
+                    fingerprint: MediaFingerprint(path: path, fileSize: 0, modifiedAt: nil),
+                    duration: max(episode.runtime, 1),
+                    position: 0,
+                    displayTitle: episode.title,
+                    finished: true,
+                    sourceKind: work.sourceKind,
+                    sourceID: work.sourceID,
+                    remotePath: episode.remotePath
+                )
+                marked += 1
+            }
+        }
+        refreshRecent()
+        statusMessage = "Trakt 历史：匹配 \(marked) 集"
+        return marked
+    }
+
+    private func normalizedTraktTitle(_ title: String) -> String {
+        var value = title
+        value = value.replacingOccurrences(of: #"\(\d{4}\)"#, with: "", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"\[\d{4}\]"#, with: "", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"[^0-9A-Za-z\p{Han}]"#, with: "", options: .regularExpression)
+        return value.lowercased()
+    }
+
     @discardableResult
     func addPlexSource(name: String, urlText: String, token: String) async -> Bool {
         guard let url = URL(string: urlText) else {

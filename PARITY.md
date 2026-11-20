@@ -349,3 +349,11 @@
 | Show 搜索 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | `/search/show?query=示例剧` → 2001 | `reports/m4r-trakt.jsonl` | 通过 |
 | Episode scrobble | 同上 | 本地示例剧 S01E01 | 待采样 | start/stop body episode{1,1}，stop 99.9467 | Evidence 83 | 通过 |
 | 真实 Trakt/历史 | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |
+
+### M4s Trakt 历史执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| history 导入 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | movies/shows 请求；匹配 3 集 | `reports/m4s-trakt-history.jsonl` | 通过 |
+| watched 筛选 | 同上 | 本地夹具 | 待采样 | visible 电影+剧集 | Evidence 84、`reports/m4s-trakt-watched.json` | 通过 |
+| 真实 Trakt/远程来源 | 同上 | 真实账号/服务器 | 待采样 | 未测；仅本地 fileURL | — | 待验证 |

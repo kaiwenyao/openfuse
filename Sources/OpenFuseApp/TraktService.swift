@@ -28,6 +28,11 @@ final class TraktService {
         client = TraktClient(config: TraktConfig(baseURL: base, clientID: clientID, clientSecret: secret), token: token)
     }
 
+    func history() async -> [TraktHistoryItem] {
+        guard let client else { return [] }
+        return (try? await client.history()) ?? []
+    }
+
     func prepare(_ query: TraktQuery) {
         pendingQuery = query
     }

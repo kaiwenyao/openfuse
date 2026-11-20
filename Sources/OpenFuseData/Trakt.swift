@@ -61,6 +61,19 @@ public struct TraktQuery: Hashable, Sendable {
     }
 }
 
+public struct TraktHistoryItem: Sendable {
+    public enum Kind: String, Sendable {
+        case movie
+        case show
+    }
+    public var kind: Kind
+    public var title: String
+    public var year: Int?
+    public var season: Int?
+    public var episode: Int?
+    public var watchedAt: String?
+}
+
 public struct TraktIDs: Codable, Hashable, Sendable {
     public var trakt: Int?
     public var slug: String?
@@ -149,6 +162,52 @@ public actor TraktClient {
             tmdb: idsObject["tmdb"] as? Int
         )
         return (ids, key)
+    }
+
+    public func history() async throws -> [TraktHistoryItem] {
+        guard token != nil else { throw TraktError.unauthorized }
+        let movies = try await historyItems(path: "sync/history/movies", kind: .movie)
+        let shows = try await historyItems(path: "sync/history/shows", kind: .show)
+        return movies + shows
+    }
+
+    private func historyItems(path: String, kind: TraktHistoryItem.Kind) async throws -> [TraktHistoryItem] {
+        guard var components = URLComponents(
+            url: config.baseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        ) else { throw TraktError.invalidResponse("history URL") }
+        components.queryItems = [URLQueryItem(name: "limit", value: "100")]
+        guard let url = components.url else { throw TraktError.invalidResponse("history URL") }
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("2", forHTTPHeaderField: "trakt-api-version")
+        request.setValue(config.clientID, forHTTPHeaderField: "trakt-api-key")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        let (data, status) = try await send(request)
+        guard (200..<300).contains(status) else { throw TraktError.http(status) }
+        guard let array = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw TraktError.invalidResponse("history array")
+        }
+        return array.compactMap { entry in
+            let watchedAt = entry["watched_at"] as? String
+            if kind == .movie {
+                guard let movie = entry["movie"] as? [String: Any],
+                      let title = movie["title"] as? String else { return nil }
+                return TraktHistoryItem(
+                    kind: .movie, title: title, year: movie["year"] as? Int,
+                    season: nil, episode: nil, watchedAt: watchedAt
+                )
+            }
+            guard let show = entry["show"] as? [String: Any],
+                  let title = show["title"] as? String else { return nil }
+            let episode = entry["episode"] as? [String: Any]
+            return TraktHistoryItem(
+                kind: .show, title: title, year: show["year"] as? Int,
+                season: episode?["season"] as? Int,
+                episode: episode?["number"] as? Int,
+                watchedAt: watchedAt
+            )
+        }
     }
 
     public func scrobble(
