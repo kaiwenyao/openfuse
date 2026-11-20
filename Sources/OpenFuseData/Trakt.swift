@@ -40,6 +40,27 @@ public struct TraktToken: Codable, Sendable {
     }
 }
 
+public struct TraktQuery: Hashable, Sendable {
+    public enum Kind: String, Sendable {
+        case movie
+        case show
+    }
+
+    public var title: String
+    public var year: Int?
+    public var kind: Kind
+    public var season: Int?
+    public var episode: Int?
+
+    public init(title: String, year: Int? = nil, kind: Kind = .movie, season: Int? = nil, episode: Int? = nil) {
+        self.title = title
+        self.year = year
+        self.kind = kind
+        self.season = season
+        self.episode = episode
+    }
+}
+
 public struct TraktIDs: Codable, Hashable, Sendable {
     public var trakt: Int?
     public var slug: String?
@@ -130,7 +151,14 @@ public actor TraktClient {
         return (ids, key)
     }
 
-    public func scrobble(action: String, ids: TraktIDs, type: String, progress: Double) async throws {
+    public func scrobble(
+        action: String,
+        ids: TraktIDs,
+        type: String,
+        season: Int? = nil,
+        episode: Int? = nil,
+        progress: Double
+    ) async throws {
         guard token != nil else { throw TraktError.unauthorized }
         var request = try makeRequest(path: "scrobble/\(action)", method: "POST", authorized: true)
         let key = type == "show" ? "show" : "movie"
@@ -139,10 +167,14 @@ public actor TraktClient {
             "imdb": ids.imdb as Any,
             "tmdb": ids.tmdb as Any,
         ].compactMapValues { $0 is NSNull ? nil : $0 }
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        var payload: [String: Any] = [
             key: ["ids": idsJSON],
             "progress": min(100, max(0, progress)),
-        ])
+        ]
+        if type == "show", let season, let episode {
+            payload["episode"] = ["season": season, "number": episode]
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         let (_, status) = try await send(request)
         guard (200..<300).contains(status) else { throw TraktError.http(status) }
     }

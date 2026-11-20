@@ -1,0 +1,13 @@
+{"method": "GET", "path": "/search/movie", "status": 200, "time": "2026-11-20T05:48:48.526342+00:00"}
+{"method": "POST", "path": "/oauth/device/code", "status": 200, "time": "2026-11-20T05:48:48.622273+00:00"}
+{"method": "POST", "path": "/oauth/device/token", "status": 200, "time": "2026-11-20T05:48:48.711190+00:00"}
+{"method": "GET", "path": "/search/movie?query=openfuse-fixture", "status": 200, "time": "2026-11-20T05:48:51.110460+00:00"}
+{"body": {"movie": {"ids": {"imdb": "tt0000001", "tmdb": 1001, "trakt": 1001}}, "progress": 0}, "method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:48:51.182031+00:00"}
+{"method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:48:51.182345+00:00"}
+{"body": {"movie": {"ids": {"imdb": "tt0000001", "tmdb": 1001, "trakt": 1001}}, "progress": 99.86166666666666}, "method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:48:55.624123+00:00"}
+{"method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:48:55.625106+00:00"}
+{"method": "GET", "path": "/search/show?query=%E7%A4%BA%E4%BE%8B%E5%89%A7", "status": 200, "time": "2026-11-20T05:49:13.094030+00:00"}
+{"body": {"episode": {"number": 1, "season": 1}, "progress": 0, "show": {"ids": {"imdb": "tt0002001", "tmdb": 2001, "trakt": 2001}}}, "method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:49:13.153664+00:00"}
+{"method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:49:13.154116+00:00"}
+{"body": {"episode": {"number": 1, "season": 1}, "progress": 99.86166666666666, "show": {"ids": {"imdb": "tt0002001", "tmdb": 2001, "trakt": 2001}}}, "method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:49:17.658226+00:00"}
+{"method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:49:17.659029+00:00"}

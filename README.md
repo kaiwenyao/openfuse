@@ -58,7 +58,8 @@
 - **M5o SMB 跨季 NFO/重连：完成本地验证。** 剧集继承 tvshow.nfo/海报，单集 NFO 优先；修复扫描中 STATUS_SHUTDOWN 漏掉第二季（重连重试）。夹具 2 作品/3 集，S01E01 NFO 标题、seek31、字幕、无缓存。记录：[M5o 验收](Docs/M5O-SMB-SHOW-NFO.md)。
 - **M5p 版本级去重：完成本地验证。** Jellyfin/Emby 同 mediaSourceID+名称+分辨率版本合并为 `Jellyfin/Emby · …`，1080p/720p 仍分开；单元测试 29/29。顺带修复 Emby 测试 env 触发 Keychain。记录：[M5p 验收](Docs/M5P-VERSION-DEDUPE.md)。
 - **M4q Trakt：完成夹具验证。** 设备码/轮询/搜索/scrobble start/stop（stop 99.9%）实际请求；播放器按标题匹配电影并上报。真实账号/剧集匹配/历史同步未做。记录：[M4q 验收](Docs/M4Q-TRAKT.md)。
-- **下一项：** M5r：Trakt 真实账号/剧集/历史；音频人工听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+- **M4r Trakt 剧集：完成夹具验证。** 播放剧集时搜索 `/search/show`，scrobble body 带 `episode{season,number}`；电影/剧集 start/stop 均通过。真实账号/OAuth UI/历史同步未做。记录：[M4r 验收](Docs/M4R-TRAKT-EPISODES.md)。
+- **下一项：** M5s：Trakt 真实账号/OAuth UI/历史；音频人工听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -89,7 +90,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4q-trakt`（基于 M5p 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m4r-trakt-episodes`（基于 M4q 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

@@ -341,3 +341,11 @@
 | 搜索/scrobble | 同上 | 本地样本 | 待采样 | search 1001；start 0；stop 99.9467 | Evidence 82 | 通过 |
 | 真实 Trakt | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |
 | 音频回环 | 同上 | iFlyrec | 待采样 | ffmpeg 捕获被系统权限阻断 | — | 待验证 |
+
+### M4r Trakt 剧集执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Show 搜索 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | `/search/show?query=示例剧` → 2001 | `reports/m4r-trakt.jsonl` | 通过 |
+| Episode scrobble | 同上 | 本地示例剧 S01E01 | 待采样 | start/stop body episode{1,1}，stop 99.9467 | Evidence 83 | 通过 |
+| 真实 Trakt/历史 | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |

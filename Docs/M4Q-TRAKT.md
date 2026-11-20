@@ -40,4 +40,4 @@
 
 ## 下一项
 
-M5r：Trakt 真实账号/剧集匹配/历史同步；音频人工听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+Trakt 剧集匹配已在 [M4r 验收](Docs/M4R-TRAKT-EPISODES.md) 完成。剩余 M5s：真实账号/OAuth UI/历史、音频听测、SMB3/并发、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

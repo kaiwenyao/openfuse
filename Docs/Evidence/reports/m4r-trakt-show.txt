@@ -1,0 +1,21 @@
+OpenFuse M4r Trakt show/episode evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/trakt_fixture.py, port 8123
+
+Implementation:
+  AppModel prepares TraktQuery(kind=show, season, episode) before library play;
+  TraktService uses prepared query (no title equality requirement), searches
+  /search/show, scrobbles show.ids + episode{season,number}.
+
+Results:
+  GET /search/show?query=示例剧 -> show 2001.
+  POST /scrobble/start body:
+    {"show":{"ids":{"trakt":2001,...}},"episode":{"season":1,"number":1},"progress":0}
+  POST /scrobble/stop progress 99.9467, same episode.
+  Movie search/start/stop still works.
+  Scripts/run-trakt-acceptance.sh PASS (movie + show + episode).
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Trakt; OAuth UI/Keychain; history import; long progress/pause; audio.

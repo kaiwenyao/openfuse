@@ -59,6 +59,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path.startswith("/search/show"):
+            query = (urllib.parse.parse_qs(parsed.query).get("query") or [""])[0]
+            self._json([{
+                "type": "show",
+                "score": 1000,
+                "show": {
+                    "title": query or "OpenFuse Show",
+                    "year": 2026,
+                    "ids": {"trakt": 2001, "slug": "openfuse-show", "imdb": "tt0002001", "tmdb": 2001},
+                },
+            }])
+            return
         if parsed.path.startswith("/search/movie"):
             query = (urllib.parse.parse_qs(parsed.query).get("query") or [""])[0]
             self._json([{

@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt 剧集匹配（M4r）
+
+- TraktQuery(movie/show, season/episode)；AppModel 播放前 prepare；TraktService 使用 prepared query。
+- TraktClient scrobble show body 带 episode；夹具 search/show 与剧集断言。
+- 实测 示例剧 S01E01 start/stop；真实账号/OAuth UI/历史未做。
+
 ## Trakt scrobble（M4q）
 
 - TraktClient：设备码/轮询/搜索/scrobble；TraktService 环境配置，PlayerModel 在加载/保存/结束触发。

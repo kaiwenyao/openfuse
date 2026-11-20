@@ -8,7 +8,8 @@ final class TraktService {
     static let shared = TraktService()
 
     private var client: TraktClient?
-    private var match: (ids: TraktIDs, type: String)?
+    private var match: (ids: TraktIDs, query: TraktQuery)?
+    private var pendingQuery: TraktQuery?
     private var activeTitle: String?
     private var pendingProgress: Double = 0
     private var lastSentAt = Date.distantPast
@@ -27,16 +28,22 @@ final class TraktService {
         client = TraktClient(config: TraktConfig(baseURL: base, clientID: clientID, clientSecret: secret), token: token)
     }
 
+    func prepare(_ query: TraktQuery) {
+        pendingQuery = query
+    }
+
     func start(title: String, progress: Double) {
         guard let client else { return }
+        let query = pendingQuery ?? TraktQuery(title: title, kind: .movie)
+        pendingQuery = nil
         activeTitle = title
         match = nil
         pendingProgress = progress
         isStopped = false
         lastAction = "search"
         Task { @MainActor in
-            guard let result = try? await client.search(title: title, type: "movie") else { return }
-            self.match = result
+            guard let result = try? await client.search(title: query.title, type: query.kind.rawValue) else { return }
+            self.match = (result.0, query)
             self.send("start", progress: self.pendingProgress)
         }
     }
@@ -63,7 +70,14 @@ final class TraktService {
         lastAction = action
         let value = min(100, max(0, progress))
         Task {
-            try? await client.scrobble(action: action, ids: match.ids, type: match.type, progress: value)
+            try? await client.scrobble(
+                action: action,
+                ids: match.ids,
+                type: match.query.kind.rawValue,
+                season: match.query.season,
+                episode: match.query.episode,
+                progress: value
+            )
         }
     }
 }

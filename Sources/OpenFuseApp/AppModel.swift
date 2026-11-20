@@ -1456,6 +1456,21 @@ final class AppModel: ObservableObject {
 
     func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {
         let version = version ?? libraryVersions(itemID: episode.id).first
+        if work.kind == .series {
+            TraktService.shared.prepare(
+                TraktQuery(
+                    title: work.title,
+                    year: work.year,
+                    kind: .show,
+                    season: episode.seasonNumber,
+                    episode: episode.episodeNumber
+                )
+            )
+        } else {
+            TraktService.shared.prepare(
+                TraktQuery(title: work.title, year: work.year, kind: .movie)
+            )
+        }
         switch work.sourceKind {
         case "jellyfin", "emby":
             guard let source = jellyfinSources.first(where: { $0.id == work.sourceID }) else {
