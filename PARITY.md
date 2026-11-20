@@ -644,3 +644,10 @@
 | 无 token | HTTP fixture | 进度服务 | Infuse 未安装 | GET 401 | `reports/m4w-sync.log` | 通过 |
 | 带 token 续播 | Mac/iPhone 模拟器 | 真实 Jellyfin MP4 | 待采样 | resume 11.00s | Evidence 106、`reports/m4w-*` | 通过 |
 | TLS/并发/CloudKit | 同上 | 生产同步 | 待采样 | 未测 | — | 待验证 |
+
+### M4x Jellyfin 用户切换执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 切换 test→test2 | Mac M2 Pro／macOS 27.2.1 | Jellyfin 12 双用户 | Infuse 未安装 | 1 来源/test2/2 作品；播放11.042；进度写入 | Evidence 107、`reports/m4x-switch-*` | 通过 |
+| 面板点击/HTTPS/并发 | 同上 | 同上 | 待采样 | 面板仅截图，CLI 验收 | — | 待验证 |

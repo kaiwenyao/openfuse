@@ -900,11 +900,58 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func switchJellyfinUser(
+        _ source: JellyfinSource,
+        username: String,
+        password: String
+    ) async -> JellyfinSource? {
+        var candidate = JellyfinSource(
+            name: source.name,
+            baseURL: source.baseURL,
+            username: username,
+            serverKind: source.serverKind
+        )
+        do {
+            let session = try await JellyfinClient.authenticate(source: candidate, password: password)
+            candidate.userID = session.userID
+            candidate.serverID = session.serverID
+            let environment = ProcessInfo.processInfo.environment
+            let prefix = candidate.kind == "emby" ? "OPENFUSE_EMBY" : "OPENFUSE_JELLYFIN"
+            let usesEnvironment = environment[prefix + "_PASSWORD"] != nil
+                || environment[prefix + "_TOKEN"] != nil
+                || environment["OPENFUSE_JELLYFIN_PASSWORD"] != nil
+                || environment["OPENFUSE_JELLYFIN_TOKEN"] != nil
+            if candidate.id != source.id {
+                removeJellyfinSource(source)
+            }
+            try jellyfinStore.upsert(candidate)
+            jellyfinSources = jellyfinStore.sources
+            sessionJellyfinTokens[candidate.id] = session.accessToken
+            if !usesEnvironment {
+                try? CredentialStore.save(
+                    password: session.accessToken,
+                    account: candidate.id,
+                    service: "com.openfuse.jellyfin"
+                )
+            }
+            statusMessage = "已切换 \(candidate.name) 用户：\(candidate.username)"
+            await scanJellyfinSource(candidate)
+            return candidate
+        } catch {
+            statusMessage = "切换用户失败：\(error.localizedDescription)"
+            return nil
+        }
+    }
+
     func removeJellyfinSource(_ source: JellyfinSource) {
         try? jellyfinStore.remove(id: source.id)
+        try? libraryStore.removeSource(kind: source.kind, sourceID: source.id)
+        try? libraryStore.removeSource(kind: "jellyfin", sourceID: source.id)
+        try? libraryStore.removeSource(kind: "emby", sourceID: source.id)
         CredentialStore.delete(account: source.id, service: "com.openfuse.jellyfin")
         sessionJellyfinTokens.removeValue(forKey: source.id)
         jellyfinSources = jellyfinStore.sources
+        reloadLibrary()
         if case .jellyfinBrowser(let browsing) = route, browsing.id == source.id {
             route = .home
         }

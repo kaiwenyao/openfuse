@@ -1,0 +1,20 @@
+OpenFuse M4x Jellyfin user-switch evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Jellyfin 12.4 users test/test and test2/test2.
+
+Flow:
+  Fresh support scan as test; Settings shows source/user.
+  CLI --jellyfin-switch-user test2 authenticates, removes old source/library,
+  upserts test2 and rescans; play seeks to 10/20.
+
+Results:
+  sources.json: one source, username=test2, userID 390f....
+  after.json: 2 works (no stale test duplicates).
+  play position 11.042; test2 UserData PlaybackPositionTicks=110.42M.
+  Settings UI shows "Jellyfin · test2 · http://127.0.0.1:8096" + 切换用户.
+  Scripts/run-jellyfin-switch.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  UI sheet click automation, HTTPS, concurrent sessions; real device/audio.

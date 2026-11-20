@@ -1,0 +1,144 @@
+{
+  "episodes" : 2,
+  "generatedAt" : "2026-11-20T11:21:45Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse jellyfin",
+      "primary" : "OpenFuse Jellyfin",
+      "sources" : [
+        "jellyfin"
+      ],
+      "workIDs" : [
+        "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71"
+      ]
+    },
+    {
+      "key" : "movie|openfuse mkv",
+      "primary" : "OpenFuse MKV",
+      "sources" : [
+        "jellyfin"
+      ],
+      "workIDs" : [
+        "jf:c135dd80bab7e30f:731a8d498c74238a7d0d92db8d7ccc17"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71-main",
+          "remotePath" : "c9a8049da54e0f1e4ffbf6cce67cee71",
+          "season" : 0,
+          "sourceKind" : "jellyfin",
+          "title" : "OpenFuse Jellyfin",
+          "versions" : [
+            {
+              "contentKey" : "",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71-main-v0",
+              "mediaSourceID" : "c9a8049da54e0f1e4ffbf6cce67cee71",
+              "name" : "OpenFuse Jellyfin",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "jellyfin:c9a8049da54e0f1e4ffbf6cce67cee71|91c24fca7d3366ada5c395bbbe24b2ca",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c135dd80bab7e30f",
+      "sourceKind" : "jellyfin",
+      "title" : "OpenFuse Jellyfin",
+      "year" : 0
+    },
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "jf:c135dd80bab7e30f:731a8d498c74238a7d0d92db8d7ccc17-main",
+          "remotePath" : "731a8d498c74238a7d0d92db8d7ccc17",
+          "season" : 0,
+          "sourceKind" : "jellyfin",
+          "title" : "OpenFuse MKV",
+          "versions" : [
+            {
+              "contentKey" : "",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "jf:c135dd80bab7e30f:731a8d498c74238a7d0d92db8d7ccc17-main-v0",
+              "mediaSourceID" : "731a8d498c74238a7d0d92db8d7ccc17",
+              "name" : "OpenFuse MKV",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "jf:c135dd80bab7e30f:731a8d498c74238a7d0d92db8d7ccc17",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "jellyfin:731a8d498c74238a7d0d92db8d7ccc17|e439bba0d184d6fd61d33bb8dbb475f7",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c135dd80bab7e30f",
+      "sourceKind" : "jellyfin",
+      "title" : "OpenFuse MKV",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Jellyfin",
+          "versions" : [
+            "Jellyfin · OpenFuse Jellyfin"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse jellyfin",
+      "sources" : [
+        "jellyfin"
+      ],
+      "title" : "OpenFuse Jellyfin"
+    },
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse MKV",
+          "versions" : [
+            "Jellyfin · OpenFuse MKV"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse mkv",
+      "sources" : [
+        "jellyfin"
+      ],
+      "title" : "OpenFuse MKV"
+    }
+  ],
+  "rawEpisodes" : 2,
+  "rawWorks" : 2,
+  "status" : "Jellyfin Jellyfin：2 个作品",
+  "visible" : [
+    "OpenFuse Jellyfin",
+    "OpenFuse MKV"
+  ],
+  "works" : 2
+}

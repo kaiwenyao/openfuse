@@ -95,6 +95,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        if let newUser = value(after: "--jellyfin-switch-user", in: arguments) {
+            let password = value(after: "--jellyfin-switch-password", in: arguments) ?? ""
+            let wantedID = value(after: "--jellyfin-switch-source", in: arguments)
+            Task { @MainActor in
+                let source = wantedID.flatMap { id in
+                    model.jellyfinSources.first { $0.id == id || $0.name == id }
+                } ?? model.jellyfinSources.first
+                guard let source else {
+                    print("no jellyfin source")
+                    self.scheduleQuitOnly(arguments: arguments)
+                    return
+                }
+                _ = await model.switchJellyfinUser(source, username: newUser, password: password)
+                if let report = self.value(after: "--library-report", in: arguments) {
+                    model.writeLibraryReport(to: URL(fileURLWithPath: report))
+                }
+                print("jellyfin user switched to \(newUser)")
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if let removeRoot = value(after: "--remove-local-root", in: arguments) {
             Task { @MainActor in
                 let path = URL(fileURLWithPath: removeRoot).standardizedFileURL.path

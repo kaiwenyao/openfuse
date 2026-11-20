@@ -35,4 +35,4 @@ M4u 的 HTTP 进度服务无鉴权。本轮给 HTTP transport 加 Bearer token�
 
 ## 下一项
 
-M4x/M6d：HTTPS、并发冲突、CloudKit 真机；Jellyfin UI 切换/HTTPS；SMB 多GB/DFS；音频/HDR/visionOS。
+Jellyfin 用户切换已在 [M4x 验收](Docs/M4X-JELLYFIN-USER-SWITCH.md) 完成。剩余 M4y/M6d：切换面板自动化、同步 HTTPS/并发/CloudKit 真机、SMB 多GB/DFS、音频/HDR/visionOS。

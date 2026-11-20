@@ -1,0 +1,14 @@
+{
+  "sources" : [
+    {
+      "baseURL" : "http:\/\/127.0.0.1:8096",
+      "id" : "3290c4fb555d3041",
+      "name" : "Jellyfin",
+      "serverID" : "20432683f47d4964a98c88b290e6cc81",
+      "serverKind" : "jellyfin",
+      "userID" : "390f2c13d06c42879983e371bb125537",
+      "username" : "test2"
+    }
+  ],
+  "version" : 1
+}

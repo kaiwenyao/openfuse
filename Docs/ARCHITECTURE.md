@@ -115,6 +115,12 @@ Docs/                   决策、素材、验收、证据
 - Bearer token 鉴权（OPENFUSE_SYNC_TOKEN），无 token 401。
 - 仍为 HTTP 明文；TLS/并发/CloudKit/真机未验证。
 
+## Jellyfin 用户切换（M4x）
+
+- Settings 用户列表/切换面板；AppModel 认证新用户、清旧库、upsert/扫描。
+- CLI 验收 test→test2：2 作品、进度写入；修复 removeSource 残留。
+- 面板点击自动化/HTTPS/并发未验证。
+
 ## Jellyfin 权限隔离（M2i）
 
 - test2 Policy 受限时扫描 0，恢复后 2；不泄漏库。
