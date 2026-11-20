@@ -19,6 +19,13 @@ struct MobilePlaybackItem: Identifiable, Hashable {
     var serverSubtitleLabel: String?
     var workID: String?
     var episodeID: String?
+
+    /// Containers AVPlayer cannot open (MKV on WebDAV) are played by libmpv.
+    var requiresMPV: Bool {
+        if ProcessInfo.processInfo.environment["OPENFUSE_FORCE_MPV"] == "1" { return true }
+        let ext = url.pathExtension.lowercased()
+        return sourceKind == "webdav" && !["mp4", "m4v", "mov"].contains(ext)
+    }
 }
 
 @MainActor

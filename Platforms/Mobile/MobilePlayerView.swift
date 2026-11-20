@@ -40,6 +40,15 @@ struct MobilePlayerView: View {
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
+        if item.requiresMPV {
+            MobileMPVPlayerView(item: item)
+                .environmentObject(model)
+        } else {
+            avPlayerBody
+        }
+    }
+
+    private var avPlayerBody: some View {
         // Centre alignment: the video, subtitle and HUD all need the full
         // screen. Only the close button pins to the top-right corner, which is
         // what keeps the iPad (portrait and landscape) layout honest.

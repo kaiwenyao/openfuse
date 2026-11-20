@@ -84,7 +84,7 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | Jellyfin 外挂 ASS（简/繁） | 已实现：Jellyfin 12 不返回 `DeliveryUrl` 时回退 `/Videos/{id}/{source}/Subtitles/{index}/Stream.ass`，下载到 `SubtitleCache` 后按纯文本渲染，默认简体、可切繁體 |
 | Jellyfin 进度回写与跨设备续播 | 已实现：`Sessions/Playing`、`/Progress`、`/Stopped`；无本地记录时用服务器位置起播；播到结尾时服务器标记 `Played=true` |
 | 移动端自动下一集 | 已实现：`AVPlayerItemDidPlayToEndTime` + `time >= duration-2.5` 兜底，切集时重建播放器；真实 Jellyfin HLS 在 1428/1436.5 s 处提前停住，模拟器未触发，需真机或本地文件复测 |
-| WebDAV 上的 MKV 直放（HEVC Main 10 / E-AC-3 5.1 / 内外挂 ASS） | **未实现**：AVPlayer 不支持 MKV，需要引入 iOS 端的 mpv/VLC 类引擎（当前工程没有） |
+| WebDAV 上的 MKV 直放（HEVC Main 10 / E-AC-3 5.1 / 内外挂 ASS） | 已实现（模拟器验证）：SPM 依赖 `mpvkit/MPVKit`（libmpv + ffmpeg + libass），Metal/MoltenVK 渲染；外挂 ASS 通过 `sub-add` 加载并默认简体；包体增加约 90 MB（含 16 MB 字体） |
 | ASS 样式排版 | 外挂 ASS 解析保留 `\N` 换行并去样式标签，按纯文本显示；斜体/定位/字体回退未做 |
 
 ## 四、验收表（Mac / iPhone / iPad × WebDAV / Jellyfin）
@@ -92,7 +92,7 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | | WebDAV | Jellyfin |
 | --- | --- | --- |
 | **Mac** | ✅ 已实测：S03E13 HEVC Main 10、内外挂 ASS、简繁切换、前中后拖动、退出回原季、续播；S01E01 E-AC-3 5.1 下混立体声 | ✅ 已实测：剧→季→集、直放、字幕切换、进度回写并恢复、退出回季、续播、自动下一集 |
-| **iPhone** | ⏳ 待真机：MP4 可播；MKV 直放缺引擎 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放；外挂 ASS 走 Stream 回退下载后默认简体，`AUTOPLAY_SUBTITLE_INDEX=2` 切到繁體，画面分别显示「什么 我到底在怕什么 / 什麼 我到底在怕什麼」；服务器进度回写 301 s，清空本地记录后用服务器 300 s 起播，实测从 302.2 s 续播并保持简体 |
+| **iPhone** | 🟡 模拟器通过（libmpv）：真实 WebDAV 的 S03E13 MKV 直放，HEVC Main 10 出画；外挂 简体/繁體 ASS 由 libass 渲染，内置 Noto Sans CJK 字体无方框；`Sex Education S01E01` 的 E-AC-3 5.1 解码为 6ch 后经 audiounit 下混为 2ch 立体声；真机待验 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放；外挂 ASS 走 Stream 回退下载后默认简体，`AUTOPLAY_SUBTITLE_INDEX=2` 切到繁體，画面分别显示「什么 我到底在怕什么 / 什麼 我到底在怕什麼」；服务器进度回写 301 s，清空本地记录后用服务器 300 s 起播，实测从 302.2 s 续播并保持简体 |
 | **iPad** | ⏳ 待真机：同上；MKV 直放缺引擎 | 🟡 模拟器播放通过（iPad Pro 13"）：同一路 HLS + 简体字幕；修复了播放器右上角对齐导致的视频缩角/字幕贴边问题，现为全屏居中；横竖屏与分屏待验（本机 Xcode 27 没有 Simulator 界面程序，无法脚本旋转） |
 
 ## 五、还差什么

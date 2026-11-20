@@ -7,17 +7,24 @@ options:
 packages:
   OpenFuse:
     path: .
+  MPVKit:
+    url: https://github.com/mpvkit/MPVKit.git
+    revision: d9194243bdc68b87d8989376ab52aee7da6c8e0b
 targets:
   OpenFuseMobile:
     type: application
     platform: iOS
     sources:
       - path: Platforms/Mobile
+      - path: Platforms/Mobile/Resources/Fonts
+        buildPhase: resources
       - path: Fixtures/mobile
         buildPhase: resources
     dependencies:
       - package: OpenFuse
         product: OpenFuseData
+      - package: MPVKit
+        product: MPVKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openfuse.mobile

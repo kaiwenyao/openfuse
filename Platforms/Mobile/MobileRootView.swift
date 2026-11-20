@@ -38,6 +38,40 @@ struct MobileRootView: View {
                 .environmentObject(model)
         }
         .task {
+            MPVProbe.runIfRequested()
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_TEST_MPV_URL"], let url = URL(string: raw) {
+                var headers: [String: String] = [:]
+                if let header = ProcessInfo.processInfo.environment["OPENFUSE_TEST_MPV_HEADER"] {
+                    let parts = header.split(separator: ":", maxSplits: 1).map(String.init)
+                    if parts.count == 2 { headers[parts[0]] = parts[1].trimmingCharacters(in: .whitespaces) }
+                }
+                var sidecars: [SubtitleTrack] = []
+                for key in ["OPENFUSE_TEST_MPV_SUB1", "OPENFUSE_TEST_MPV_SUB2"] {
+                    if let raw = ProcessInfo.processInfo.environment[key], let subURL = URL(string: raw) {
+                        let name = key.hasSuffix("1") ? "中文（简体） (ASS)" : "中文（繁體） (ASS)"
+                        let language = key.hasSuffix("1") ? "zh-Hans" : "zh-Hant"
+                        sidecars.append(SubtitleTrack(
+                            id: "test-sub-\(key)", displayName: name, language: language,
+                            format: SubtitleFormat(fileExtension: subURL.pathExtension),
+                            source: .external, url: subURL
+                        ))
+                    }
+                }
+                autoplayItem = MobilePlaybackItem(
+                    url: url,
+                    title: ProcessInfo.processInfo.environment["OPENFUSE_TEST_MPV_TITLE"] ?? "WebDAV MKV",
+                    subtitle: nil,
+                    fingerprint: MediaFingerprint(path: url.absoluteString, fileSize: 0, modifiedAt: nil),
+                    resumePosition: nil,
+                    sourceKind: "webdav",
+                    sourceID: "test",
+                    remotePath: nil,
+                    remoteURL: url.absoluteString,
+                    httpHeaders: headers,
+                    sidecarSubtitles: sidecars
+                )
+                return
+            }
             await model.syncProgress(force: true)
             await model.bootstrapTestSourcesIfRequested()
             guard model.autoplaySample, autoplayItem == nil else { return }
