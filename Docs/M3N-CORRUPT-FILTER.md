@@ -33,4 +33,4 @@ M3 只做到“损坏单个文件不中断扫描”，坏文件仍以占位作�
 
 ## 下一项
 
-M3o：多根本地库策略；SMB/WebDAV 损坏过滤；音频听测；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+多根本地库已在 [M3o 验收](Docs/M3O-LOCAL-ROOTS.md) 完成。剩余 M3p/M5z：跨根文件级去重、SMB/WebDAV 损坏过滤、音频听测、HDR 直通、真实 SMB3/Trakt、AirPlay、CloudKit。

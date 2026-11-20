@@ -1,0 +1,20 @@
+OpenFuse M3o multi-root local library evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Roots: root-a/Alpha Movie (2026).mkv, root-b/Beta Movie (2026).mkv.
+
+Implementation:
+  LocalRootStore persists local-roots.json; scanner sourceID is derived from
+  the standardized root path, so each root is an independent library source.
+  AppModel registers roots on scan, supports scan-all and remove (also deletes
+  that source's works). Scan menu adds scan-all/remove submenu.
+
+Results:
+  After scanning A then B: rawWorks=2, titles Alpha Movie + Beta Movie.
+  Remove B: rawWorks=1, only Alpha Movie; local-roots.json has 1 root.
+  Scripts/run-local-roots.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Duplicate files across roots are merged by title but versions remain separate;
+  no watcher/auto-rescan; corrupt filtering remains local; audio.

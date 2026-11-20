@@ -421,3 +421,11 @@
 | 损坏过滤 | MacBook Pro M2 Pro／macOS 27.2.1 | 本地库 + 文本 .mkv | Infuse 未安装 | Broken 不入库；3 个正常作品 | `reports/m3n-corrupt-filter.json` | 通过 |
 | 扫描中播放 | 同上 | 同上 | 待采样 | position 12s 继续；损坏扫描不崩 | 脚本 PASS | 通过 |
 | 远程损坏 | 同上 | SMB/WebDAV | 待采样 | 未过滤 | — | 待验证 |
+
+### M3o 多根本地库执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 两根共存 | MacBook Pro M2 Pro／macOS 27.2.1 | root-a/root-b | Infuse 未安装 | rawWorks=2，Alpha+Beta | `reports/m3o-local-roots.json` | 通过 |
+| 移除根 | 同上 | 同上 | 待采样 | rawWorks=1，仅 Alpha；store 1 root | 同上 | 通过 |
+| 跨根内容去重 | 同上 | 同文件 | 待采样 | 未按内容去重 | — | 待验证 |

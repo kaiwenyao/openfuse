@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## 多根本地库（M3o）
+
+- LocalRootStore 持久化 local-roots.json；scanner sourceID 由根路径哈希生成。
+- 支持扫描全部/移除根；移除删除该 source 的 works。
+- 实测两根共存/移除；跨根内容去重/自动重扫未做。
+
 ## 本地损坏文件过滤（M3n）
 
 - MediaProbe ffprobe 返回 playable；过滤损坏版本并移除空 movie/episode/season/work。

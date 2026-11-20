@@ -88,6 +88,7 @@ final class AppModel: ObservableObject {
     @Published var jellyfinSources: [JellyfinSource] = []
     @Published var plexSources: [PlexSource] = []
     @Published var smbSources: [SMBSource] = []
+    @Published var localRoots: [LocalRoot] = []
     @Published var libraryWorks: [LibraryWork] = []
     @Published var libraryGroups: [LibraryGroup] = []
     @Published var libraryWorkCount = 0
@@ -119,6 +120,7 @@ final class AppModel: ObservableObject {
     let jellyfinStore: JellyfinSourceStore
     let plexStore: PlexSourceStore
     let smbStore: SMBSourceStore
+    let localRootStore: LocalRootStore
     let libraryStore: LibraryStore
     let libraryOverrideStore: LibraryOverrideStore
     @Published var libraryOverrides: [String: LibraryOverride] = [:]
@@ -136,6 +138,7 @@ final class AppModel: ObservableObject {
             self.jellyfinStore = try JellyfinSourceStore(directory: directory)
             self.plexStore = try PlexSourceStore(directory: directory)
             self.smbStore = try SMBSourceStore(directory: directory)
+            self.localRootStore = try LocalRootStore(directory: directory)
             self.libraryStore = try LibraryStore(directory: directory)
             self.libraryOverrideStore = try LibraryOverrideStore(directory: directory)
         } catch {
@@ -145,6 +148,7 @@ final class AppModel: ObservableObject {
         self.jellyfinSources = jellyfinStore.sources
         self.plexSources = plexStore.sources
         self.smbSources = smbStore.sources
+        self.localRoots = localRootStore.roots
         self.libraryOverrides = libraryOverrideStore.all
         loadTraktConfiguration()
         refreshRecent()
@@ -1047,16 +1051,58 @@ final class AppModel: ObservableObject {
     }
 
     func scanLocalFolder(_ url: URL) async {
+        registerLocalRoot(url)
         let token = ScanCancellationToken()
         activeScanToken = token
         await performLocalScan(url, token: token)
     }
 
     func startLocalScan(_ url: URL) {
+        registerLocalRoot(url)
         cancelScan()
         let token = ScanCancellationToken()
         activeScanToken = token
         activeScanTask = Task { await performLocalScan(url, token: token) }
+    }
+
+    func scanAllLocalRoots() {
+        cancelScan()
+        let roots = localRoots
+        guard !roots.isEmpty else {
+            libraryStatus = "还没有本地根目录"
+            return
+        }
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        activeScanTask = Task {
+            for root in roots {
+                if token.isCancelled { break }
+                await performLocalScan(URL(fileURLWithPath: root.path), token: token)
+            }
+            if !token.isCancelled {
+                let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+                libraryStatus = "已扫描 \(roots.count) 个本地根目录：\(counts.works) 个作品"
+            }
+        }
+    }
+
+    func addLocalRoot(_ url: URL) {
+        registerLocalRoot(url)
+    }
+
+    func removeLocalRoot(_ root: LocalRoot) {
+        try? localRootStore.remove(id: root.id)
+        try? libraryStore.removeSource(kind: "local", sourceID: root.id)
+        localRoots = localRootStore.roots
+        reloadLibrary()
+        libraryStatus = "已移除本地根目录 \(root.name)"
+    }
+
+    private func registerLocalRoot(_ url: URL) {
+        let standardized = url.standardizedFileURL
+        let name = standardized.lastPathComponent.isEmpty ? "本地文件夹" : standardized.lastPathComponent
+        try? localRootStore.upsert(path: standardized.path, name: name)
+        localRoots = localRootStore.roots
     }
 
     func cancelScan() {

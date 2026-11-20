@@ -95,6 +95,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        if let removeRoot = value(after: "--remove-local-root", in: arguments) {
+            Task { @MainActor in
+                let path = URL(fileURLWithPath: removeRoot).standardizedFileURL.path
+                if let root = model.localRoots.first(where: { $0.path == path }) {
+                    model.removeLocalRoot(root)
+                }
+                if let report = self.value(after: "--library-report", in: arguments) {
+                    model.writeLibraryReport(to: URL(fileURLWithPath: report))
+                }
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if let scanLocal = value(after: "--scan-local", in: arguments) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 if let cancelAfter = self.value(after: "--cancel-scan-after", in: arguments).flatMap(Double.init) {
@@ -597,7 +610,17 @@ struct HomeView: View {
             Spacer()
 
             Menu {
-                Button("扫描文件夹…") { chooseFolderToScan() }
+                Button("添加并扫描文件夹…") { chooseFolderToScan() }
+                if !model.localRoots.isEmpty {
+                    Button("扫描全部本地根目录（\(model.localRoots.count)）") {
+                        model.scanAllLocalRoots()
+                    }
+                    Menu("移除本地根目录") {
+                        ForEach(model.localRoots) { root in
+                            Button(root.name) { model.removeLocalRoot(root) }
+                        }
+                    }
+                }
                 if !model.jellyfinSources.isEmpty {
                     Divider()
                     ForEach(model.jellyfinSources) { source in
