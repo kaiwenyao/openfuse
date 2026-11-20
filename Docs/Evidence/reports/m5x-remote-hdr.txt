@@ -1,0 +1,19 @@
+OpenFuse M5x remote HDR evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Implementation:
+  JellyfinMediaStream parses VideoRange/VideoRangeType; scanner maps HDR10/
+  HDR10+/HLG/Dolby Vision/HDR.
+  WebDAV ffprobe remote MKV now returns height+color_transfer/primaries;
+  FileCandidate.dynamicRange flows into version/report.
+
+Results:
+  Jellyfin fixture: movie/episode versions dynamicRange=HDR10, resolution=1080p.
+  WebDAV HDR MKV: dynamicRange=HDR10, resolution=1080p, name "1080p · WebDAV".
+  Scripts/run-remote-hdr.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Actual HDR output/tone mapping; real Jellyfin/OpenList HDR fields; DV/HDR10+
+  accuracy; audio.

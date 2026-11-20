@@ -36,4 +36,4 @@
 
 ## 下一项
 
-M5x：HDR 输出/tone mapping；WebDAV/Jellyfin HDR；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+Jellyfin/WebDAV 远程 HDR 已在 [M5x 验收](Docs/M5X-REMOTE-HDR.md) 完成。剩余 M5y：HDR 输出/tone mapping、真实远程 HDR、音频听测、真实 SMB3/Trakt、AirPlay 实机、CloudKit、M3 多根/损坏过滤。

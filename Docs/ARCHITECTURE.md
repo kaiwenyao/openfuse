@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## 远程 HDR 元数据（M5x）
+
+- Jellyfin VideoRange/VideoRangeType → HDR10/HDR10+/HLG/DV/HDR。
+- WebDAV ffprobe color_transfer/primaries → HDR10；FileCandidate.dynamicRange 入库。
+- 实测 Jellyfin/WebDAV HDR10；实际 HDR 输出/tone mapping 未验证。
+
 ## HDR10 元数据（M5w）
 
 - ScannedVersion/LibraryVersion.dynamicRange；SQLite versions.dynamic_range + ALTER。

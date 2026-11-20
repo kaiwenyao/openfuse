@@ -65,7 +65,8 @@
 - **M5u SMB 并发：完成本地验证。** 回环 Range 服务器并发连接上限 4，socket 设 SO_NOSIGPIPE；两个并发 Range 请求 SHA-256 与 fixture 片段一致。真实 SMB3/大文件压力待验证。记录：[M5u 验收](Docs/M5U-SMB-CONCURRENCY.md)。
 - **M5v Trakt 自动轮询：完成夹具验证。** 设备码后按 interval 自动请求 token，1.07s 成功；手动检查/关闭设置会取消任务。测试跳过 Keychain；真实账号/Keychain 未验证。记录：[M5v 验收](Docs/M5V-TRAKT-AUTO-POLL.md)。
 - **M5w HDR10 元数据：完成本地验证。** 1080p10bit HDR10 样片经 ffprobe 识别 bt2020/smpte2084，版本/UI 显示 HDR10；SQLite 迁移 dynamic_range。实际 HDR 输出未验证；WebDAV/Jellyfin HDR 未解析。记录：[M5w 验收](Docs/M5W-HDR.md)。
-- **下一项：** M5x：HDR 输出/tone mapping；WebDAV/Jellyfin HDR；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+- **M5x 远程 HDR：完成本地验证。** Jellyfin VideoRange/VideoRangeType 与 WebDAV 远程 MKV ffprobe 均解析 HDR10；版本/报告显示 dynamicRange=HDR10。实际 HDR 输出未验证。记录：[M5x 验收](Docs/M5X-REMOTE-HDR.md)。
+- **下一项：** M5y：HDR 输出/tone mapping；真实远程 HDR；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -96,7 +97,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5w-hdr-metadata`（基于 M5v 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5x-remote-hdr`（基于 M5w 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

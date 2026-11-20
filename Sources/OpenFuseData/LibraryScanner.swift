@@ -48,6 +48,7 @@ public enum LibraryScanner {
         var showNFO: NFOMetadata?
         var modifiedAt: Date? = nil
         var resolution: String? = nil
+        var dynamicRange: String? = nil
     }
 
     // MARK: - Local
@@ -118,7 +119,7 @@ public enum LibraryScanner {
         )
     }
 
-    static func probeRemoteVideoHeight(url: URL, authorization: String) async -> String? {
+    static func probeRemoteVideoHeight(url: URL, authorization: String) async -> (height: String?, dynamicRange: String?)? {
         #if os(macOS)
         let candidates = ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe", "/usr/bin/ffprobe"]
         guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
@@ -138,8 +139,8 @@ public enum LibraryScanner {
             "-probesize", "1000000",
             "-headers", "Authorization: \(authorization)\r\n",
             "-select_streams", "v:0",
-            "-show_entries", "stream=height",
-            "-of", "csv=p=0",
+            "-show_entries", "stream=height,color_transfer,color_primaries",
+            "-of", "json",
             url.absoluteString,
         ]
         process.standardOutput = output
@@ -148,16 +149,25 @@ public enum LibraryScanner {
             process.terminationHandler = { _ in
                 try? output.close()
                 let data = (try? Data(contentsOf: outputURL)) ?? Data()
-                let text = String(decoding: data, as: UTF8.self)
-                let height = text
-                    .split(whereSeparator: { $0 == "\n" || $0 == "," })
-                    .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
-                    .first
-                guard let height, height > 0 else {
+                guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let streams = object["streams"] as? [[String: Any]],
+                      let stream = streams.first else {
                     continuation.resume(returning: nil)
                     return
                 }
-                continuation.resume(returning: height >= 2000 ? "2160p" : "\(height)p")
+                var height: String?
+                if let value = stream["height"] as? Int, value > 0 {
+                    height = value >= 2000 ? "2160p" : "\(value)p"
+                }
+                let transfer = stream["color_transfer"] as? String
+                let primaries = stream["color_primaries"] as? String
+                var dynamicRange: String?
+                if transfer == "smpte2084" {
+                    dynamicRange = primaries == "bt2020" ? "HDR10" : "HDR"
+                } else if transfer == "arib-std-b67" {
+                    dynamicRange = "HLG"
+                }
+                continuation.resume(returning: (height, dynamicRange))
             }
             do {
                 try process.run()
@@ -277,6 +287,7 @@ public enum LibraryScanner {
                 mediaSourceID: nil,
                 container: (candidate.name as NSString).pathExtension.uppercased(),
                 resolution: candidate.resolution,
+                dynamicRange: candidate.dynamicRange,
                 remotePath: candidate.remotePath,
                 fileURL: candidate.fileURL?.absoluteString
             )
@@ -331,6 +342,7 @@ public enum LibraryScanner {
                     mediaSourceID: nil,
                     container: (candidate.name as NSString).pathExtension.uppercased(),
                     resolution: candidate.resolution,
+                    dynamicRange: candidate.dynamicRange,
                     remotePath: candidate.remotePath,
                     fileURL: candidate.fileURL?.absoluteString
                 )
@@ -438,13 +450,15 @@ public enum LibraryScanner {
             var versions: [ScannedVersion] = []
             if let info = try? await client.playbackInfo(itemID: movie.id) {
                 for (index, media) in info.mediaSources.enumerated() {
+                    let video = media.mediaStreams?.first(where: { $0.type == "Video" })
                     versions.append(
                         ScannedVersion(
                             id: episodeID + "-v\(index)",
                             name: media.name,
                             mediaSourceID: media.id,
                             container: media.container,
-                            resolution: media.mediaStreams?.first(where: { $0.type == "Video" })?.height.map { "\($0)p" },
+                            resolution: video?.height.map { "\($0)p" },
+                            dynamicRange: Self.jellyfinHDR(video),
                             remotePath: movie.id,
                             fileURL: nil
                         )
@@ -518,14 +532,15 @@ public enum LibraryScanner {
                         PosterRef.jellyfin(itemID: episode.primaryImageTag != nil ? episode.id : (seasonItem?.id ?? posterItem.id), tag: $0)
                     }
                     let playback = try? await client.playbackInfo(itemID: episode.id)
-                    let episodeHeight = playback?.mediaSources.first?.mediaStreams?
-                        .first(where: { $0.type == "Video" })?.height
+                    let episodeVideo = playback?.mediaSources.first?.mediaStreams?
+                        .first(where: { $0.type == "Video" })
                     let version = ScannedVersion(
                         id: episodeID + "-v0",
                         name: "服务器版本",
                         mediaSourceID: nil,
                         container: nil,
-                        resolution: episodeHeight.map { "\($0)p" },
+                        resolution: episodeVideo?.height.map { "\($0)p" },
+                        dynamicRange: Self.jellyfinHDR(episodeVideo),
                         remotePath: episode.id,
                         fileURL: nil
                     )
@@ -596,6 +611,17 @@ public enum LibraryScanner {
         )
     }
 
+    static func jellyfinHDR(_ stream: JellyfinMediaStream?) -> String? {
+        guard let stream else { return nil }
+        let type = (stream.videoRangeType ?? "").lowercased()
+        if type.contains("dovi") || type.contains("dolby") { return "Dolby Vision" }
+        if type.contains("hdr10+") || type.contains("hdr10plus") { return "HDR10+" }
+        if type.contains("hdr10") { return "HDR10" }
+        if type.contains("hlg") { return "HLG" }
+        if (stream.videoRange ?? "").lowercased() == "hdr" { return "HDR" }
+        return nil
+    }
+
     static func jellyfinDate(_ value: String?) -> Date? {
         guard let value else { return nil }
         let formatter = ISO8601DateFormatter()
@@ -630,9 +656,9 @@ public enum LibraryScanner {
             try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
         }
 
-        func probeRemoteHeight(_ remotePath: String) async -> String? {
+        func probeRemoteHeight(_ remotePath: String) async -> (height: String?, dynamicRange: String?) {
             let ext = (remotePath as NSString).pathExtension.lowercased()
-            guard let header = client.basicAuthorizationHeader else { return nil }
+            guard let header = client.basicAuthorizationHeader else { return (nil, nil) }
             if ["mp4", "m4v", "mov"].contains(ext) {
                 let loader = AuthenticatedAssetLoader(
                     url: client.url(for: remotePath),
@@ -640,16 +666,16 @@ public enum LibraryScanner {
                 )
                 let asset = loader.makeAsset()
                 guard let track = try? await asset.loadTracks(withMediaType: .video).first,
-                      let size = try? await track.load(.naturalSize) else { return nil }
+                      let size = try? await track.load(.naturalSize) else { return (nil, nil) }
                 let height = Int(abs(size.height).rounded())
-                guard height > 0 else { return nil }
-                return height >= 2000 ? "2160p" : "\(height)p"
+                guard height > 0 else { return (nil, nil) }
+                return (height >= 2000 ? "2160p" : "\(height)p", nil)
             }
-            guard ["mkv", "webm", "ts", "m2ts", "avi"].contains(ext) else { return nil }
+            guard ["mkv", "webm", "ts", "m2ts", "avi"].contains(ext) else { return (nil, nil) }
             return await Self.probeRemoteVideoHeight(
                 url: client.url(for: remotePath),
                 authorization: header
-            )
+            ) ?? (nil, nil)
         }
 
         func cachePoster(remotePath: String) async -> String? {
@@ -755,7 +781,7 @@ public enum LibraryScanner {
                     }
                 }
 
-                let resolution = await probeRemoteHeight(entry.path)
+                let probe = await probeRemoteHeight(entry.path)
                 candidates.append(
                     FileCandidate(
                         relativePath: entry.path,
@@ -767,7 +793,8 @@ public enum LibraryScanner {
                         nfo: nfo,
                         showNFO: showNFO,
                         modifiedAt: entry.modifiedAt,
-                        resolution: resolution
+                        resolution: probe.height,
+                        dynamicRange: probe.dynamicRange
                     )
                 )
             }

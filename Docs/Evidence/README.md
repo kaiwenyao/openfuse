@@ -174,6 +174,10 @@
 | `87-hdr10.jpg` | HDR10 元数据/媒体库 | 应用内窗口快照 |
 | `reports/m5w-hdr-library.json` | HDR 版本报告 | 应用报告 |
 | `reports/m5w-hdr.txt` | HDR 元数据摘要 | 运行记录 |
+| `88-remote-hdr.jpg` | WebDAV HDR10 媒体库 | 应用内窗口快照 |
+| `reports/m5x-jellyfin-hdr.json` | Jellyfin HDR 报告 | 应用报告 |
+| `reports/m5x-webdav-hdr.json` | WebDAV HDR 报告 | 应用报告 |
+| `reports/m5x-remote-hdr.txt` | 远程 HDR 摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

@@ -194,7 +194,8 @@ def all_items() -> dict[str, dict]:
 def media_streams() -> list[dict]:
     return [
         {"Type": "Video", "Index": 0, "Codec": "hevc", "Profile": "Main 10", "Width": 1920, "Height": 1080,
-         "DisplayTitle": "1080p HEVC Main 10", "IsDefault": True},
+         "VideoRange": "HDR", "VideoRangeType": "HDR10",
+         "DisplayTitle": "1080p HEVC Main 10 HDR10", "IsDefault": True},
         {"Type": "Audio", "Index": 1, "Codec": "eac3", "Language": "chi", "Channels": 6,
          "DisplayTitle": "服务器音轨 · E-AC-3 5.1", "IsDefault": True},
         {"Type": "Subtitle", "Index": 2, "Codec": "ass", "Language": "chi",

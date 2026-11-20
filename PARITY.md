@@ -397,3 +397,11 @@
 | HDR10 样片 | MacBook Pro M2 Pro／macOS 27.2.1 | bt2020/smpte2084 1080p10bit | Infuse 未安装 | ffprobe 识别；dynamicRange=HDR10 | Evidence 87、`reports/m5w-hdr-library.json` | 通过（元数据） |
 | HDR 输出 | 同上 | 同上 | 待采样 | 未验证显示/tone mapping | — | 待验证 |
 | 远程 HDR | 同上 | WebDAV/Jellyfin | 待采样 | 未解析 | — | 待验证 |
+
+### M5x 远程 HDR 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jellyfin HDR | MacBook Pro M2 Pro／macOS 27.2.1 | 夹具 VideoRangeType=HDR10 | Infuse 未安装 | 版本 dynamicRange=HDR10/1080p | `reports/m5x-jellyfin-hdr.json` | 通过（元数据） |
+| WebDAV HDR | 同上 | HDR MKV | 待采样 | ffprobe HDR10，`1080p · WebDAV` | Evidence 88、`reports/m5x-webdav-hdr.json` | 通过（元数据） |
+| 实际 HDR 输出 | 同上 | 同上 | 待采样 | 未验证 | — | 待验证 |

@@ -155,6 +155,8 @@ public struct JellyfinMediaStream: Codable, Hashable, Sendable {
     public var width: Int?
     public var height: Int?
     public var profile: String?
+    public var videoRange: String?
+    public var videoRangeType: String?
 
     enum CodingKeys: String, CodingKey {
         case type = "Type"
@@ -170,6 +172,8 @@ public struct JellyfinMediaStream: Codable, Hashable, Sendable {
         case width = "Width"
         case height = "Height"
         case profile = "Profile"
+        case videoRange = "VideoRange"
+        case videoRangeType = "VideoRangeType"
     }
 }
 
