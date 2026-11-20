@@ -437,3 +437,11 @@
 | 内容去重 | MacBook Pro M2 Pro／macOS 27.2.1 | 两根同文件 | Infuse 未安装 | rawWorks=2/groups=1/versions=1 | `reports/m3p-local-dedupe.json` | 通过 |
 | 指纹 | 同上 | 1080p 样品 | 待采样 | contentKey size+首尾64KB SHA-256 | 同上 | 通过 |
 | 全文件/远程指纹 | 同上 | 大文件/SMB/WebDAV | 待采样 | 未做 | — | 待验证 |
+
+### M5z 5.1 解码执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| E-AC-3 5.1 | MacBook Pro M2 Pro／macOS 27.2.1 | 60s 测试 MKV | Infuse 未安装 | PCM 48k/6ch/5.1；六路非静音 | `reports/m5z-audio-pcm-probe.json` | 通过（解码） |
+| 扬声器听测 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |
+| Downmix/同步 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |

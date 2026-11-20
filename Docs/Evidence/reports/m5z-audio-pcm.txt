@@ -1,0 +1,18 @@
+OpenFuse M5z E-AC-3 5.1 decode evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Fixtures/generated/openfuse-fixture.mkv, E-AC-3 5.1 448k.
+
+Implementation:
+  Test-only OPENFUSE_AO_PCM switches mpv ao=pcm, ao-pcm-file, waveheader,
+  audio-channels=5.1; no CoreAudio output in this mode.
+
+Results:
+  WAV: pcm_f32le, 48000 Hz, 6 channels, 5.1, 16.096 s.
+  astats: all six channels non-silent (RMS around -24..-29 dB; LFE included).
+  Scripts/run-audio-pcm.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Actual speaker/headphone listening, CoreAudio device routing, downmix to
+  stereo, A/V sync by ear. This proves decode and 5.1 PCM layout, not audibility.

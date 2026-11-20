@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## E-AC-3 5.1 PCM 验证（M5z）
+
+- 测试模式 OPENFUSE_AO_PCM → ao=pcm/文件/waveheader/5.1；正常 CoreAudio。
+- 16s 走查 WAV：48k/6ch/5.1，六路非静音。
+- 仅解码验证；扬声器听测、设备路由、downmix 未做。
+
 ## 本地损坏文件过滤（M3n）
 
 - MediaProbe ffprobe 返回 playable；过滤损坏版本并移除空 movie/episode/season/work。

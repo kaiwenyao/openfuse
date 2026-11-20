@@ -67,8 +67,15 @@ public final class MPVEngine: @unchecked Sendable {
             setOption("gpu-api", "opengl")
         }
         setOption("hwdec", "videotoolbox")
-        setOption("ao", headless ? "null" : "coreaudio")
-        setOption("audio-channels", "auto-safe")
+        let pcmOutput = ProcessInfo.processInfo.environment["OPENFUSE_AO_PCM"] ?? ""
+        setOption("ao", headless ? "null" : (pcmOutput.isEmpty ? "coreaudio" : "pcm"))
+        if !pcmOutput.isEmpty {
+            setOption("ao-pcm-file", pcmOutput)
+            setOption("ao-pcm-waveheader", "yes")
+            setOption("audio-channels", ProcessInfo.processInfo.environment["OPENFUSE_AO_CHANNELS"] ?? "5.1")
+        } else {
+            setOption("audio-channels", "auto-safe")
+        }
         setOption("keep-open", "yes")
         setOption("idle", "yes")
         setOption("sub-auto", "no")

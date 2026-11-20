@@ -1,0 +1,17 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "pcm_f32le",
+            "sample_rate": "48000",
+            "channels": 6,
+            "channel_layout": "5.1",
+            "duration": "16.096000"
+        }
+    ]
+}

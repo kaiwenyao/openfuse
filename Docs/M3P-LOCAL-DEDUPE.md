@@ -35,4 +35,4 @@ M3o 后同一文件拷到两个根会出现两个版本。本轮为本地版本�
 
 ## 下一项
 
-M3q/M5z：全文件/抽样哈希策略；同内容跨标题合并；SMB/WebDAV 指纹；音频听测；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+E-AC-3 5.1 PCM 解码已在 [M5z 验收](Docs/M5Z-AUDIO-PCM.md) 完成（未扬声器听测）。剩余 M5aa：真实听测/设备路由/downmix、SMB/WebDAV 指纹、HDR 直通、真实 SMB3/Trakt、AirPlay、CloudKit。
