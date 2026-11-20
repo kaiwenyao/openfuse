@@ -49,7 +49,8 @@
 - **M5h Plex 多版本：完成本地验证。** 扫描遍历全部 `Media[]`，电影/每集保留 2 个版本；`--library-version 1` 实际播放 720p 备版（part 4012），字幕/进度回归通过。记录：[M5h 验收](Docs/M5H-PLEX-VERSIONS.md)。
 - **M5i Plex 直连浏览：完成。** 新增 Plex Direct NavigationStack：sections → 电影/剧 → 季/集 → 详情/播放；实测进入电影 section 并显示条目网格，请求带 token。播放按钮复用已验证的 `openPlexMetadata`。记录：[M5i 验收](Docs/M5I-PLEX-BROWSER.md)。
 - **M3l T07 扫描中播放：完成本地验证。** `--rescan-local` 在播放中重扫，播放器到 12.0s 未中断；损坏单文件不拖垮扫描（仍留下不可播条目）。不同本地目录会累积作品，测试改用独立 support。记录：[M3l 验收](Docs/M3L-T07.md)。
-- **下一项：** M5j：Plex 详情/播放点击自动化、音轨/版本 UI；版本级去重；真实服务器；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3m 多根本地库/损坏过滤。
+- **M3m WebDAV MKV 分辨率：完成。** 远程 MKV 用带 Basic Auth 的 ffprobe Range 探测，版本 `1080p · WebDAV`，1080p 筛选覆盖；terminationHandler 避免等待死锁。iOS 扫描端仍无 ffprobe。记录：[M3m 验收](Docs/M3M-WEBDAV-MKV.md)。
+- **下一项：** M5j：Plex 详情点击/音轨；版本级去重；SMB/HDR/AirPlay；CloudKit/Trakt；音频听测；iOS 远程 MKV 探测；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -79,7 +80,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m3l-t07`（基于 M5i 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3m-webdav-mkv-resolution`（基于 M3l 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

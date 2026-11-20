@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## WebDAV MKV 分辨率（M3m）
+
+- 远程 MKV/TS/WebM/AVI 用 ffprobe + Basic Auth + HTTP Range；terminationHandler 读取临时输出，避免 NSTask 等待死锁。
+- 高度写入 ScannedVersion.resolution，名称 `1080p · WebDAV`；报告序列化 resolution；1080p 筛选覆盖。
+- 仅 macOS；iOS/tvOS/visionOS 扫描端无 ffprobe；真实 OpenList/大文件/HDR 未验证。
+
 ## T07 扫描中播放（M3l）
 
 - 新增 CLI `--rescan-local <dir>`，在播放中触发本地重扫。

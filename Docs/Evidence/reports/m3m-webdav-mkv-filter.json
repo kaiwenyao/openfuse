@@ -1,0 +1,76 @@
+{
+  "episodes": 1,
+  "generatedAt": "2026-11-20T04:20:40Z",
+  "groups": [
+    {
+      "key": "movie|openfuse remote",
+      "primary": "OpenFuse Remote",
+      "sources": [
+        "webdav"
+      ],
+      "workIDs": [
+        "webdav-9402f181f9495ac5"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-9402f181f9495ac5-main",
+          "remotePath": "Movie/OpenFuse.Remote.mkv",
+          "season": 0,
+          "sourceKind": "webdav",
+          "title": "OpenFuse Remote",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-9402f181f9495ac5-main-v0",
+              "mediaSourceID": "",
+              "name": "1080p · WebDAV",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-9402f181f9495ac5",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "",
+      "seasons": [],
+      "sourceID": "c8e376ed97ead924",
+      "sourceKind": "webdav",
+      "title": "OpenFuse Remote",
+      "year": 0
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Remote",
+          "versions": [
+            "WebDAV · 1080p · WebDAV"
+          ]
+        }
+      ],
+      "key": "movie|openfuse remote",
+      "sources": [
+        "webdav"
+      ],
+      "title": "OpenFuse Remote"
+    }
+  ],
+  "rawEpisodes": 1,
+  "rawWorks": 1,
+  "status": "",
+  "visible": [
+    "OpenFuse Remote"
+  ],
+  "works": 1
+}

@@ -7,14 +7,14 @@
 | M0 参照与选型 | 完成（Infuse 实机采样除外） | AVPlayer 打不开 MKV；libmpv 胜出。夹具与声道校验完成。 |
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
 | M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
-| M3 Mac 媒体库 | 基本完成：M3a–M3l | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07 扫描中播放与损坏单文件通过；多根本地库累积、损坏过滤、WebDAV MKV 分辨率仍待。 |
+| M3 Mac 媒体库 | 基本完成：M3a–M3m | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07 扫描中播放/损坏单文件；WebDAV MKV 分辨率（macOS ffprobe）与 1080p 筛选通过。多根本地库策略、损坏过滤、iOS 远程 MKV 探测仍待。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M4p | 五端实际启动；iPhone/iPad 远程 WebDAV+Jellyfin；移动音轨/字幕；tvOS/visionOS 播放；进度同步协议 + 本地共享文件两设备续播实测（A 9.917s → B 14.417s）；CloudKit transport 代码、真实 iCloud 未验证。音频听测、ASS 样式、沉浸式交互、Trakt/自动同步未做。 |
 | M5 其余来源与高级播放 | 部分完成：M5a–M5i | Plex 扫描/播放/timeline/scrobble/字幕/多版本/Plex Direct 浏览；macOS 自包含 app；Emby；Jellyfin+Emby 去重/progress。未公证/仅 arm64；真实服务器、版本级去重、Plex 详情点击/音轨、SMB/HDR/AirPlay、CloudKit/Trakt、音频未做。 |
 | M6 Vision Pro | 未开始 | |
 
 ## 当前分支
 
-`m3l-t07`（基于 M5i 提交）。M5j/M3m 从该分支继续。
+`m3m-webdav-mkv-resolution`（基于 M3l 提交）。M5j 从该分支继续。
 
 ## 下一批可执行工作
 

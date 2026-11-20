@@ -1193,7 +1193,13 @@ final class AppModel: ObservableObject {
                         "fileURL": episode.fileURL ?? "",
                         "remotePath": episode.remotePath ?? "",
                         "versions": libraryVersions(itemID: episode.id).map { version in
-                            ["id": version.id, "name": version.name, "fileURL": version.fileURL ?? "", "mediaSourceID": version.mediaSourceID ?? ""]
+                            [
+                                "id": version.id,
+                                "name": version.name,
+                                "resolution": version.resolution ?? "",
+                                "fileURL": version.fileURL ?? "",
+                                "mediaSourceID": version.mediaSourceID ?? "",
+                            ]
                         },
                     ]
                 },

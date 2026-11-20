@@ -1,0 +1,22 @@
+OpenFuse M3m WebDAV MKV resolution evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: WebDAV server on 8122, one remote MKV (1920x1080 HEVC).
+
+Implementation:
+  LibraryScanner.probeRemoteVideoHeight uses ffprobe with -
+  headers "Authorization: Basic ...\r\n", -rw_timeout 8s, Range HTTP.
+  Output read via terminationHandler + temp file (avoids NSTask wait deadlock).
+  Candidate resolution stored in ScannedVersion.resolution; name
+  "1080p · WebDAV"; library report now serializes resolution.
+
+Results:
+  Scan report: version resolution "1080p", name "1080p · WebDAV".
+  1080p filter report: visible ["OpenFuse Remote"], groups 1.
+  Server log: Lavf GET Range bytes=0- with Basic auth, 206; aborted after probe.
+  Scripts/run-webdav-mkv-resolution.sh PASS.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real OpenList/Baidu MKV and large files/timeouts; iOS on-device remote MKV
+  probe (ffprobe path is macOS-only); HDR metadata; audio.

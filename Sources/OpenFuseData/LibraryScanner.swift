@@ -118,6 +118,58 @@ public enum LibraryScanner {
         )
     }
 
+    static func probeRemoteVideoHeight(url: URL, authorization: String) async -> String? {
+        #if os(macOS)
+        let candidates = ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe", "/usr/bin/ffprobe"]
+        guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            return nil
+        }
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-ffprobe-\(UUID().uuidString).txt")
+        FileManager.default.createFile(atPath: outputURL.path, contents: nil)
+        guard let output = FileHandle(forWritingAtPath: outputURL.path) else { return nil }
+        defer { try? FileManager.default.removeItem(at: outputURL) }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = [
+            "-v", "error",
+            "-rw_timeout", "8000000",
+            "-analyzeduration", "500000",
+            "-probesize", "1000000",
+            "-headers", "Authorization: \(authorization)\r\n",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=height",
+            "-of", "csv=p=0",
+            url.absoluteString,
+        ]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        return await withCheckedContinuation { continuation in
+            process.terminationHandler = { _ in
+                try? output.close()
+                let data = (try? Data(contentsOf: outputURL)) ?? Data()
+                let text = String(decoding: data, as: UTF8.self)
+                let height = text
+                    .split(whereSeparator: { $0 == "\n" || $0 == "," })
+                    .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+                    .first
+                guard let height, height > 0 else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                continuation.resume(returning: height >= 2000 ? "2160p" : "\(height)p")
+            }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(returning: nil)
+            }
+        }
+        #else
+        return nil
+        #endif
+    }
+
     static func probeLocalHeight(_ url: URL) -> String? {
         #if os(visionOS)
         return nil
@@ -219,7 +271,9 @@ public enum LibraryScanner {
                 ?? candidate.posterURL.map { PosterRef.remote($0) }
             let version = ScannedVersion(
                 id: versionID,
-                name: sourceKind == "local" ? "本地文件" : "WebDAV",
+                name: candidate.resolution.map {
+                    "\($0) · \(sourceKind == "local" ? "本地" : "WebDAV")"
+                } ?? (sourceKind == "local" ? "本地文件" : "WebDAV"),
                 mediaSourceID: nil,
                 container: (candidate.name as NSString).pathExtension.uppercased(),
                 resolution: candidate.resolution,
@@ -271,7 +325,9 @@ public enum LibraryScanner {
                 let versionID = episodeID + "-v0"
                 let version = ScannedVersion(
                     id: versionID,
-                    name: sourceKind == "local" ? "本地文件" : "WebDAV",
+                    name: candidate.resolution.map {
+                    "\($0) · \(sourceKind == "local" ? "本地" : "WebDAV")"
+                } ?? (sourceKind == "local" ? "本地文件" : "WebDAV"),
                     mediaSourceID: nil,
                     container: (candidate.name as NSString).pathExtension.uppercased(),
                     resolution: candidate.resolution,
@@ -576,17 +632,24 @@ public enum LibraryScanner {
 
         func probeRemoteHeight(_ remotePath: String) async -> String? {
             let ext = (remotePath as NSString).pathExtension.lowercased()
-            guard ["mp4", "m4v", "mov"].contains(ext), let header = client.basicAuthorizationHeader else { return nil }
-            let loader = AuthenticatedAssetLoader(
+            guard let header = client.basicAuthorizationHeader else { return nil }
+            if ["mp4", "m4v", "mov"].contains(ext) {
+                let loader = AuthenticatedAssetLoader(
+                    url: client.url(for: remotePath),
+                    headers: ["Authorization": header]
+                )
+                let asset = loader.makeAsset()
+                guard let track = try? await asset.loadTracks(withMediaType: .video).first,
+                      let size = try? await track.load(.naturalSize) else { return nil }
+                let height = Int(abs(size.height).rounded())
+                guard height > 0 else { return nil }
+                return height >= 2000 ? "2160p" : "\(height)p"
+            }
+            guard ["mkv", "webm", "ts", "m2ts", "avi"].contains(ext) else { return nil }
+            return await Self.probeRemoteVideoHeight(
                 url: client.url(for: remotePath),
-                headers: ["Authorization": header]
+                authorization: header
             )
-            let asset = loader.makeAsset()
-            guard let track = try? await asset.loadTracks(withMediaType: .video).first,
-                  let size = try? await track.load(.naturalSize) else { return nil }
-            let height = Int(abs(size.height).rounded())
-            guard height > 0 else { return nil }
-            return height >= 2000 ? "2160p" : "\(height)p"
         }
 
         func cachePoster(remotePath: String) async -> String? {
