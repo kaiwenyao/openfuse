@@ -106,7 +106,8 @@
 - **M5aq SMB 16并发：完成。** 3批×16共48个 Range 全部206、播放继续1202s、RSS 128→112MB。>16/长稳/DFS未测。记录：[M5aq 验收](Docs/M5AQ-SAMBA-CONCURRENCY-16.md)。
 - **M6e 实际音频输出：完成客观验证。** iFlyrec/BlackHole 2ch 录到回放 mean -24.5dB；输出切内置扬声器时虚拟设备 -91dB 静音，证明路由生效；源 E-AC-3 6ch。物理5.1/人耳/HDMI未测。记录：[M6e 验收](Docs/M6E-AUDIO-OUTPUT.md)。
 - **M5ar SMB 32并发：修复并验证。** listen backlog 16 导致 21/32；改为128后 32/32 Range 206、播放继续1200s、RSS 211MB稳定。>32/长稳/DFS未测。记录：[M5ar 验收](Docs/M5AR-SAMBA-CONCURRENCY-32.md)。
-- **下一项：** M5as/M6f：>32/长稳/DFS；物理5.1/人耳/HDMI；HDR测量；CloudKit/visionOS。
+- **M5as SMB 64并发：完成。** 64/64 Range 206、播放继续1202s、RSS 167→158MB；backlog128/4活跃槽可承受。>64/长稳/DFS未测。记录：[M5as 验收](Docs/M5AS-SAMBA-CONCURRENCY-64.md)。
+- **下一项：** M5at/M6f：>64/长稳/DFS；物理5.1/人耳/HDMI；HDR测量；CloudKit/visionOS。
 
 开发入口：
 
@@ -137,7 +138,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5ar-samba-concurrency-32`（基于 M6e 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5as-samba-concurrency-64`（基于 M5ar 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

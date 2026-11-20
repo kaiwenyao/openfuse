@@ -1,0 +1,73 @@
+{
+  "app" : "OpenFuse",
+  "arguments" : [
+    "build\/OpenFuse.app\/Contents\/MacOS\/OpenFuse",
+    "--library-play",
+    "smb-ac79af28924396a8-main",
+    "--seek",
+    "1200",
+    "--freeze-at",
+    "1202",
+    "--capture",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/samba-concurrency-64\/play.png",
+    "--capture-after",
+    "8",
+    "--report",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/samba-concurrency-64\/play.json",
+    "--quit-after",
+    "50"
+  ],
+  "audio" : [
+    {
+      "channels" : 6,
+      "codec" : "eac3",
+      "engineID" : 1,
+      "id" : "mpv-audio:1",
+      "label" : "E-AC-3 5.1",
+      "name" : "音轨 1"
+    }
+  ],
+  "audioChannels" : "6",
+  "audioCodec" : "eac3",
+  "audioDevice" : "auto",
+  "audioDeviceActive" : "auto",
+  "audioOutParams" : "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams" : "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "currentAO" : "coreaudio",
+  "currentVO" : "libmpv",
+  "duration" : 1800,
+  "engine" : "libmpv",
+  "file" : "http:\/\/127.0.0.1:51434\/stream",
+  "generatedAt" : "2026-11-20T12:52:50Z",
+  "hdrComputePeak" : "yes",
+  "hwdecCurrent" : "videotoolbox",
+  "isFullScreen" : false,
+  "libraryStatus" : "",
+  "logs" : [
+    "[warn] libmpv_render: Disabling HDR peak computation (one or more of the following is not supported: compute shaders=0, SSBO=0).",
+    "[warn] libmpv_render: Tone mapping curve unsupported by vo_gpu, falling back."
+  ],
+  "mpv" : "mpv v0.42.0",
+  "paused" : true,
+  "position" : 1202,
+  "remotePath" : "\/OpenFuse.Concurrency64.mkv",
+  "screenEDR" : 16,
+  "selectedAudio" : "mpv-audio:1",
+  "selectedSubtitle" : "off",
+  "sourceID" : "bdebc1099012fbb7",
+  "sourceKind" : "smb",
+  "sourceName" : "Samba",
+  "subtitles" : [
+
+  ],
+  "targetColorspaceHint" : "yes",
+  "title" : "OpenFuse Concurrency64",
+  "toneMapping" : "spline",
+  "videoCodec" : "hevc \/ Main 10",
+  "videoDescription" : "H.265 \/ HEVC (High Efficiency Video Coding)",
+  "videoGamma" : "bt.1886",
+  "videoOutParams" : "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1280,\"h\":720,\"dw\":1280,\"dh\":720,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1280,\"crop-h\":720,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2\/4\/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "videoPrimaries" : "bt.709",
+  "videoSigPeak" : "0.000000",
+  "windowFrame" : "{{137, 141}, {1180, 760}}"
+}

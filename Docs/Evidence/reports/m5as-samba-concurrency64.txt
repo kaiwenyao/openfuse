@@ -1,0 +1,14 @@
+OpenFuse M5as 64-way SMB concurrency evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 2.4GB file; listen backlog 128, 4 active slots.
+
+Results:
+  64/64 Range HTTP 206, 524288 bytes each.
+  Playback continued at 1202/1800.
+  RSS 167MB -> 158MB.
+  Scripts/run-samba-concurrency-64.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  >64 clients, long soak, DFS/domain, real NAS; audio.
