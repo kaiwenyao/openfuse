@@ -4,12 +4,16 @@ import PackageDescription
 let package = Package(
     name: "OpenFuse",
     platforms: [
-        .macOS(.v14)
+        .macOS(.v14),
+        .iOS(.v18),
+        .tvOS(.v18),
+        .visionOS(.v2),
     ],
     products: [
         .executable(name: "OpenFuse", targets: ["OpenFuseApp"]),
         .executable(name: "openfuse-probe", targets: ["openfuse-probe"]),
         .library(name: "OpenFuseCore", targets: ["OpenFuseCore"]),
+        .library(name: "OpenFuseData", targets: ["OpenFuseData"]),
     ],
     targets: [
         // Thin C shim so Swift can call libmpv's stable client API.
@@ -19,8 +23,18 @@ let package = Package(
             providers: [.brew(["mpv"])]
         ),
         .target(
+            name: "OpenFuseData",
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
+            ],
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
+                .linkedFramework("Security"),
+            ]
+        ),
+        .target(
             name: "OpenFuseCore",
-            dependencies: ["CMpv"],
+            dependencies: ["OpenFuseData", "CMpv"],
             swiftSettings: [
                 .unsafeFlags(["-I/opt/homebrew/include"]),
                 .swiftLanguageMode(.v5),

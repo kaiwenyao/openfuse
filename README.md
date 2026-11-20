@@ -19,7 +19,8 @@
 - **M3f WebDAV 元数据：完成本地验证。** WebDAV 扫描下载 NFO，使用 movie/tvshow/单集 NFO 的标题/简介/海报；海报经 Basic Auth 下载并缓存，海报库不再依赖 TMDB。记录：[M3f WebDAV NFO 验收](Docs/M3F-WEBDAV-NFO.md)。
 - **M3g 媒体库排序/筛选：完成本地验证。** 标题/年份/最近添加/集数排序，电影/剧集筛选，搜索组合；`addedAt` 来自本地 mtime、WebDAV mtime、Jellyfin DateCreated。记录：[M3g 排序筛选验收](Docs/M3G-FILTERS.md)。
 - **尚未完成：** 防剧透、观看状态/分辨率筛选、继续观看排序、T07 扫描中播放/超时恢复、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
-- **下一项：** M3h：防剧透、观看状态/分辨率筛选、继续观看排序；或进入 M4 家庭设备与状态同步（M3 剩余项单列待办）。
+- **M4a 跨平台数据层与 iOS 首版：构建完成，运行待验证。** 拆分 `OpenFuseData`（媒体库/WebDAV/Jellyfin/SQLite/记录）供全平台复用；新增 iPhone/iPad SwiftUI 应用、示例 MP4、Files 导入、AVPlayer 播放与续播。iOS Simulator/device generic 构建均成功；本轮无模拟器 runtime，启动/触控/后台恢复标「待验证」。记录：[M4a 移动端验收](Docs/M4-MOBILE.md)。
+- **下一项：** M4b：安装模拟器 runtime 并实际启动/截图；移动端 Jellyfin/WebDAV 来源、MKV/libmpv、iPad 分栏、tvOS/visionOS、CloudKit/Trakt。M3 剩余项（防剧透、观看状态/分辨率筛选、继续观看排序、T07 深入）仍在待办。
 
 开发入口：
 
@@ -40,10 +41,11 @@ Scripts/run-scan-stress.sh          # 10,000 条目扫描、取消与旧库保�
 Scripts/run-manual-merge.sh         # 手动合并/拆分与分组持久化
 Scripts/run-webdav-metadata.sh      # WebDAV NFO 与认证海报缓存
 Scripts/run-library-filters.sh      # 排序/类型筛选/搜索组合
+Scripts/build-ios.sh                # iPhone/iPad（XcodeGen + xcodebuild）
 open build/OpenFuse.app
 ```
 
-当前分支 `m3g-filters`（从 `m3f-webdav` 拉出）。每个里程碑使用独立分支；M3h 或 M4 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
+当前分支 `m4-shared-core`（从 `m3g-filters` 拉出）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

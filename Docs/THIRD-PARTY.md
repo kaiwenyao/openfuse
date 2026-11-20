@@ -11,6 +11,7 @@
 | 系统字体 PingFang SC / Hiragino Sans | macOS 27.2.1 | 测试字幕样式与回退 | 系统许可 | 本机系统 |
 | SQLite | 系统自带（libsqlite3） | 本地媒体库 | Public Domain | macOS SDK |
 | TMDB API | v3（可选，需用户 key） | 片名/简介/海报元数据 | TMDB API 服务条款，需署名 | 用户环境变量 `OPENFUSE_TMDB_API_KEY`；仓库不含 key |
+| XcodeGen | 2.48.0 | 生成 iOS Xcode 工程（构建期） | MIT | Homebrew；不随应用分发 |
 
 注意：
 

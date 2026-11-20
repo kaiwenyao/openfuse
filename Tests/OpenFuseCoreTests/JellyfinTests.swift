@@ -1,5 +1,6 @@
 import XCTest
 @testable import OpenFuseCore
+@testable import OpenFuseData
 
 final class JellyfinTests: XCTestCase {
     func testDecodesItemAndPlaybackInfo() throws {

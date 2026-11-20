@@ -48,6 +48,7 @@
 | `reports/m3f-webdav-nfo.json` | WebDAV NFO/海报扫描报告 | 应用 `--library-report` |
 | `36-library-filters.jpg` | 电影筛选 + 年份排序后的媒体库 | 应用内窗口快照 |
 | `reports/m3g-filter-*.json` | 类型筛选/集数排序/搜索报告 | 应用 `--library-report` |
+| `reports/m4-ios-build.txt` | iOS Simulator/device 构建与未验证项 | `xcodebuild` 日志摘要 |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |

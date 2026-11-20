@@ -1,0 +1,25 @@
+OpenFuse M4a build evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+
+Commands:
+  swift test
+  Scripts/build-app.sh
+  xcodegen generate --spec project.yml
+  xcodebuild -project OpenFuseMobile.xcodeproj -scheme OpenFuseMobile \
+    -configuration Debug -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath build/mobile-derived CODE_SIGNING_ALLOWED=NO build
+  xcodebuild ... -configuration Release -destination 'generic/platform=iOS' \
+    -derivedDataPath build/mobile-device CODE_SIGNING_ALLOWED=NO build
+
+Results:
+  swift test: 25/25 passed
+  Mac build/scan smoke: 3 works / 4 episodes / 3 groups
+  iOS Simulator generic build: BUILD SUCCEEDED (exit 0)
+  iOS device generic build: BUILD SUCCEEDED (exit 0)
+  OpenFuse.app (simulator): build/mobile-derived/Build/Products/Debug-iphonesimulator/OpenFuse.app
+
+Not verified:
+  No installed simulator runtime at build time. `xcodebuild -downloadPlatform iOS`
+  started downloading iOS 27.2 Simulator (8.32 GB); launch, layout, touch,
+  background/resume, and screenshots remain 待验证.

@@ -15,3 +15,6 @@ Fixtures/frames/
 
 __pycache__/
 *.pyc
+
+*.xcodeproj/
+!Fixtures/mobile/*.mp4

@@ -103,6 +103,14 @@
 | 集数排序 | 同上 | 同上 | 待采样 | 剧集按集数：《示例剧》2 集在《另一部剧》1 集前 | `reports/m3g-filter-series.json` | 本地通过 |
 | 搜索+排序 | 同上 | 同上 | 待采样 | 「示例」只剩《示例剧》 | `reports/m3g-filter-search.json` | 本地通过 |
 
+### M4a 移动端构建执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iOS Simulator 构建 | MacBook Pro M2 Pro／macOS 27.2.1／Xcode 27.2 | `Fixtures/mobile/openfuse-mobile.mp4` | Infuse 未安装 | `xcodebuild -destination 'generic/platform=iOS Simulator'` → BUILD SUCCEEDED | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
+| iOS device 构建 | 同上 | 同上 | 待采样 | `generic/platform=iOS` Release → BUILD SUCCEEDED | 同上 | 构建通过；真机待验证 |
+| 移动 UI/播放/续播 | 同上 | 20s H.264/AAC 示例 | 待采样 | 无模拟器 runtime；启动、布局、触控、后台恢复、音频均未执行 | — | 待验证 |
+
 
 
 

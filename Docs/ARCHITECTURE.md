@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 跨平台分层（M4a）
+
+- `OpenFuseData`（SwiftPM library）：媒体/库模型、SQLite、扫描、WebDAV、Jellyfin、TMDB/NFO、覆盖、播放记录、凭据、聚合；Foundation/Security/sqlite3，无 AppKit/mpv，可编 iOS/tvOS/visionOS。
+- `OpenFuseCore`：macOS 播放层（libmpv/OpenGL），`@_exported import OpenFuseData` 保持旧 import。
+- `Platforms/Mobile` + `project.yml`：iPhone/iPad SwiftUI；AVPlayer 本地 MP4/MOV、Files 导入、PlaybackStore 续播；示例 MP4 首次启动入库。
+- 生成 `OpenFuseMobile.xcodeproj`（不入库），`Scripts/build-ios.sh` 重建。
+- 未做：移动端服务器来源/字幕/音轨/MKV、iPad 分栏、tvOS/visionOS、CloudKit/Trakt。
+
 ## 排序、筛选与最近添加（M3g）
 
 - `ScannedWork.addedAt`：本地 mtime、WebDAV modifiedAt、Jellyfin DateCreated；LibraryStore 写入 `added_at`。
