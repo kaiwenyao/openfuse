@@ -135,6 +135,9 @@ public enum LibraryAggregation {
         if let mediaSourceID = version.mediaSourceID, !mediaSourceID.isEmpty {
             return "media|\(mediaSourceID)|\(version.name)|\(version.resolution ?? "")"
         }
+        if let contentKey = version.contentKey, !contentKey.isEmpty {
+            return "content|\(contentKey)|\(version.name)"
+        }
         if let remotePath = version.remotePath, !remotePath.isEmpty {
             return "path|\(remotePath)|\(version.name)"
         }

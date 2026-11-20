@@ -1669,6 +1669,7 @@ final class AppModel: ObservableObject {
                                 "name": version.name,
                                 "resolution": version.resolution ?? "",
                                 "dynamicRange": version.dynamicRange ?? "",
+                                "contentKey": version.contentKey ?? "",
                                 "fileURL": version.fileURL ?? "",
                                 "mediaSourceID": version.mediaSourceID ?? "",
                             ]

@@ -1,0 +1,113 @@
+{
+  "episodes": 1,
+  "generatedAt": "2026-11-20T06:50:16Z",
+  "groups": [
+    {
+      "key": "movie|dup movie",
+      "primary": "Dup Movie",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-2363a436a1ffae62",
+        "local-73c1dca884f4d497"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/local-dedupe/root-a/Movies/Dup%20Movie%20(2026).mkv",
+          "id": "local-2363a436a1ffae62-main",
+          "remotePath": "",
+          "season": 0,
+          "sourceKind": "local",
+          "title": "Dup Movie",
+          "versions": [
+            {
+              "contentKey": "7289df19a59322bfc219bf09ec855bdc",
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/local-dedupe/root-a/Movies/Dup%20Movie%20(2026).mkv",
+              "id": "local-2363a436a1ffae62-main-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-2363a436a1ffae62",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "",
+      "seasons": [],
+      "sourceID": "local-ef6093060db6b25c",
+      "sourceKind": "local",
+      "title": "Dup Movie",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/local-dedupe/root-b/Movies/Dup%20Movie%20(2026).mkv",
+          "id": "local-73c1dca884f4d497-main",
+          "remotePath": "",
+          "season": 0,
+          "sourceKind": "local",
+          "title": "Dup Movie",
+          "versions": [
+            {
+              "contentKey": "7289df19a59322bfc219bf09ec855bdc",
+              "dynamicRange": "",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/local-dedupe/root-b/Movies/Dup%20Movie%20(2026).mkv",
+              "id": "local-73c1dca884f4d497-main-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-73c1dca884f4d497",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "",
+      "seasons": [],
+      "sourceID": "local-93db2b4fb177304c",
+      "sourceKind": "local",
+      "title": "Dup Movie",
+      "year": 2026
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "Dup Movie",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "movie|dup movie",
+      "sources": [
+        "local"
+      ],
+      "title": "Dup Movie"
+    }
+  ],
+  "rawEpisodes": 2,
+  "rawWorks": 2,
+  "status": "已扫描 root-b：2 个作品",
+  "visible": [
+    "Dup Movie"
+  ],
+  "works": 1
+}

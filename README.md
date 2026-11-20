@@ -69,7 +69,8 @@
 - **M5y HDR10 播放：完成色调映射验证。** libmpv 读入 bt.2020/pq（sig-peak 4.93），spline + compute-peak 输出 SDR 彩色条正常；播放报告暴露 HDR 属性。真实 HDR 直通/显示器未验证。记录：[M5y 验收](Docs/M5Y-HDR-PLAYBACK.md)。
 - **M3n 损坏过滤：完成本地验证。** ffprobe 判定本地版本可播放性，Broken.Movie 不再入库；空作品逐级移除，扫描中播放仍通过。SMB/WebDAV 损坏过滤未做。记录：[M3n 验收](Docs/M3N-CORRUPT-FILTER.md)。
 - **M3o 多根本地库：完成本地验证。** `local-roots.json` 持久化根目录，每个根独立 sourceID；可扫描全部/移除。两根目录共存 rawWorks=2，移除后=1。跨根重复文件未按内容去重。记录：[M3o 验收](Docs/M3O-LOCAL-ROOTS.md)。
-- **下一项：** M3p/M5z：跨根文件级去重；SMB/WebDAV 损坏过滤；HDR 直通/真实显示器；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit。
+- **M3p 跨根去重：完成本地验证。** 本地版本记录 size+首尾 64KB SHA-256 contentKey；同内容跨根版本合并为 1 条（rawWorks=2/groups=1）。非全文件哈希，SMB/WebDAV 无指纹。记录：[M3p 验收](Docs/M3P-LOCAL-DEDUPE.md)。
+- **下一项：** M3q/M5z：全文件/抽样哈希策略；SMB/WebDAV 指纹；音频听测；HDR 直通/真实显示器；真实 SMB3/Trakt；AirPlay 实机；CloudKit。
 
 开发入口：
 
@@ -100,7 +101,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m3o-local-roots`（基于 M3n 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3p-local-dedupe`（基于 M3o 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

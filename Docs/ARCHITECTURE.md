@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## 跨根内容去重（M3p）
+
+- 本地版本 contentKey = SHA-256(size+首尾64KB)，存 versions.content_key。
+- versionIdentity 优先 contentKey；跨根同内容版本合并；非全文件哈希，SMB/WebDAV 无指纹。
+- 同内容不同标题仍分开。
+
 ## 多根本地库（M3o）
 
 - LocalRootStore 持久化 local-roots.json；scanner sourceID 由根路径哈希生成。

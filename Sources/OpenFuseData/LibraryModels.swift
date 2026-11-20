@@ -111,6 +111,7 @@ public struct LibraryVersion: Identifiable, Hashable, Sendable {
     public var container: String?
     public var resolution: String?
     public var dynamicRange: String?
+    public var contentKey: String?
     public var fileURL: String?
 }
 
@@ -182,6 +183,7 @@ public struct ScannedVersion: Sendable {
     public var container: String?
     public var resolution: String?
     public var dynamicRange: String?
+    public var contentKey: String?
     public var remotePath: String?
     public var fileURL: String?
 }

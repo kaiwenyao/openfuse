@@ -1,0 +1,19 @@
+OpenFuse M3p cross-root content dedupe evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Roots: A/B each with identical "Dup Movie (2026).mkv".
+
+Implementation:
+  Local versions compute contentKey = SHA-256(size + first 64KB + last 64KB)
+  prefix; stored in versions.content_key (ALTER migration). Version merge
+  prefers contentKey over path/fileURL.
+
+Results:
+  After scanning both roots: rawWorks=2, groups=1, merged versions=1
+  ("本地 · 本地文件"), contentKey=7289df19a59322bfc219bf09ec855bdc.
+  Scripts/run-local-dedupe.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Full-file hash/collisions; same file with different titles stays separate;
+  SMB/WebDAV content keys; audio.

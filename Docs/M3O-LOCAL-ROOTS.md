@@ -34,4 +34,4 @@
 
 ## 下一项
 
-M3p/M5z：跨根文件级去重；SMB/WebDAV 损坏过滤；音频听测；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+跨根内容去重已在 [M3p 验收](Docs/M3P-LOCAL-DEDUPE.md) 完成。剩余 M3q/M5z：全文件/抽样哈希策略、SMB/WebDAV 指纹/损坏过滤、音频听测、HDR 直通、真实 SMB3/Trakt、AirPlay、CloudKit。

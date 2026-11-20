@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import OpenFuseCore
 
@@ -41,8 +42,30 @@ enum MediaProbe {
             var copy = version
             if copy.resolution == nil { copy.resolution = probe.height }
             if copy.dynamicRange == nil { copy.dynamicRange = probe.dynamicRange }
+            if copy.contentKey == nil { copy.contentKey = contentKey(path) }
             return copy
         }
+    }
+
+    private static func contentKey(_ url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        let size = (try? handle.seekToEnd()) ?? 0
+        guard size > 0 else { return nil }
+        let chunk: UInt64 = 65_536
+        var hasher = SHA256()
+        withUnsafeBytes(of: size.littleEndian) { hasher.update(bufferPointer: $0) }
+        if let first = try? handle.read(upToCount: Int(min(chunk, size))), !first.isEmpty {
+            hasher.update(data: first)
+        }
+        if size > chunk {
+            try? handle.seek(toOffset: size - chunk)
+            if let last = try? handle.read(upToCount: Int(chunk)), !last.isEmpty {
+                hasher.update(data: last)
+            }
+        }
+        let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        return String(digest.prefix(32))
     }
 
     private static func probeVideo(_ url: URL) -> VideoInfo {
