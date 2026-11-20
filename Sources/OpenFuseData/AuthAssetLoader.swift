@@ -41,8 +41,21 @@ public final class AuthenticatedAssetLoader: NSObject, AVAssetResourceLoaderDele
         return components.url ?? realURL
     }
 
-    private func request(method: String, range: String? = nil) -> URLRequest {
-        var request = URLRequest(url: realURL)
+    private func mappedURL(_ requested: URL?) -> URL {
+        guard let requested, requested.scheme == "openfuse-auth",
+              var components = URLComponents(url: requested, resolvingAgainstBaseURL: false) else {
+            return realURL
+        }
+        components.scheme = realURL.scheme
+        components.host = realURL.host
+        components.port = realURL.port
+        components.user = realURL.user
+        components.password = realURL.password
+        return components.url ?? realURL
+    }
+
+    private func request(method: String, range: String? = nil, url: URL? = nil) -> URLRequest {
+        var request = URLRequest(url: mappedURL(url))
         request.httpMethod = method
         for (key, value) in headers {
             request.setValue(value, forHTTPHeaderField: key)
@@ -81,7 +94,7 @@ public final class AuthenticatedAssetLoader: NSObject, AVAssetResourceLoaderDele
         _ information: AVAssetResourceLoadingContentInformationRequest,
         request loadingRequest: AVAssetResourceLoadingRequest
     ) {
-        let task = session.dataTask(with: request(method: "HEAD")) { [weak self] _, response, error in
+        let task = session.dataTask(with: request(method: "HEAD", url: loadingRequest.request.url)) { [weak self] _, response, error in
             guard let self else { return }
             defer { self.finish(loadingRequest) }
             if let error {
@@ -115,7 +128,7 @@ public final class AuthenticatedAssetLoader: NSObject, AVAssetResourceLoaderDele
         } else {
             range = "bytes=\(offset)-"
         }
-        let task = session.dataTask(with: request(method: "GET", range: range)) { [weak self] data, response, error in
+        let task = session.dataTask(with: request(method: "GET", range: range, url: loadingRequest.request.url)) { [weak self] data, response, error in
             guard let self else { return }
             defer { self.finish(loadingRequest) }
             if let error {

@@ -570,3 +570,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | Jellyfin 12 全链路 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin Docker + local | Infuse 未安装 | 1080p 扫描；seek 11.106s；6ch/字幕；位置 11.022s、Played=false | Evidence 97、`reports/m2e-real-jellyfin-*` | 通过（Docker） |
 | HTTPS/转码/多用户 | 同上 | 真实服务器 | 待采样 | 未测 | — | 待验证 |
+
+### M2f iPhone Jellyfin HLS 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jellyfin HLS | iPhone 18 Pro 模拟器／iOS 27.2 | 真实 Jellyfin 12 MKV | Infuse 未安装 | 12.2/60s；master.m3u8；libx264/AAC；进度12.242s | Evidence 98、`reports/m2f-*` | 通过（模拟器） |
+| HTTPS/4K/多用户 | 同上 | 真实服务器 | 待采样 | 未测 | — | 待验证 |
+| 音轨/字幕元数据 | 同上 | HLS | 待优化 | HUD Unknown/CC | — | 待验证 |

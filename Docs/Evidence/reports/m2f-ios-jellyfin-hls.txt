@@ -1,0 +1,26 @@
+OpenFuse M2f iPhone Jellyfin HLS evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2.
+Server: Jellyfin 12.4 Docker (M2e config), MKV 1080p HEVC/E-AC-3.
+
+Flow:
+  Build/install/launch with real Jellyfin test source; autoplay OpenFuse MKV,
+  seek 10, pause 12, subtitle index 1; wait 24s; read playback.json/log.
+
+Results:
+  Video: test pattern at 12.2/60s.
+  HLS URL:
+    /Videos/<id>/master.m3u8?...VideoCodec=h264&AudioCodec=aac...ts
+  playback.json: sourceKind jellyfin, duration 60, position 12.242s.
+  Jellyfin log: ffmpeg -f hls, libx264 + libfdk_aac, 416x234, HLS playlist.
+  Scripts/run-ios-jellyfin-hls.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Fixes:
+  Jellyfin 12 HLS needs Authorization header; api_key-only returns 401.
+  AVAssetResourceLoader custom scheme did not work for HLS master; use
+  AVURLAssetHTTPHeaderFieldsKey for m3u8, plus path-mapped loader for others.
+
+Not verified:
+  HTTPS/4K/HEVC transcode quality, multi-user, real device, audio listening,
+  HLS subtitle encoding (HUD shows CC).

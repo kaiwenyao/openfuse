@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## iPhone Jellyfin HLS（M2f）
+
+- 移动端 HLS 用 AVURLAssetHTTPHeaderFieldsKey 注入 Authorization；Jellyfin 12 拒绝 api_key-only。
+- AuthAssetLoader 按 custom URL 映射子播放列表/分片。
+- 真实 Jellyfin MKV → libx264/AAC HLS，12.2/60；416×234、HUD 元数据待优化。
+
 ## 真实 Jellyfin 12 验证（M2e）
 
 - 官方 Jellyfin Docker；启动向导/用户/媒体库脚本化。

@@ -1,0 +1,19 @@
+{
+  "records" : {
+    "jellyfin:\/\/c135dd80bab7e30f\/731a8d498c74238a7d0d92db8d7ccc17\/731a8d498c74238a7d0d92db8d7ccc17" : {
+      "displayTitle" : "OpenFuse MKV",
+      "duration" : 60,
+      "fileSize" : 0,
+      "isFinished" : false,
+      "lastPlayedAt" : "2026-11-20T09:19:29.294Z",
+      "mediaPath" : "jellyfin:\/\/c135dd80bab7e30f\/731a8d498c74238a7d0d92db8d7ccc17\/731a8d498c74238a7d0d92db8d7ccc17",
+      "playCount" : 0,
+      "position" : 12.058443025,
+      "remotePath" : "731a8d498c74238a7d0d92db8d7ccc17|731a8d498c74238a7d0d92db8d7ccc17",
+      "remoteURL" : "http:\/\/127.0.0.1:8096\/Videos\/731a8d498c74238a7d0d92db8d7ccc17\/master.m3u8?MediaSourceId=731a8d498c74238a7d0d92db8d7ccc17&VideoCodec=h264&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=hls&SegmentContainer=ts&DeviceId=openfuse-c135dd80bab7e30f&api_key=a1d362d6ae8d4ccd9437c6f8b6cc79c7",
+      "sourceID" : "c135dd80bab7e30f",
+      "sourceKind" : "jellyfin"
+    }
+  },
+  "version" : 1
+}

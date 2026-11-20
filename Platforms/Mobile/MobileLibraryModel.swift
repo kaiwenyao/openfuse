@@ -121,6 +121,10 @@ final class MobileLibraryModel: ObservableObject {
         } else {
             url = client.hlsURL(itemID: itemID, mediaSourceID: media.id, token: token)
                 ?? client.streamURL(itemID: itemID, mediaSource: media)
+            headers = [
+                "X-Emby-Token": token,
+                "Authorization": "MediaBrowser Token=\"\(token)\"",
+            ]
         }
         guard let url else { return nil }
         var sidecars: [SubtitleTrack] = []
@@ -497,6 +501,13 @@ final class MobileLibraryModel: ObservableObject {
     func makePlayer(for item: MobilePlaybackItem) -> (AVPlayer, AuthenticatedAssetLoader?) {
         if item.httpHeaders.isEmpty {
             return (AVPlayer(url: item.url), nil)
+        }
+        if item.url.path.contains(".m3u8") {
+            let asset = AVURLAsset(
+                url: item.url,
+                options: ["AVURLAssetHTTPHeaderFieldsKey": item.httpHeaders]
+            )
+            return (AVPlayer(playerItem: AVPlayerItem(asset: asset)), nil)
         }
         let loader = AuthenticatedAssetLoader(url: item.url, headers: item.httpHeaders)
         let asset = loader.makeAsset()
