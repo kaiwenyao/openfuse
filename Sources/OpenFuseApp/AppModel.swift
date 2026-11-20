@@ -115,6 +115,11 @@ final class AppModel: ObservableObject {
     @Published var libraryWatchFilter: LibraryWatchFilter = .all
     @Published var libraryResolutionFilter: LibraryResolutionFilter = .all
     @Published var scanProgress = 0
+    /// Directory/episode position per source, so closing the player returns to
+    /// the same folder or season instead of the home screen.
+    @Published var webdavPaths: [String: [String]] = [:]
+    @Published var jellyfinPaths: [String: [JellyfinItem]] = [:]
+    private var playerReturnRoute: AppRoute?
     private var activeScanToken: ScanCancellationToken?
     private var activeScanTask: Task<Void, Never>?
 
@@ -446,22 +451,41 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func startPlayer(with item: MediaItem, serverStart: Double = 0) {
+    private func startPlayer(
+        with item: MediaItem,
+        serverStart: Double = 0,
+        serverLastPlayedAt: Date? = nil
+    ) {
         smbStreamServer?.stop()
         smbStreamServer = nil
         if let current = player {
             current.stopAndClose()
         }
         let record = store.record(forPath: item.fingerprint.resumeKey)
-        let localStart = record.flatMap { ResumePolicy.resumePosition(for: $0) } ?? 0
-        let startAt = max(localStart, serverStart)
+        let startAt = ResumeMerge.startPosition(
+            local: record,
+            serverPosition: serverStart,
+            serverLastPlayedAt: serverLastPlayedAt
+        )
+        if let serverLastPlayedAt {
+            let runtime = item.jellyfinContext?.runtime ?? record?.duration ?? 0
+            store.mergeRemotePosition(
+                fingerprint: item.fingerprint,
+                position: serverStart,
+                duration: runtime,
+                lastPlayedAt: serverLastPlayedAt,
+                finished: ResumePolicy.isFinished(position: serverStart, duration: runtime)
+            )
+        }
+        if route != .player {
+            playerReturnRoute = route
+        }
         let model = PlayerModel(item: item, startAt: startAt, store: store)
         model.onClose = { [weak self] in
             self?.smbStreamServer?.stop()
             self?.smbStreamServer = nil
             self?.player = nil
-            self?.route = .home
-            self?.browsingSource = nil
+            self?.route = self?.playerReturnRoute ?? .home
             self?.refreshRecent()
         }
         model.onFinished = { [weak self] in
@@ -538,6 +562,23 @@ final class AppModel: ObservableObject {
         route = .browser(source)
     }
 
+    func webdavPath(for source: WebDAVSource) -> [String] {
+        let path = webdavPaths[source.id] ?? [""]
+        return path.isEmpty ? [""] : path
+    }
+
+    func setWebDAVPath(_ path: [String], for source: WebDAVSource) {
+        webdavPaths[source.id] = path.isEmpty ? [""] : path
+    }
+
+    func jellyfinPath(for source: JellyfinSource) -> [JellyfinItem] {
+        jellyfinPaths[source.id] ?? []
+    }
+
+    func setJellyfinPath(_ path: [JellyfinItem], for source: JellyfinSource) {
+        jellyfinPaths[source.id] = path
+    }
+
     func loadDirectory(source: WebDAVSource, path: String) async throws -> [RemoteEntry] {
         guard let client = webdavClient(for: source) else {
             throw WebDAVError.unauthorized
@@ -585,7 +626,7 @@ final class AppModel: ObservableObject {
         smbStreamServer = nil
         player?.stopAndClose()
         player = nil
-        route = .home
+        route = playerReturnRoute ?? .home
         refreshRecent()
     }
 
@@ -1140,7 +1181,12 @@ final class AppModel: ObservableObject {
             } else {
                 mediaSource = playback.mediaSources[0]
             }
-            let subtitles = MediaItem.serverSubtitles(source: source, mediaSource: mediaSource, token: token)
+            let subtitles = MediaItem.serverSubtitles(
+                source: source,
+                mediaSource: mediaSource,
+                itemID: item.id,
+                token: token
+            )
             guard let mediaItem = MediaItem.jellyfin(
                 source: source,
                 item: item,
@@ -1152,7 +1198,11 @@ final class AppModel: ObservableObject {
                 statusMessage = "无法构造 Jellyfin 播放地址"
                 return
             }
-            startPlayer(with: mediaItem, serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks))
+            startPlayer(
+                with: mediaItem,
+                serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks),
+                serverLastPlayedAt: item.userData?.lastPlayedAt
+            )
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -1314,6 +1364,7 @@ final class AppModel: ObservableObject {
     }
 
     func scanJellyfinSource(_ source: JellyfinSource) async {
+        cancelScan()
         let token = ScanCancellationToken()
         activeScanToken = token
         await performJellyfinScan(source, token: token)
@@ -1324,18 +1375,49 @@ final class AppModel: ObservableObject {
             libraryStatus = "缺少 \(source.name) 的登录令牌"
             return
         }
+        guard activeScanToken === token else { return }
         isScanningLibrary = true
+        scanProgress = 0
         libraryStatus = "正在扫描 Jellyfin：\(source.name)…"
         do {
-            let scanned = try await LibraryScanner.scanJellyfin(source: source, client: client)
-            try libraryStore.replace(source: scanned)
+            let result = try await LibraryScanner.scanJellyfin(
+                source: source,
+                client: client,
+                token: token,
+                progress: { value in
+                    Task { @MainActor in self.scanProgress = value }
+                }
+            )
+            guard activeScanToken === token, !token.isCancelled else {
+                throw LibraryScanError.cancelled
+            }
+            if result.hasTransientFailure {
+                let names = result.transientFailures.map(\.libraryName).joined(separator: "、")
+                libraryStatus = "Jellyfin \(source.name)：\(names) 读取不完整，已保留上次完整索引，可重试"
+            } else {
+                try libraryStore.replace(source: result.library)
+                reloadLibrary()
+                let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+                var status = "Jellyfin \(source.name)：\(counts.works) 个作品"
+                if !result.revokedLibraryNames.isEmpty {
+                    status += "，已移除无权访问的 \(result.revokedLibraryNames.joined(separator: "、"))"
+                }
+                libraryStatus = status
+            }
+        } catch LibraryScanError.cancelled {
+            libraryStatus = "Jellyfin 扫描已取消，媒体库保持原样"
+        } catch JellyfinError.unauthorized {
+            try? libraryStore.removeSource(kind: source.kind, sourceID: source.id)
             reloadLibrary()
-            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
-            libraryStatus = "Jellyfin \(source.name)：\(counts.works) 个作品"
+            libraryStatus = "Jellyfin \(source.name)：服务器撤回了访问权限，请重新登录该来源"
         } catch {
-            libraryStatus = "Jellyfin 扫描失败：\(error.localizedDescription)"
+            libraryStatus = "Jellyfin 扫描失败：\(error.localizedDescription)，媒体库保持原样"
         }
-        isScanningLibrary = false
+        if activeScanToken === token {
+            isScanningLibrary = false
+            activeScanToken = nil
+            activeScanTask = nil
+        }
     }
 
     func startWebDAVScan(_ source: WebDAVSource) {
@@ -2044,6 +2126,7 @@ final class PlayerModel: ObservableObject {
     @Published var selectedAudioID: String?
     @Published var audioDevices: [AudioDeviceInfo] = []
     @Published var selectedAudioDeviceID = "auto"
+    @Published var speed: Double = 1.0
     @Published var showControls = true
     @Published var isScrubbing = false
     @Published var statusMessage: String?
@@ -2058,6 +2141,13 @@ final class PlayerModel: ObservableObject {
     private var fileLoaded = false
     private var pendingSeek: Double?
     private var queuedSeek: Double?
+    private var seekTarget: Double?
+    private var seekIssuedAt: Date?
+    private var seekRetryCount = 0
+
+    /// The user's seek target wins over delayed mpv time-pos callbacks until
+    /// mpv confirms it. Persisting this also fixes exits right after a seek.
+    private var currentPosition: Double { seekTarget ?? position }
     private var progressTimer: Timer?
     private var controlsTimer: Timer?
     private var hasFinished = false
@@ -2148,6 +2238,27 @@ final class PlayerModel: ObservableObject {
     private func wireEngine() {
         engine.onTimeChanged = { [weak self] value in
             guard let self, !self.isScrubbing else { return }
+            // mpv can deliver a stale time-pos after a seek (the event was
+            // already queued). Keep the user's target authoritative until mpv
+            // agrees, and re-issue the seek if playback resumed elsewhere.
+            if let target = self.seekTarget {
+                if abs(value - target) <= 1.5 {
+                    self.seekTarget = nil
+                    self.seekIssuedAt = nil
+                    self.seekRetryCount = 0
+                    self.position = value
+                    return
+                }
+                if !self.isPaused,
+                   let issued = self.seekIssuedAt,
+                   Date().timeIntervalSince(issued) > 2.0,
+                   self.seekRetryCount < 2 {
+                    self.seekRetryCount += 1
+                    self.seekIssuedAt = Date()
+                    self.engine.seek(to: target)
+                }
+                return
+            }
             self.position = value
         }
         engine.onDurationChanged = { [weak self] value in
@@ -2203,7 +2314,7 @@ final class PlayerModel: ObservableObject {
         )
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
-        for track in catalog where track.source == .external {
+        for track in catalog where track.url != nil {
             if let url = track.url {
                 engine.addSubtitle(url: url, select: false)
             }
@@ -2310,15 +2421,17 @@ final class PlayerModel: ObservableObject {
     private func applyInitialSelectionIfReady() {
         debugSelection("ready check attempts=\(selectionAttempts) loaded=\(subtitleTracks.filter { $0.source == .external && $0.engineID != nil }.count)/\(catalog.filter { $0.source == .external }.count) fileLoaded=\(fileLoaded)")
         guard !didApplyInitialSelection, fileLoaded else { return }
-        let externalCatalog = catalog.filter { $0.source == .external }
-        let loadedExternal = subtitleTracks.filter { $0.source == .external && $0.engineID != nil }
+        // WebDAV sidecars and Jellyfin external streams are both loaded by
+        // URL after file-load; wait for them before applying the saved track.
+        let sidecarCatalog = catalog.filter { $0.source != .embedded && $0.url != nil }
+        let loadedExternal = subtitleTracks.filter { $0.source != .embedded && $0.engineID != nil }
         let hasSelectable = subtitleTracks.contains { $0.engineID != nil }
         if !hasSelectable, selectionAttempts < 20 {
             selectionAttempts += 1
             scheduleInitialSelection(after: 0.4)
             return
         }
-        if !externalCatalog.isEmpty, loadedExternal.count < externalCatalog.count, selectionAttempts < 20 {
+        if !sidecarCatalog.isEmpty, loadedExternal.count < sidecarCatalog.count, selectionAttempts < 20 {
             selectionAttempts += 1
             scheduleInitialSelection(after: 0.4)
             return
@@ -2430,6 +2543,9 @@ final class PlayerModel: ObservableObject {
         }
         let clamped = max(0, min(duration - 0.25, target))
         position = clamped
+        seekTarget = clamped
+        seekIssuedAt = Date()
+        seekRetryCount = 0
         engine.seek(to: clamped)
         hasFinished = false
         showControlsTemporarily()
@@ -2480,18 +2596,21 @@ final class PlayerModel: ObservableObject {
     }
 
     func setSpeed(_ speed: Double) {
+        self.speed = speed
         engine.setSpeed(speed)
+        showControlsTemporarily()
     }
 
     func saveProgress(finished: Bool? = nil) {
         guard duration > 0 else { return }
+        let savedPosition = currentPosition
         reportJellyfinProgress()
         reportPlexProgress()
-        let resolvedFinished = finished ?? (hasFinished || ResumePolicy.isFinished(position: position, duration: duration))
+        let resolvedFinished = finished ?? (hasFinished || ResumePolicy.isFinished(position: savedPosition, duration: duration))
         store.update(
             fingerprint: fingerprint,
             duration: duration,
-            position: position,
+            position: savedPosition,
             displayTitle: title,
             audioTrackID: selectedAudioID,
             subtitleTrackID: selectedSubtitleID,
@@ -2595,7 +2714,7 @@ final class PlayerModel: ObservableObject {
 
     private func reportJellyfinProgress() {
         guard let client = jellyfinClient, let context = jellyfinContext, !hasReportedStop else { return }
-        let current = position
+        let current = currentPosition
         let paused = isPaused
         Task.detached {
             await client.reportProgress(
@@ -2611,7 +2730,7 @@ final class PlayerModel: ObservableObject {
     private func reportJellyfinStop(wait: Bool) {
         guard let client = jellyfinClient, let context = jellyfinContext, !hasReportedStop else { return }
         hasReportedStop = true
-        let current = position
+        let current = currentPosition
         if wait {
             let semaphore = DispatchSemaphore(value: 0)
             Task.detached {

@@ -1,5 +1,7 @@
 #if os(macOS)
+#if OPENFUSE_SMB2
 import CSMB2
+#endif
 import CryptoKit
 import Foundation
 
@@ -64,6 +66,7 @@ public enum SMBError: LocalizedError, Sendable {
     }
 }
 
+#if OPENFUSE_SMB2
 public final class SMBClient: @unchecked Sendable {
     public let source: SMBSource
     private let password: String
@@ -297,6 +300,30 @@ public final class SMBClient: @unchecked Sendable {
     }
 }
 
+#else
+/// WebDAV/Jellyfin-only build: libsmb2 is not linked. SMB sources stay visible
+/// in settings but every operation explains how to enable them again.
+public final class SMBClient: @unchecked Sendable {
+    public let source: SMBSource
+
+    public init(source: SMBSource, password: String) {
+        self.source = source
+    }
+
+    private func unavailable() throws -> Never {
+        throw SMBError.operation("此构建未包含 SMB 支持（运行 Scripts/install-libsmb2.sh 后重新构建）")
+    }
+
+    public func list(path: String? = nil) throws -> [SMBEntry] { try unavailable() }
+    public func reconnect() {}
+    public func closeHandles() {}
+    public func size(path: String) throws -> Int64 { try unavailable() }
+    public func fetch(path: String) throws -> Data { try unavailable() }
+    public func read(path: String, offset: Int64, length: Int) throws -> Data { try unavailable() }
+}
+
+#endif
+
 public final class SMBSourceStore: @unchecked Sendable {
     private struct Snapshot: Codable {
         var version: Int = 1
@@ -347,6 +374,7 @@ public final class SMBSourceStore: @unchecked Sendable {
     }
 }
 
+#if OPENFUSE_SMB2
 public enum SMBLibraryScanner {
     public static func scan(
         source: SMBSource,
@@ -566,8 +594,21 @@ public enum SMBLibraryScanner {
     }
 }
 
+#else
+public enum SMBLibraryScanner {
+    public static func scan(
+        source: SMBSource,
+        client: SMBClient,
+        posterCacheDirectory: URL? = nil,
+        token: ScanCancellationToken? = nil,
+        progress: ((Int) -> Void)? = nil
+    ) throws -> ScannedLibrary {
+        throw SMBError.operation("此构建未包含 SMB 支持（运行 Scripts/install-libsmb2.sh 后重新构建）")
+    }
+}
 #endif
 
+#endif
 
 private extension String {
     var deletingLeadingSlash: String {

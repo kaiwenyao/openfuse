@@ -406,19 +406,101 @@ public enum LibraryScanner {
 
     // MARK: - Jellyfin
 
+    public struct JellyfinLibraryIssue: Sendable, Hashable {
+        public var libraryID: String
+        public var libraryName: String
+        public var message: String
+        /// True when the server answered 401/403: access was explicitly
+        /// withdrawn and cached entries must disappear. False means a
+        /// transient failure and the previous index must survive.
+        public var accessRevoked: Bool
+    }
+
+    public struct JellyfinScanResult: Sendable {
+        public var library: ScannedLibrary
+        public var issues: [JellyfinLibraryIssue]
+
+        public init(library: ScannedLibrary, issues: [JellyfinLibraryIssue] = []) {
+            self.library = library
+            self.issues = issues
+        }
+
+        /// A revoked library is an authoritative answer, so it does not make
+        /// the scan partial; a transport/timeout failure does.
+        public var hasTransientFailure: Bool {
+            issues.contains { !$0.accessRevoked }
+        }
+
+        public var revokedLibraryNames: [String] {
+            issues.filter(\.accessRevoked).map(\.libraryName)
+        }
+
+        public var transientFailures: [JellyfinLibraryIssue] {
+            issues.filter { !$0.accessRevoked }
+        }
+    }
+
+    /// Loads every library page by page. A single failing page aborts the
+    /// whole library (never a silent prefix), and a cancellation throws
+    /// `.cancelled` so the caller keeps the last complete index.
     public static func scanJellyfin(
         source: JellyfinSource,
         client: JellyfinClient,
         token: ScanCancellationToken? = nil,
         progress: ((Int) -> Void)? = nil
-    ) async throws -> ScannedLibrary {
+    ) async throws -> JellyfinScanResult {
         let views = try await client.views()
         var items: [JellyfinItem] = []
+        var issues: [JellyfinLibraryIssue] = []
+        var loadedLibraries = 0
         for (index, view) in views.enumerated() {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
-            items.append(contentsOf: (try? await client.libraryItems(parentID: view.id)) ?? [])
-            progress?(items.count + index)
+            if Task.isCancelled { throw LibraryScanError.cancelled }
+            do {
+                let libraryItems = try await client.libraryItems(parentID: view.id, token: token)
+                items.append(contentsOf: libraryItems)
+                loadedLibraries += 1
+                progress?(items.count + index)
+            } catch JellyfinError.cancelled {
+                throw LibraryScanError.cancelled
+            } catch is CancellationError {
+                throw LibraryScanError.cancelled
+            } catch let error as JellyfinError {
+                issues.append(
+                    JellyfinLibraryIssue(
+                        libraryID: view.id,
+                        libraryName: view.name,
+                        message: error.localizedDescription,
+                        accessRevoked: error.isAccessRevoked
+                    )
+                )
+            } catch {
+                issues.append(
+                    JellyfinLibraryIssue(
+                        libraryID: view.id,
+                        libraryName: view.name,
+                        message: error.localizedDescription,
+                        accessRevoked: false
+                    )
+                )
+            }
         }
+        if token?.isCancelled == true { throw LibraryScanError.cancelled }
+
+        // Nothing usable came back: give the caller the failure list without
+        // spending time rebuilding an empty library.
+        if loadedLibraries == 0 && !views.isEmpty {
+            return JellyfinScanResult(
+                library: ScannedLibrary(
+                    sourceKind: source.kind,
+                    sourceID: source.id,
+                    sourceName: source.name,
+                    works: []
+                ),
+                issues: issues
+            )
+        }
+
         var movies: [JellyfinItem] = []
         var seriesItems: [String: JellyfinItem] = [:]
         var seasonItems: [String: [JellyfinItem]] = [:]
@@ -446,39 +528,42 @@ public enum LibraryScanner {
         }
         var works: [ScannedWork] = []
 
-        for movie in movies {
-            let workID = "jf:\(source.id):\(movie.id)"
-            let episodeID = workID + "-main"
-            let poster = movie.primaryImageTag.map { PosterRef.jellyfin(itemID: movie.id, tag: $0) }
+        func versions(for item: JellyfinItem, prefix: String) -> [ScannedVersion] {
+            let sources = item.mediaSources ?? []
             var versions: [ScannedVersion] = []
-            if let info = try? await client.playbackInfo(itemID: movie.id) {
-                for (index, media) in info.mediaSources.enumerated() {
-                    let video = media.mediaStreams?.first(where: { $0.type == "Video" })
-                    versions.append(
-                        ScannedVersion(
-                            id: episodeID + "-v\(index)",
-                            name: media.name,
-                            mediaSourceID: media.id,
-                            container: media.container,
-                            resolution: video?.height.map { "\($0)p" },
-                            dynamicRange: Self.jellyfinHDR(video),
-                            remotePath: movie.id,
-                            fileURL: nil
-                        )
+            for (index, media) in sources.enumerated() {
+                let video = media.mediaStreams?.first(where: { $0.type == "Video" })
+                versions.append(
+                    ScannedVersion(
+                        id: prefix + "-v\(index)",
+                        name: media.name,
+                        mediaSourceID: media.id,
+                        container: media.container,
+                        resolution: video?.height.map { "\($0)p" },
+                        dynamicRange: jellyfinHDR(video),
+                        remotePath: item.id,
+                        fileURL: nil
                     )
-                }
+                )
             }
             if versions.isEmpty {
                 versions = [ScannedVersion(
-                    id: episodeID + "-v0",
+                    id: prefix + "-v0",
                     name: "服务器版本",
                     mediaSourceID: nil,
                     container: nil,
                     resolution: nil,
-                    remotePath: movie.id,
+                    remotePath: item.id,
                     fileURL: nil
                 )]
             }
+            return versions
+        }
+
+        for movie in movies {
+            let workID = "jf:\(source.id):\(movie.id)"
+            let episodeID = workID + "-main"
+            let poster = movie.primaryImageTag.map { PosterRef.jellyfin(itemID: movie.id, tag: $0) }
             let episode = ScannedEpisode(
                 id: episodeID,
                 seasonNumber: 0,
@@ -491,7 +576,7 @@ public enum LibraryScanner {
                 remotePath: movie.id,
                 remoteVariant: nil,
                 fileURL: nil,
-                versions: versions
+                versions: versions(for: movie, prefix: episodeID)
             )
             works.append(
                 ScannedWork(
@@ -513,6 +598,7 @@ public enum LibraryScanner {
         }
 
         for (seriesID, seriesItem) in seriesItems {
+            if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let workID = "jf:\(source.id):\(seriesID)"
             let posterItem = seriesItem
             let poster = posterItem.primaryImageTag.map { PosterRef.jellyfin(itemID: posterItem.id, tag: $0) }
@@ -534,19 +620,6 @@ public enum LibraryScanner {
                     let episodePoster = (episode.primaryImageTag ?? seasonItem?.primaryImageTag).map {
                         PosterRef.jellyfin(itemID: episode.primaryImageTag != nil ? episode.id : (seasonItem?.id ?? posterItem.id), tag: $0)
                     }
-                    let playback = try? await client.playbackInfo(itemID: episode.id)
-                    let episodeVideo = playback?.mediaSources.first?.mediaStreams?
-                        .first(where: { $0.type == "Video" })
-                    let version = ScannedVersion(
-                        id: episodeID + "-v0",
-                        name: "服务器版本",
-                        mediaSourceID: nil,
-                        container: nil,
-                        resolution: episodeVideo?.height.map { "\($0)p" },
-                        dynamicRange: Self.jellyfinHDR(episodeVideo),
-                        remotePath: episode.id,
-                        fileURL: nil
-                    )
                     scannedEpisodes.append(
                         ScannedEpisode(
                             id: episodeID,
@@ -560,7 +633,7 @@ public enum LibraryScanner {
                             remotePath: episode.id,
                             remoteVariant: nil,
                             fileURL: nil,
-                            versions: [version]
+                            versions: versions(for: episode, prefix: episodeID)
                         )
                     )
                 }
@@ -606,11 +679,14 @@ public enum LibraryScanner {
             )
         }
 
-        return ScannedLibrary(
-            sourceKind: source.kind,
-            sourceID: source.id,
-            sourceName: source.name,
-            works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending }
+        return JellyfinScanResult(
+            library: ScannedLibrary(
+                sourceKind: source.kind,
+                sourceID: source.id,
+                sourceName: source.name,
+                works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending }
+            ),
+            issues: issues
         )
     }
 

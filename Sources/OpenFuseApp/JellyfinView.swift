@@ -21,6 +21,12 @@ struct JellyfinBrowserView: View {
             content
         }
         .background(Theme.background.ignoresSafeArea())
+        .onAppear {
+            path = model.jellyfinPath(for: source)
+        }
+        .onChange(of: path) { _, newValue in
+            model.setJellyfinPath(newValue, for: source)
+        }
         .task(id: currentParentID ?? "root") {
             await load()
         }

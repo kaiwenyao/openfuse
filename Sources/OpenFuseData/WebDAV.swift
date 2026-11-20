@@ -106,6 +106,13 @@ public actor WebDAVClient {
         self.session = URLSession(configuration: configuration)
     }
 
+    /// Test seam for URLProtocol stubs.
+    init(source: WebDAVSource, password: String, session: URLSession) {
+        self.source = source
+        self.password = password
+        self.session = session
+    }
+
     public nonisolated var basicAuthorizationHeader: String? {
         guard !source.username.isEmpty || !password.isEmpty else { return nil }
         let token = Data("\(source.username):\(password)".utf8).base64EncodedString()
@@ -166,7 +173,12 @@ public actor WebDAVClient {
         guard parser.parse(data) else {
             throw WebDAVError.invalidResponse("PROPFIND XML 解析失败")
         }
-        return entries(from: parser.responses, requestedPath: path, directoryURL: directoryURL)
+        return entries(
+            from: parser.responses,
+            requestedPath: path,
+            directoryURL: directoryURL,
+            excludingSelf: true
+        )
     }
 
     public func fetch(path: String, range: Range<Int64>? = nil) async throws -> (Data, HTTPURLResponse) {
@@ -220,8 +232,14 @@ public actor WebDAVClient {
         }
     }
 
-    private func entries(from responses: [ParsedWebDAVResponse], requestedPath: String, directoryURL: URL) -> [RemoteEntry] {
+    private func entries(
+        from responses: [ParsedWebDAVResponse],
+        requestedPath: String,
+        directoryURL: URL,
+        excludingSelf: Bool = false
+    ) -> [RemoteEntry] {
         let basePath = source.normalizedBaseURL.path
+        let requestedNormalized = requestedPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         var result: [RemoteEntry] = []
         for response in responses {
             guard var hrefPath = Self.decodePath(response.href) else { continue }
@@ -230,6 +248,10 @@ public actor WebDAVClient {
             }
             var relative = hrefPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             if relative.isEmpty { continue }
+            // PROPFIND depth=1 includes the requested collection itself. It is
+            // navigation chrome, not a child, and showing it lets the user
+            // descend into the same folder forever.
+            if excludingSelf, relative == requestedNormalized { continue }
             if let queryIndex = relative.firstIndex(of: "?") { relative = String(relative[..<queryIndex]) }
             let name = response.displayName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
                 ?? (relative as NSString).lastPathComponent

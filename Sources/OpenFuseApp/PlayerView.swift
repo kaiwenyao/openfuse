@@ -267,12 +267,18 @@ struct PlayerView: View {
 
                 Menu {
                     ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                        Button(String(format: "%.2fx", speed)) {
+                        Button {
                             player.setSpeed(speed)
+                        } label: {
+                            if abs(player.speed - speed) < 0.001 {
+                                Label(String(format: "%.2fx", speed), systemImage: "checkmark")
+                            } else {
+                                Text(String(format: "%.2fx", speed))
+                            }
                         }
                     }
                 } label: {
-                    Text("1.0x")
+                    Text(String(format: "%.2fx", player.speed))
                         .font(.system(size: 12.5, weight: .medium, design: .monospaced))
                 }
                 .menuStyle(.borderlessButton)

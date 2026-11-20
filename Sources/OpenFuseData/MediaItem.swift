@@ -286,24 +286,34 @@ public extension MediaItem {
     static func serverSubtitles(
         source: JellyfinSource,
         mediaSource: JellyfinMediaSource,
+        itemID: String,
         token: String
     ) -> [SubtitleTrack] {
         var tracks: [SubtitleTrack] = []
         for stream in mediaSource.mediaStreams ?? [] where stream.type == "Subtitle" && stream.isExternal == true {
-            guard let delivery = stream.deliveryURL else { continue }
-            guard let deliveryURL = URL(string: delivery, relativeTo: source.normalizedBaseURL),
-                  var components = URLComponents(url: deliveryURL, resolvingAgainstBaseURL: false)
+            // Jellyfin 12 omits DeliveryUrl for sidecars, but the documented
+            // stream endpoint serves them and accepts the token header/query.
+            let codec = stream.codec ?? "ass"
+            let delivery = stream.deliveryURL
+                ?? "/Videos/\(itemID)/\(mediaSource.id)/Subtitles/\(stream.index)/Stream.\(codec)"
+            guard let resolved = URL(string: delivery, relativeTo: source.normalizedBaseURL)?.absoluteURL,
+                  var components = URLComponents(url: resolved, resolvingAgainstBaseURL: false)
             else { continue }
             var query = components.queryItems ?? []
             query.append(URLQueryItem(name: "api_key", value: token))
             components.queryItems = query
             guard let url = components.url else { continue }
             let language = LanguageTag.normalizeISO(stream.language)
-            let format = SubtitleFormat(fileExtension: (delivery as NSString).pathExtension)
+            let format = SubtitleFormat(fileExtension: codec)
             tracks.append(
                 SubtitleTrack(
                     id: "jellyfin-sub:\(source.id):\(stream.index)",
-                    displayName: stream.displayTitle ?? SubtitleLabel.make(language: language, format: format, forced: stream.isForced ?? false, includeFormat: true),
+                    displayName: SubtitleLabel.make(
+                        language: language,
+                        format: format,
+                        forced: stream.isForced ?? false,
+                        includeFormat: true
+                    ),
                     language: language,
                     format: format,
                     source: .server,

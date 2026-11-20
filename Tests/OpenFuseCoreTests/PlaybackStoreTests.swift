@@ -63,7 +63,11 @@ final class PlaybackStoreTests: XCTestCase {
 
         store.update(fingerprint: fingerprint, duration: 60, position: 55)
         let nearEnd = try XCTUnwrap(store.record(forPath: fingerprint.resumeKey))
-        XCTAssertNil(ResumePolicy.resumePosition(for: nearEnd))
+        XCTAssertEqual(ResumePolicy.resumePosition(for: nearEnd) ?? 0, 55, accuracy: 0.01)
+
+        store.update(fingerprint: fingerprint, duration: 60, position: 59)
+        let finished = try XCTUnwrap(store.record(forPath: fingerprint.resumeKey))
+        XCTAssertNil(ResumePolicy.resumePosition(for: finished))
     }
 
     func testRemoteProgressMetadataRoundTrip() throws {

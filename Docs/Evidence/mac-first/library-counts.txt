@@ -1,0 +1,4 @@
+jellyfin|2
+webdav|2
+jellyfin|2
+webdav|2

@@ -72,3 +72,46 @@ final class WebDAVTests: XCTestCase {
         XCTAssertEqual(tracks[0].url?.absoluteString, "http://host/a.ass")
     }
 }
+
+final class WebDAVStubProtocol: URLProtocol {
+    nonisolated(unsafe) static var body = Data()
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        let response = HTTPURLResponse(
+            url: request.url!, statusCode: 207,
+            httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/xml"]
+        )!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Self.body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}
+
+final class WebDAVListFilterTests: XCTestCase {
+    func testDepthOneResponseOmitsTheRequestedDirectory() async throws {
+        WebDAVStubProtocol.body = Data("""
+        <?xml version="1.0" encoding="utf-8"?>
+        <d:multistatus xmlns:d="DAV:">
+          <d:response><d:href>/dav/Movies/</d:href><d:propstat><d:prop>
+            <d:displayname>Movies</d:displayname><d:resourcetype><d:collection/></d:resourcetype>
+          </d:prop></d:propstat></d:response>
+          <d:response><d:href>/dav/Movies/Film.mkv</d:href><d:propstat><d:prop>
+            <d:displayname>Film.mkv</d:displayname><d:resourcetype/>
+            <d:getcontentlength>123</d:getcontentlength>
+          </d:prop></d:propstat></d:response>
+        </d:multistatus>
+        """.utf8)
+        let source = WebDAVSource(name: "t", baseURL: URL(string: "http://host/dav/")!, username: "u")
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [WebDAVStubProtocol.self]
+        let client = WebDAVClient(
+            source: source, password: "p",
+            session: URLSession(configuration: configuration)
+        )
+        let entries = try await client.list(path: "Movies")
+        XCTAssertEqual(entries.map(\.path), ["Movies/Film.mkv"])
+        XCTAssertEqual(entries.first?.size, 123)
+    }
+}

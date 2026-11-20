@@ -21,6 +21,12 @@ struct WebDAVBrowserView: View {
             content
         }
         .background(Theme.background.ignoresSafeArea())
+        .onAppear {
+            pathStack = model.webdavPath(for: source)
+        }
+        .onChange(of: pathStack) { _, newValue in
+            model.setWebDAVPath(newValue, for: source)
+        }
         .task(id: currentPath) {
             await load(path: currentPath)
         }
@@ -64,16 +70,16 @@ struct WebDAVBrowserView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(Theme.secondary)
 
-                ForEach(Array(pathStack.dropFirst().indices), id: \.self) { index in
+                ForEach(Array(pathStack.indices.dropFirst()), id: \.self) { index in
                     Text("/").foregroundStyle(Theme.secondary.opacity(0.6))
                     Button {
-                        pathStack = Array(pathStack.prefix(through: index + 1))
+                        pathStack = Array(pathStack.prefix(through: index))
                     } label: {
-                        Text((pathStack[index + 1] as NSString).lastPathComponent)
+                        Text((pathStack[index] as NSString).lastPathComponent)
                             .font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(index + 1 == pathStack.count - 1 ? Theme.text : Theme.secondary)
+                    .foregroundStyle(index == pathStack.count - 1 ? Theme.text : Theme.secondary)
                 }
             }
             .padding(.horizontal, 12)

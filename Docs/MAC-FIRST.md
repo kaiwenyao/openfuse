@@ -1,5 +1,7 @@
 # 当前交付目标：Mac 上的 WebDAV 和 Jellyfin
 
+> 本轮实施、构建、测试与窗口验收结果见 [MAC-FIRST-RESULT.md](MAC-FIRST-RESULT.md)。可双击产物为 `build/OpenFuse.app` 与 `build/OpenFuse-macOS-self-contained.zip`。
+
 更新于 2026-11-20。开发基线为 main 的 `1a20827`。本轮只交付 macOS 客户端，支持通过 OpenList WebDAV 访问原始目录，以及通过 Jellyfin 浏览电影库和电视剧库。以 Infuse 8.5.10 Mac 的可观察行为为参照，重点是找片、播放、选轨、返回与续播。界面使用 OpenFuse 有辨识度的原创布局与素材。原路线中的其余平台、协议、云服务及购买流程暂缓。
 
 ## 当前进度和证据

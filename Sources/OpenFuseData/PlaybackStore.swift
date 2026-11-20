@@ -77,9 +77,34 @@ public enum ResumePolicy {
     public static func resumePosition(for record: PlaybackRecord) -> TimeInterval? {
         guard !record.isFinished, record.duration > 0 else { return nil }
         guard record.position >= minimumResumePosition else { return nil }
-        let scaledGuard = record.duration < 60 ? max(1, record.duration * 0.1) : endGuard
+        // Five percent, capped at ten seconds: the old fixed ten-second guard
+        // swallowed most of a short episode, so a card showing 00:50/01:00
+        // would restart from zero when clicked.
+        let scaledGuard = min(endGuard, max(1, record.duration * 0.05))
         guard record.position < record.duration - scaledGuard else { return nil }
         return record.position
+    }
+}
+
+/// Chooses where a playback starts when both this device and the server have
+/// an opinion. The most recent *action* wins, not the largest position: a
+/// cross-device rewatch that starts near the beginning must not be dragged
+/// back to an old local timestamp near the end.
+public enum ResumeMerge {
+    public static func startPosition(
+        local: PlaybackRecord?,
+        serverPosition: Double,
+        serverLastPlayedAt: Date?
+    ) -> Double {
+        let server = max(0, serverPosition)
+        guard let local else { return server }
+        let localResume = ResumePolicy.resumePosition(for: local) ?? 0
+        if let serverLastPlayedAt {
+            return serverLastPlayedAt > local.lastPlayedAt ? server : localResume
+        }
+        // Without a server timestamp, only trust the server when this device
+        // has no usable resume point.
+        return localResume > 0 ? localResume : server
     }
 }
 
@@ -174,6 +199,39 @@ public final class PlaybackStore: @unchecked Sendable {
             record.isFinished = true
             record.position = 0
             record.playCount += 1
+        } else {
+            record.isFinished = false
+            record.position = max(0, position)
+        }
+        snapshot.records[key] = record
+        isDirty = true
+        try? flushLocked()
+        return record
+    }
+
+    /// Records a server-side position without pretending this device played.
+    /// The timestamp stays the server's, so a later local play still wins and
+    /// an older rewatch on another device is not clobbered by local history.
+    @discardableResult
+    public func mergeRemotePosition(
+        fingerprint: MediaFingerprint,
+        position: TimeInterval,
+        duration: TimeInterval,
+        lastPlayedAt: Date,
+        finished: Bool
+    ) -> PlaybackRecord {
+        lock.lock(); defer { lock.unlock() }
+        let key = fingerprint.resumeKey
+        if let existing = snapshot.records[key], existing.lastPlayedAt > lastPlayedAt {
+            return existing
+        }
+        var record = snapshot.records[key] ?? PlaybackRecord(mediaPath: key)
+        record.fileSize = fingerprint.fileSize
+        record.duration = max(duration, record.duration)
+        record.lastPlayedAt = lastPlayedAt
+        if finished {
+            record.isFinished = true
+            record.position = 0
         } else {
             record.isFinished = false
             record.position = max(0, position)

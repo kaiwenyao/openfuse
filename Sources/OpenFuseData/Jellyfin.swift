@@ -58,11 +58,24 @@ public struct JellyfinUserData: Codable, Hashable, Sendable {
     public var playbackPositionTicks: Int64?
     public var played: Bool?
     public var playCount: Int?
+    public var lastPlayedDate: String?
 
     enum CodingKeys: String, CodingKey {
         case playbackPositionTicks = "PlaybackPositionTicks"
         case played = "Played"
         case playCount = "PlayCount"
+        case lastPlayedDate = "LastPlayedDate"
+    }
+
+    /// Jellyfin writes ISO-8601 timestamps, usually with fractional seconds.
+    public var lastPlayedAt: Date? {
+        guard let lastPlayedDate else { return nil }
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractional.date(from: lastPlayedDate) { return date }
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return plain.date(from: lastPlayedDate)
     }
 }
 
@@ -83,6 +96,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
     public var imageTags: [String: String]?
     public var userData: JellyfinUserData?
     public var dateCreated: String?
+    public var mediaSources: [JellyfinMediaSource]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -101,6 +115,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         case imageTags = "ImageTags"
         case userData = "UserData"
         case dateCreated = "DateCreated"
+        case mediaSources = "MediaSources"
     }
 
     public var isPlayable: Bool {
@@ -240,6 +255,7 @@ public enum JellyfinError: LocalizedError, Sendable {
     case httpStatus(Int)
     case invalidResponse(String)
     case network(String)
+    case cancelled
 
     public var errorDescription: String? {
         switch self {
@@ -249,7 +265,15 @@ public enum JellyfinError: LocalizedError, Sendable {
         case .httpStatus(let code): return "Jellyfin 返回 HTTP \(code)"
         case .invalidResponse(let message): return "Jellyfin 响应无法解析：\(message)"
         case .network(let message): return "网络错误：\(message)"
+        case .cancelled: return "请求已取消"
         }
+    }
+
+    /// Server explicitly withdrew this account's access, as opposed to a
+    /// transient timeout or transport failure.
+    public var isAccessRevoked: Bool {
+        if case .unauthorized = self { return true }
+        return false
     }
 }
 
@@ -277,6 +301,13 @@ public actor JellyfinClient {
         configuration.timeoutIntervalForResource = 60
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: configuration)
+    }
+
+    /// Test seam: lets the pagination tests answer from URLProtocol stubs.
+    init(source: JellyfinSource, token: String, session: URLSession) {
+        self.source = source
+        self.token = token
+        self.session = session
     }
 
     public nonisolated func url(path: String) -> URL {
@@ -316,6 +347,10 @@ public actor JellyfinClient {
             throw error
         } catch let error as DecodingError {
             throw JellyfinError.invalidResponse(String(describing: error))
+        } catch is CancellationError {
+            throw JellyfinError.cancelled
+        } catch let error as URLError where error.code == .cancelled {
+            throw JellyfinError.cancelled
         } catch {
             throw JellyfinError.network(error.localizedDescription)
         }
@@ -378,41 +413,71 @@ public actor JellyfinClient {
         return response.items
     }
 
-    public func items(parentID: String?) async throws -> [JellyfinItem] {
+    /// One page of `Users/{id}/Items`. Jellyfin caps the page size the client
+    /// may request; anything larger is silently truncated, so callers must
+    /// paginate with `StartIndex`.
+    static let itemsPageSize = 200
+
+    private func pagedItems(
+        query baseQuery: [URLQueryItem],
+        pageSize: Int = JellyfinClient.itemsPageSize,
+        token: ScanCancellationToken? = nil
+    ) async throws -> [JellyfinItem] {
         guard let userID = source.userID else { throw JellyfinError.unauthorized }
-        var components = URLComponents(url: url(path: "Users/\(userID)/Items"), resolvingAgainstBaseURL: false)
-        var query = [
-            URLQueryItem(name: "Fields", value: "Overview,Genres,MediaSources,MediaStreams,ParentId,SeriesName,IndexNumber,ParentIndexNumber,RunTimeTicks,ProductionYear"),
-            URLQueryItem(name: "SortBy", value: "SortName"),
-            URLQueryItem(name: "SortOrder", value: "Ascending"),
-            URLQueryItem(name: "ImageTypeLimit", value: "1"),
-            URLQueryItem(name: "EnableImageTypes", value: "Primary"),
-            URLQueryItem(name: "Limit", value: "500"),
-        ]
-        if let parentID { query.append(URLQueryItem(name: "ParentId", value: parentID)) }
-        components?.queryItems = query
-        guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
-        let response = try await perform(request(requestURL), as: JellyfinItemsResponse.self)
-        return response.items
+        guard pageSize > 0 else { throw JellyfinError.invalidResponse("分页大小必须大于 0") }
+        var results: [JellyfinItem] = []
+        var startIndex = 0
+        var total: Int?
+        while true {
+            if token?.isCancelled == true { throw JellyfinError.cancelled }
+            if Task.isCancelled { throw JellyfinError.cancelled }
+            var components = URLComponents(
+                url: url(path: "Users/\(userID)/Items"),
+                resolvingAgainstBaseURL: false
+            )
+            components?.queryItems = baseQuery + [
+                URLQueryItem(name: "StartIndex", value: String(startIndex)),
+                URLQueryItem(name: "Limit", value: String(pageSize)),
+            ]
+            guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
+            let response = try await perform(request(requestURL), as: JellyfinItemsResponse.self)
+            total = response.totalRecordCount ?? total
+            if response.items.isEmpty { break }
+            results.append(contentsOf: response.items)
+            startIndex += response.items.count
+            if let total, results.count >= total { break }
+            // A short page means the server has nothing else to give.
+            if response.items.count < pageSize { break }
+        }
+        return results
     }
 
-    public func libraryItems(parentID: String) async throws -> [JellyfinItem] {
-        guard let userID = source.userID else { throw JellyfinError.unauthorized }
-        var components = URLComponents(url: url(path: "Users/\(userID)/Items"), resolvingAgainstBaseURL: false)
-        components?.queryItems = [
-            URLQueryItem(name: "ParentId", value: parentID),
-            URLQueryItem(name: "Recursive", value: "true"),
-            URLQueryItem(name: "IncludeItemTypes", value: "Movie,Series,Season,Episode"),
-            URLQueryItem(name: "Fields", value: "Overview,Genres,ParentId,SeriesName,IndexNumber,ParentIndexNumber,RunTimeTicks,ProductionYear,SeriesId,SeasonId"),
+    public func items(parentID: String?, token: ScanCancellationToken? = nil) async throws -> [JellyfinItem] {
+        var query = [
+            URLQueryItem(name: "Fields", value: "Overview,Genres,MediaSources,MediaStreams,ParentId,SeriesName,IndexNumber,ParentIndexNumber,RunTimeTicks,ProductionYear,SeriesId,SeasonId"),
             URLQueryItem(name: "SortBy", value: "SortName"),
             URLQueryItem(name: "SortOrder", value: "Ascending"),
             URLQueryItem(name: "ImageTypeLimit", value: "1"),
             URLQueryItem(name: "EnableImageTypes", value: "Primary"),
-            URLQueryItem(name: "Limit", value: "5000"),
         ]
-        guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
-        let response = try await perform(request(requestURL), as: JellyfinItemsResponse.self)
-        return response.items
+        if let parentID { query.append(URLQueryItem(name: "ParentId", value: parentID)) }
+        return try await pagedItems(query: query, token: token)
+    }
+
+    public func libraryItems(parentID: String, token: ScanCancellationToken? = nil) async throws -> [JellyfinItem] {
+        try await pagedItems(
+            query: [
+                URLQueryItem(name: "ParentId", value: parentID),
+                URLQueryItem(name: "Recursive", value: "true"),
+                URLQueryItem(name: "IncludeItemTypes", value: "Movie,Series,Season,Episode"),
+                URLQueryItem(name: "Fields", value: "Overview,Genres,ParentId,SeriesName,IndexNumber,ParentIndexNumber,RunTimeTicks,ProductionYear,SeriesId,SeasonId,MediaSources,MediaStreams"),
+                URLQueryItem(name: "SortBy", value: "SortName"),
+                URLQueryItem(name: "SortOrder", value: "Ascending"),
+                URLQueryItem(name: "ImageTypeLimit", value: "1"),
+                URLQueryItem(name: "EnableImageTypes", value: "Primary"),
+            ],
+            token: token
+        )
     }
 
     public func item(id: String) async throws -> JellyfinItem {
