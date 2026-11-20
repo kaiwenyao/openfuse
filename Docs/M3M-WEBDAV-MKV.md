@@ -36,4 +36,4 @@
 
 ## 下一项
 
-M5j：Plex 详情点击/音轨；版本级去重；SMB/HDR/AirPlay；CloudKit/Trakt；音频；iOS 远程 MKV 探测；M3 多根/损坏过滤。
+Mac AirPlay 入口已在 [M5j 验收](Docs/M5J-AIRPLAY.md) 完成（UI）。剩余 M5k：AirPlay/HDR 实机、Plex 详情点击/音轨、版本级去重、SMB、CloudKit/Trakt、音频、M3 多根/损坏过滤。

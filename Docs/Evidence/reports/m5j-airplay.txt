@@ -1,0 +1,17 @@
+OpenFuse M5j AirPlay route picker evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Implementation:
+  AirPlayButton.swift wraps AVRoutePickerView (NSViewRepresentable) with
+  isRoutePickerButtonBordered=false; inserted in PlayerView control bar next
+  to fullscreen with help "AirPlay 投屏".
+
+Verification:
+  App built; local MKV opened, frozen at 3s, UI capture shows AirPlay waves
+  icon left of fullscreen; controls include subtitles/audio/speed.
+  swift test 28/28; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Actual AirPlay route discovery/playback (no receiver/Apple TV on network);
+  HDR routing; iOS route picker behavior beyond AVKit default; audio.

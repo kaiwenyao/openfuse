@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## AirPlay 入口（M5j）
+
+- `AirPlayRoutePicker` 包装 macOS `AVRoutePickerView`，置于播放器控制栏全屏旁。
+- 仅 UI/构建验证；无 AirPlay 接收设备，实际路由/HDR/音频未测。
+- iOS/tvOS 使用 AVKit 自带路由控件。
+
 ## WebDAV MKV 分辨率（M3m）
 
 - 远程 MKV/TS/WebM/AVI 用 ffprobe + Basic Auth + HTTP Range；terminationHandler 读取临时输出，避免 NSTask 等待死锁。

@@ -257,6 +257,10 @@ struct PlayerView: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
 
+                AirPlayRoutePicker()
+                    .frame(width: 24, height: 24)
+                    .help("AirPlay 投屏")
+
                 Button { player.toggleFullScreen() } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))

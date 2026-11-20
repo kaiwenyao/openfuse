@@ -128,6 +128,8 @@
 | `reports/m3m-webdav-mkv-library.json` | MKV 版本/分辨率 | 应用报告 |
 | `reports/m3m-webdav-mkv-filter.json` | 1080p 筛选结果 | 应用报告 |
 | `reports/m3m-webdav-mkv.txt` | MKV 分辨率摘要 | 运行记录 |
+| `71-airplay-player.jpg` | Mac 播放器 AirPlay 入口 | 应用内窗口快照 |
+| `reports/m5j-airplay.txt` | AirPlay 构建/UI 摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
