@@ -516,3 +516,11 @@
 | 大 tail MP4 | MacBook Pro M2 Pro／macOS 27.2.1 | 12.6MB HDR MP4 over SMB | Infuse 未安装 | 尾8MB中段扫描 moov → 1080p/HDR10 | `reports/m5ah-smb-large-mp4.json` | 通过 |
 | 单测 | 同上 | 1MB前缀+moov | 待采样 | 34/34 | 终端 | 通过 |
 | 碎片 MP4/大 moov | 同上 | 特殊文件 | 待采样 | 未做 | — | 待验证 |
+
+### M6a visionOS 沉浸执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 沉浸空间 | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | ImmersiveSpace 打开无拒绝；截图大 plane | Evidence 92、`reports/m6a-vision-immersive.txt` | 部分通过 |
+| VideoMaterial | 同上 | 同上 | 待真机 | 模拟器 Metal 不可用黑屏 | 同上 | 待验证 |
+| 手势/进度 | 同上 | 同上 | 待真机 | 未验证 | — | 待验证 |

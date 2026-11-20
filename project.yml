@@ -69,8 +69,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openfuse.vision
         PRODUCT_NAME: OpenFuse
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: OpenFuse
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Platforms/Vision/Info.plist
         SWIFT_VERSION: "5.0"
         CODE_SIGNING_ALLOWED: NO
 schemes:

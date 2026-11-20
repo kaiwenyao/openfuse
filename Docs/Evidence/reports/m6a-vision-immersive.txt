@@ -1,0 +1,23 @@
+OpenFuse M6a visionOS immersive space evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; Apple Vision Pro simulator visionOS 27.2.
+
+Implementation:
+  VisionImmersiveModel + ImmersiveSpace + RealityKit VideoMaterial plane.
+  Explicit Platforms/Vision/Info.plist with
+  UIApplicationSceneManifest.UIApplicationSupportsMultipleScenes=true.
+  Detail button "沉浸式播放"; OPENFUSE_AUTOPLAY/OPENFUSE_IMMERSIVE auto-open.
+  Overlay play/pause/seek/close; progress recorded on disappear.
+
+Results:
+  Multi-scene plist check PASS.
+  Launch with immersive env; no "Unable to open an immersive space" rejection.
+  Screenshot shows the large immersive plane plus the app window.
+  Simulator logs: VideoLightSpillGenerator unable to get Metal device, so the
+  VideoMaterial plane renders black in the simulator; real Vision Pro needed.
+  Scripts/run-vision-immersive.sh PASS.
+  swift test 34/34; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real Vision Pro VideoMaterial/HDR rendering, hand/eye controls, immersive
+  dismissal progress write, performance; audio.

@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## visionOS 沉浸空间（M6a）
+
+- ImmersiveSpace + RealityKit VideoMaterial plane；VisionImmersiveModel 管 AVPlayer/进度。
+- 显式 Info.plist UIApplicationSupportsMultipleScenes=true；模拟器 Metal 不可用黑屏。
+- 手势/空间音频/真机渲染未验证。
+
 ## 大 MP4 moov 扫描（M5ah）
 
 - 头部解析失败后扫描 "moov" 签名，从 size 字段解析；解决尾读从 mdat 中间开始。

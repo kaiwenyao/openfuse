@@ -35,4 +35,4 @@ M5ag 的尾部回退假设尾数据从 atom 边界开始；>8MB 文件的尾 8MB
 
 ## 下一项
 
-M5ai：碎片 MP4/大 moov；SMB 性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+visionOS 沉浸空间已在 [M6a 验收](Docs/M6A-VISION-IMMERSIVE.md) 完成模拟器验证。剩余 M6b：真机 VideoMaterial/手势/空间音频、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

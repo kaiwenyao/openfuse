@@ -4,6 +4,8 @@ import SwiftUI
 
 struct VisionRootView: View {
     @EnvironmentObject private var model: MobileLibraryModel
+    @EnvironmentObject private var playback: VisionImmersiveModel
+    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
     @State private var selectedWork: LibraryWork?
 
     var body: some View {
@@ -46,6 +48,17 @@ struct VisionRootView: View {
             guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
                   selectedWork == nil else { return }
             selectedWork = model.groups.first?.primary
+            if ProcessInfo.processInfo.environment["OPENFUSE_IMMERSIVE"] == "1",
+               let work = selectedWork,
+               let item = model.playbackItem(for: work) {
+                await playback.prepare(item: item, model: model)
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                let result = await openImmersiveSpace(id: VisionImmersiveModel.spaceID)
+                print("OpenFuse immersive result: \(result)")
+                if result != .opened {
+                    playback.status = "沉浸空间未打开：\(result)"
+                }
+            }
         }
     }
 }
@@ -82,6 +95,8 @@ private struct VisionPoster: View {
 
 private struct VisionDetailView: View {
     @EnvironmentObject private var model: MobileLibraryModel
+    @EnvironmentObject private var playback: VisionImmersiveModel
+    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
     let work: LibraryWork
     @State private var item: MobilePlaybackItem?
 
@@ -117,6 +132,18 @@ private struct VisionDetailView: View {
                                 .padding(.vertical, 12)
                         }
                         .buttonStyle(.borderedProminent)
+                        Button {
+                            Task {
+                                await playback.prepare(item: item, model: model)
+                                _ = await openImmersiveSpace(id: VisionImmersiveModel.spaceID)
+                            }
+                        } label: {
+                            Label("沉浸式播放", systemImage: "visionpro")
+                                .font(.headline)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.bordered)
                     } else {
                         Text("该来源在 Vision Pro 首版不可直接播放；远程/服务器播放待接入。")
                             .font(.callout)
@@ -134,6 +161,7 @@ private struct VisionDetailView: View {
         }
         .task {
             guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
+                  ProcessInfo.processInfo.environment["OPENFUSE_IMMERSIVE"] != "1",
                   item == nil,
                   let playback = model.playbackItem(for: work) else { return }
             item = playback
