@@ -1,6 +1,6 @@
 # OpenFuse 安装与续签（macOS / iPhone / iPad）
 
-版本：0.2.1 · 提交 `d81bc7e`（安装器对齐 anypaste；Mac 播放行为不变）
+版本：0.2.2 · 提交 `63af6e2`（安装器与 anypaste 统一写法与格式）
 日期：2026-11-20
 
 ## 一、macOS：一条命令安装与升级
@@ -8,7 +8,7 @@
 私有仓库，先用已登录的 `gh` 取安装脚本，再运行：
 
 ```bash
-gh release download v0.2.1-d81bc7e -R kaiwenyao/openfuse \
+gh release download v0.2.2-63af6e2 -R kaiwenyao/openfuse \
   -p install-openfuse-macos.sh -O /tmp/install-openfuse-macos.sh
 bash /tmp/install-openfuse-macos.sh
 ```
@@ -16,7 +16,7 @@ bash /tmp/install-openfuse-macos.sh
 我已在本机跑过这条命令（`--no-launch`），安装到 `/Applications/OpenFuse.app`：
 
 ```
-Installed 0.2.1 (d81bc7e) at /Applications/OpenFuse.app
+Installed 0.2.2 (63af6e2) at /Applications/OpenFuse.app
 User data kept: 1 sources, 8 Keychain credential(s), playback history present.
 ```
 
@@ -34,7 +34,7 @@ bash install-openfuse-macos.sh --app OpenFuse-macOS-0.2.0-af2f28d.zip
 - 默认 ad-hoc 签名；`--sign local` 创建/复用 10 年自签身份 `OpenFuse Local Signing`，升级不再因签名变化触发 Keychain 授权（首次会请求一次钥匙串/信任确认）。
 - 不申请辅助功能、输入监控或屏幕录制权限；OpenFuse 不需要它们。
 - 安装后打印来源数量、Keychain 凭据数量、观看记录是否存在，证明升级没有破坏数据。
-- 与 anypaste 一致的运维参数：`--uninstall`（删 app 与签名身份，保留来源/Keychain/观看记录）、`--reset-identity`、`--sign local`（10 年自签身份，一次信任后升级复用）、`--prefix`、`--keep-backup`；并拒绝 root、检查 arm64/x86_64 与 macOS 14+。
+- 与 anypaste 统一的默认签名策略：默认 `--sign local`（持久身份，升级复用），`--sign adhoc` 显式降级；运维参数：`--uninstall`（删 app 与签名身份，保留来源/Keychain/观看记录）、`--reset-identity`、`--sign local`（10 年自签身份，一次信任后升级复用）、`--prefix`、`--keep-backup`；并拒绝 root、检查 arm64/x86_64 与 macOS 14+。
 
 实测升级（同一条命令重复执行）：
 
@@ -48,10 +48,10 @@ bash install-openfuse-macos.sh --app OpenFuse-macOS-0.2.0-af2f28d.zip
 
 | 文件 | 说明 |
 | --- | --- |
-| `build/OpenFuse-macOS-0.2.1-d81bc7e.zip` | 自包含 .app（含 50 个 dylib），从最新提交打包 |
-| `build/OpenFuse-macOS-0.2.1-d81bc7e.zip.sha256` | `8a050ae5…ba8927` |
+| `build/OpenFuse-macos.zip` | 自包含 .app（含 50 个 dylib），资产名与 anypaste 一致 |
+| `build/OpenFuse-macos.zip.sha256` | `78eab65c…8d83fc` |
 | `build/install-openfuse-macos.sh` | 安装脚本 |
-| GitHub Release | `v0.2.1-d81bc7e`（私有仓库，需登录 gh；含 zip、sha256、安装脚本） |
+| GitHub Release | `v0.2.2-63af6e2`（私有仓库，需登录 gh；资产为 `OpenFuse-macos.zip`、`.sha256`、安装脚本） |
 
 ## 二、iPhone / iPad：数据线安装与 7 天续签
 
