@@ -39,6 +39,7 @@ public struct PlexStream: Codable, Hashable, Sendable {
     public var languageCode: String?
     public var displayTitle: String?
     public var forced: Bool?
+    public var channels: Int?
 }
 
 public struct PlexPart: Codable, Hashable, Sendable {

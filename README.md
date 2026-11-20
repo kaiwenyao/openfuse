@@ -51,7 +51,8 @@
 - **M3l T07 扫描中播放：完成本地验证。** `--rescan-local` 在播放中重扫，播放器到 12.0s 未中断；损坏单文件不拖垮扫描（仍留下不可播条目）。不同本地目录会累积作品，测试改用独立 support。记录：[M3l 验收](Docs/M3L-T07.md)。
 - **M3m WebDAV MKV 分辨率：完成。** 远程 MKV 用带 Basic Auth 的 ffprobe Range 探测，版本 `1080p · WebDAV`，1080p 筛选覆盖；terminationHandler 避免等待死锁。iOS 扫描端仍无 ffprobe。记录：[M3m 验收](Docs/M3M-WEBDAV-MKV.md)。
 - **M5j AirPlay 入口：完成。** Mac 播放器控制栏加入 `AVRoutePickerView` AirPlay 图标；构建/UI 截图通过。无接收设备，实际投屏标待验证。记录：[M5j 验收](Docs/M5J-AIRPLAY.md)。
-- **下一项：** M5k：AirPlay 实机/HDR；Plex 详情点击/音轨；版本级去重；SMB；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+- **M5k Plex 详情/版本/音轨：完成。** 详情显示 1080p/720p 与 E-AC-3 5.1/AAC，可按版本播放；`--plex-play 401` 实际播放 9.917s 并选中 Plex 外挂简体；修复电影 children 404。记录：[M5k 验收](Docs/M5K-PLEX-DETAIL.md)。
+- **下一项：** M5l：真实 Plex 验证、版本级去重；SMB；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -81,7 +82,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5j-airplay`（基于 M3m 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5k-plex-detail`（基于 M5j 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

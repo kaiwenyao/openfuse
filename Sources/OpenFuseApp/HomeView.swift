@@ -179,6 +179,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Task { @MainActor in
                     let ok = await model.addPlexSource(name: name, urlText: plexURL, token: token)
                     if ok {
+                        let playKey = self.value(after: "--plex-play", in: arguments)
+                        if let playKey {
+                            await model.playPlexMetadata(source: model.plexSources.last!, ratingKey: playKey)
+                            self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+                            return
+                        }
                         if arguments.contains("--plex-browse") {
                             if let plexSource = model.plexSources.last {
                                 model.browsePlex(plexSource)

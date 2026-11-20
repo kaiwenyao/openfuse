@@ -1,0 +1,24 @@
+OpenFuse M5k Plex detail versions/audio and play evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, movie 101 with 1080p/720p + audio streams, episode 401.
+
+Detail:
+  Plex Direct auto section 1 + item 101; detail shows:
+  1080p · MKV — E-AC-3 5.1 6ch / AAC 立体声 2ch — 播放此版本
+  720p · MKV — AAC 立体声 2ch — 播放此版本
+  No children request for a movie (fixed previous 404).
+
+Play:
+  --plex-play 401 --subtitle zh-Hans --freeze-at 9.9
+  sourceKind=plex, position 9.917, selectedSubtitle=mpv:1,
+  subtitles = Plex 外挂简体 + 中文（简体）· 中日双语.
+  Screenshot 73; report m5k-plex-detail-play.json.
+
+Verification:
+  Scripts/run-plex-browser.sh PASS (sections/grid/detail/play + token/metadata).
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Plex metadata/stream shapes; audio playback listening; version-level
+  dedupe; SMB/HDR/AirPlay device; CloudKit/Trakt; M3 items.

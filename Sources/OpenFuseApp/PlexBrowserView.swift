@@ -71,9 +71,17 @@ struct PlexBrowserView: View {
         defer { isLoading = false }
         do {
             sections = try await client.sections()
-            if let key = ProcessInfo.processInfo.environment["OPENFUSE_PLEX_SECTION"],
-               let section = sections.first(where: { $0.key == key }) {
+            let environment = ProcessInfo.processInfo.environment
+            let section = environment["OPENFUSE_PLEX_SECTION"]
+                .flatMap { key in sections.first(where: { $0.key == key }) }
+            if let section {
                 path.append(section)
+                if let itemKey = environment["OPENFUSE_PLEX_ITEM"] {
+                    let items = try await client.items(sectionKey: section.key)
+                    if let item = items.first(where: { $0.ratingKey == itemKey }) {
+                        path.append(item)
+                    }
+                }
             }
         } catch {
             errorText = error.localizedDescription
@@ -209,6 +217,40 @@ private struct PlexMetadataView: View {
                         }
                     }
                 }
+                if let media = metadata.media, !media.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("版本与音轨")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        ForEach(media.indices, id: \.self) { index in
+                            let item = media[index]
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(versionTitle(item, index: index))
+                                        .font(.system(size: 12.5, weight: .semibold))
+                                        .foregroundStyle(Theme.text)
+                                    let audio = audioStreams(item)
+                                    if !audio.isEmpty {
+                                        Text(audio.map { stream in
+                                            let name = stream.displayTitle ?? stream.codec ?? "音频"
+                                            let channels = stream.channels.map { " · \($0)ch" } ?? ""
+                                            return name + channels
+                                        }.joined(separator: " / "))
+                                            .font(.system(size: 10.5))
+                                            .foregroundStyle(Theme.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Button("播放此版本") {
+                                    Task { await model.openPlexMedia(metadata, source: source, mediaIndex: index) }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                            .padding(10)
+                            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
                 if let errorText { Text(errorText).foregroundStyle(.orange) }
                 if loading { ProgressView().tint(Theme.accent) }
                 if !children.isEmpty {
@@ -264,6 +306,14 @@ private struct PlexMetadataView: View {
     }
 
     private func load() async {
+        guard metadata.type == "show" || metadata.type == "season" else {
+            loading = false
+            if isPlayable,
+               ProcessInfo.processInfo.environment["OPENFUSE_PLEX_AUTOPLAY"] == "1" {
+                await model.openPlexMetadata(metadata, source: source)
+            }
+            return
+        }
         guard children.isEmpty else { loading = false; return }
         guard let client = model.plexClient(for: source) else { errorText = "缺少 Plex token"; loading = false; return }
         do {
@@ -272,6 +322,22 @@ private struct PlexMetadataView: View {
             errorText = error.localizedDescription
         }
         loading = false
+        if isPlayable,
+           ProcessInfo.processInfo.environment["OPENFUSE_PLEX_AUTOPLAY"] == "1" {
+            await model.openPlexMetadata(metadata, source: source)
+        }
+    }
+
+    private func versionTitle(_ media: PlexMedia, index: Int) -> String {
+        let resolution = media.videoResolution.map { $0.lowercased() == "4k" ? "2160p" : "\($0)p" }
+        let container = media.container?.uppercased()
+        return [resolution, container].compactMap { $0 }.joined(separator: " · ").isEmpty
+            ? "版本 \(index + 1)"
+            : [resolution, container].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    private func audioStreams(_ media: PlexMedia) -> [PlexStream] {
+        (media.parts ?? []).flatMap { $0.streams ?? [] }.filter { $0.streamType == 2 }
     }
 }
 

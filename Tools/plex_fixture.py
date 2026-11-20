@@ -35,6 +35,18 @@ def media(part_id):
             "file": f"/media/{part_id}/file.mkv",
             "size": size,
             "Stream": [{
+                "streamType": 2,
+                "codec": "eac3",
+                "languageCode": "eng",
+                "displayTitle": "E-AC-3 5.1",
+                "channels": 6,
+            }, {
+                "streamType": 2,
+                "codec": "aac",
+                "languageCode": "eng",
+                "displayTitle": "AAC 立体声",
+                "channels": 2,
+            }, {
                 "streamType": 3,
                 "key": f"/library/streams/{part_id}-srt",
                 "codec": "srt",
@@ -50,6 +62,13 @@ def media(part_id):
             "key": f"/library/parts/{part_id}2/file.mkv",
             "file": f"/media/{part_id}/compact.mkv",
             "size": size,
+            "Stream": [{
+                "streamType": 2,
+                "codec": "aac",
+                "languageCode": "eng",
+                "displayTitle": "AAC 立体声",
+                "channels": 2,
+            }],
         }],
     }]
 

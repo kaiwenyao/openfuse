@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex 详情/版本/音轨（M5k）
+
+- PlexMetadataView 展示 media 版本（分辨率/容器）、音频流（codec/display/channels）；按版本播放。
+- openPlexMedia(mediaIndex) / playPlexMetadata + CLI --plex-play；OPENFUSE_PLEX_ITEM/AUTOPLAY。
+- 修复 movie 误请求 children 404；实测 9.917s + 外挂字幕。
+- 真实 Plex/音频听测/版本级去重未做。
+
 ## AirPlay 入口（M5j）
 
 - `AirPlayRoutePicker` 包装 macOS `AVRoutePickerView`，置于播放器控制栏全屏旁。

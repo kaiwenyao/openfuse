@@ -33,4 +33,4 @@
 
 ## 下一项
 
-M5k：AirPlay 实机、HDR；Plex 详情点击/音轨；SMB；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+Plex 详情/版本/音轨已在 [M5k 验收](Docs/M5K-PLEX-DETAIL.md) 完成。剩余 M5l：AirPlay/HDR 实机、真实 Plex/版本级去重、SMB、CloudKit/Trakt、音频、M3 多根/损坏过滤。

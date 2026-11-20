@@ -130,6 +130,10 @@
 | `reports/m3m-webdav-mkv.txt` | MKV 分辨率摘要 | 运行记录 |
 | `71-airplay-player.jpg` | Mac 播放器 AirPlay 入口 | 应用内窗口快照 |
 | `reports/m5j-airplay.txt` | AirPlay 构建/UI 摘要 | 运行记录 |
+| `72-plex-detail-versions.jpg` | Plex 详情版本/音轨 | 应用内窗口快照 |
+| `73-plex-detail-play.jpg` | Plex 详情播放 9.9s | 播放器抓帧 |
+| `reports/m5k-plex-detail-play.json` | Plex 详情播放报告 | 应用报告 |
+| `reports/m5k-plex-detail.txt` | 详情/播放摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

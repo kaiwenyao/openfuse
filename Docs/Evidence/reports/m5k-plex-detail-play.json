@@ -1,0 +1,83 @@
+{
+  "app": "OpenFuse",
+  "arguments": [
+    "build/OpenFuse.app/Contents/MacOS/OpenFuse",
+    "--plex-url",
+    "http://127.0.0.1:32400",
+    "--plex-token",
+    "plex-test-token",
+    "--plex-name",
+    "Plex",
+    "--plex-play",
+    "401",
+    "--subtitle",
+    "zh-Hans",
+    "--freeze-at",
+    "9.9",
+    "--capture",
+    "build/plex-browser/play.png",
+    "--capture-after",
+    "14",
+    "--report",
+    "build/plex-browser/play.json",
+    "--quit-after",
+    "16"
+  ],
+  "audio": [
+    {
+      "channels": 6,
+      "codec": "eac3",
+      "engineID": 1,
+      "id": "mpv-audio:1",
+      "label": "E-AC-3 5.1",
+      "name": "中文 · E-AC-3 5.1 测试音轨"
+    }
+  ],
+  "audioChannels": "6",
+  "audioCodec": "eac3",
+  "audioDevice": "auto",
+  "audioOutParams": "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams": "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "currentAO": "coreaudio",
+  "currentVO": "libmpv",
+  "duration": 60,
+  "engine": "libmpv",
+  "file": "http://127.0.0.1:32400/library/parts/401/file.mkv?X-Plex-Token=REDACTED",
+  "generatedAt": "2026-11-20T04:29:20Z",
+  "hwdecCurrent": "videotoolbox",
+  "isFullScreen": false,
+  "libraryStatus": "Plex Plex：2 个作品",
+  "logs": [],
+  "mpv": "mpv v0.42.0",
+  "paused": true,
+  "position": 9.917,
+  "remotePath": "/library/parts/401/file.mkv",
+  "selectedAudio": "mpv-audio:1",
+  "selectedSubtitle": "mpv:1",
+  "sourceID": "afedf4286653593a",
+  "sourceKind": "plex",
+  "sourceName": "Plex",
+  "subtitles": [
+    {
+      "engineID": -1,
+      "format": "srt",
+      "id": "plex-stream:401:2",
+      "language": "zh-Hans",
+      "name": "Plex 外挂简体",
+      "source": "downloaded"
+    },
+    {
+      "engineID": 1,
+      "format": "ass",
+      "id": "mpv:1",
+      "language": "zh",
+      "name": "中文（简体） · 中日双语",
+      "source": "embedded"
+    }
+  ],
+  "title": "Plex 第 1 集",
+  "videoCodec": "hevc / Main 10",
+  "videoDescription": "H.265 / HEVC (High Efficiency Video Coding)",
+  "videoOutParams": "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1920,\"h\":1080,\"dw\":1920,\"dh\":1080,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1920,\"crop-h\":1080,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2/4/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "windowFrame": "{{0, 0}, {0, 0}}"
+}

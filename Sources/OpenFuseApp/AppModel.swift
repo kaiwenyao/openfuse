@@ -515,7 +515,12 @@ final class AppModel: ObservableObject {
     }
 
     func openPlexMetadata(_ metadata: PlexMetadata, source: PlexSource) async {
-        guard let part = metadata.media?.first?.parts?.first else {
+        await openPlexMedia(metadata, source: source, mediaIndex: 0)
+    }
+
+    func openPlexMedia(_ metadata: PlexMetadata, source: PlexSource, mediaIndex: Int) async {
+        guard let media = metadata.media, media.indices.contains(mediaIndex),
+              let part = media[mediaIndex].parts?.first else {
             libraryStatus = "Plex 条目没有可播放文件"
             return
         }
@@ -527,6 +532,22 @@ final class AppModel: ObservableObject {
             title: metadata.title,
             duration: Double(metadata.duration ?? 0) / 1000
         )
+    }
+
+    func playPlexMetadata(source: PlexSource, ratingKey: String) async {
+        guard let client = plexClient(for: source) else {
+            statusMessage = "缺少 Plex token"
+            return
+        }
+        do {
+            guard let metadata = try await client.metadata(ratingKey: ratingKey) else {
+                statusMessage = "Plex 找不到条目 \(ratingKey)"
+                return
+            }
+            await openPlexMetadata(metadata, source: source)
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
     func jellyfinImageURL(source: JellyfinSource, item: JellyfinItem, maxWidth: Int = 480) -> URL? {
