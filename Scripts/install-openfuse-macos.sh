@@ -106,8 +106,8 @@ msg() {
             cn="SHA-256 校验失败:下载文件损坏或被篡改,未安装任何内容。"
             ;;
         download_failed)
-            en="Download failed. Check your network (and “gh auth login” for this private repository) and try again."
-            cn="下载失败,请检查网络(私有仓库还需 gh auth login)后重试。"
+            en="Download failed. Check your network and try again (or install offline with --app <zip>)."
+            cn="下载失败,请检查网络后重试(也可用 --app <zip> 离线安装)。"
             ;;
         bundle_invalid)
             en="The downloaded app bundle is invalid or has the wrong bundle identifier; nothing was installed."
@@ -707,9 +707,6 @@ install_app() {
             die download_failed
         fi
     else
-        if ! command -v gh >/dev/null 2>&1 || ! gh auth status >/dev/null 2>&1; then
-            die gh_needed
-        fi
         say downloading
         local base
         base=$(resolve_base)

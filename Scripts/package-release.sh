@@ -29,6 +29,9 @@ unzip -t "$ZIP" >/dev/null
 )
 cp Scripts/install-openfuse-macos.sh build/install-openfuse-macos.sh
 chmod +x build/install-openfuse-macos.sh
+mkdir -p dist
+cp Scripts/install-openfuse-macos.sh dist/install-openfuse-macos.sh
+chmod +x dist/install-openfuse-macos.sh
 
 echo "version: ${VERSION}"
 echo "commit : ${COMMIT}"
