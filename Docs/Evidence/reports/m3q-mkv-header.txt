@@ -1,0 +1,21 @@
+OpenFuse M3q MKV header parser evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: 1080p Main10 HDR10 MKV over WebDAV.
+
+Implementation:
+  MatroskaProbe parses EBML from first 2MB Range; handles truncated Segment/
+  Tracks, reads PixelWidth/Height and Colour Transfer/Primaries.
+  WebDAV scanner prefers parser on iOS/tvOS/visionOS; macOS env
+  OPENFUSE_MKV_HEADER=1 forces it.
+
+Results:
+  Unit tests: 1920x1080/1080p; HDR transfer=16/primaries=9 -> HDR10 (31 tests).
+  WebDAV scan via parser: resolution=1080p, dynamicRange=HDR10,
+  name "1080p · WebDAV".
+  Scripts/run-mkv-header.sh PASS.
+  swift test 31/31; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real OpenList/WebDAV servers with large headers/malformed EBML; iOS simulator
+  runtime scan (build only); audio listening.

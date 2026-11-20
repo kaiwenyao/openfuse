@@ -672,6 +672,17 @@ public enum LibraryScanner {
                 return (height >= 2000 ? "2160p" : "\(height)p", nil)
             }
             guard ["mkv", "webm", "ts", "m2ts", "avi"].contains(ext) else { return (nil, nil) }
+            #if os(macOS)
+            let preferHeader = ProcessInfo.processInfo.environment["OPENFUSE_MKV_HEADER"] == "1"
+            #else
+            let preferHeader = true
+            #endif
+            if preferHeader || ext == "mkv" {
+                if let (data, _) = try? await client.fetch(path: remotePath, range: 0..<2_000_000),
+                   let header = MatroskaProbe.parse(data) {
+                    return (header.resolution, header.dynamicRange)
+                }
+            }
             return await Self.probeRemoteVideoHeight(
                 url: client.url(for: remotePath),
                 authorization: header

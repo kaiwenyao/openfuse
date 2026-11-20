@@ -445,3 +445,13 @@
 | E-AC-3 5.1 | MacBook Pro M2 Pro／macOS 27.2.1 | 60s 测试 MKV | Infuse 未安装 | PCM 48k/6ch/5.1；六路非静音 | `reports/m5z-audio-pcm-probe.json` | 通过（解码） |
 | 扬声器听测 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |
 | Downmix/同步 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |
+
+### M3q MKV 头部解析执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 头部解析 | MacBook Pro M2 Pro／macOS 27.2.1 | 1080p/HDR10 MKV | Infuse 未安装 | 2MB Range → 1080p/HDR10 | `reports/m3q-mkv-header.json` | 通过 |
+| 单测 | 同上 | 主/HDR 夹具 | 待采样 | 31/31，MatroskaProbe 2 项 | 终端 | 通过 |
+| iOS 运行期扫描 | 同上 | iPhone/iPad | 待采样 | 仅构建，未跑扫描 | — | 待验证 |
+| 大头部/畸形 EBML | 同上 | 大文件 | 待采样 | 未测 | — | 待验证 |
+| Stereo downmix | 同上 | 5.1 样片 | 待人工 | 2ch 非静音 | `reports/m5z-stereo-probe.json` | 通过（解码） |

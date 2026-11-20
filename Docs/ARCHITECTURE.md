@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## 纯 Swift MKV 头部解析（M3q）
+
+- MatroskaProbe 解析 2MB Range EBML：PixelWidth/Height、Colour Transfer/Primaries；截断主元素按可用数据。
+- WebDAV iOS 默认使用，macOS OPENFUSE_MKV_HEADER=1 强制；单测/扫描通过。
+- 2MB 后 Tracks、畸形 EBML、iOS 运行期扫描未验证。
+
 ## E-AC-3 5.1 PCM 验证（M5z）
 
 - 测试模式 OPENFUSE_AO_PCM → ao=pcm/文件/waveheader/5.1；正常 CoreAudio。

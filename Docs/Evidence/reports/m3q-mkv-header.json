@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T07:01:00Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse",
+      "primary" : "OpenFuse",
+      "sources" : [
+        "webdav"
+      ],
+      "workIDs" : [
+        "webdav-5c03e430b444befa"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "webdav-5c03e430b444befa-main",
+          "remotePath" : "Movie\/OpenFuse.HDR.mkv",
+          "season" : 0,
+          "sourceKind" : "webdav",
+          "title" : "OpenFuse",
+          "versions" : [
+            {
+              "contentKey" : "",
+              "dynamicRange" : "HDR10",
+              "fileURL" : "",
+              "id" : "webdav-5c03e430b444befa-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · WebDAV",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "webdav-5c03e430b444befa",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c8e376ed97ead924",
+      "sourceKind" : "webdav",
+      "title" : "OpenFuse",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse",
+          "versions" : [
+            "WebDAV · 1080p · WebDAV · HDR10"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse",
+      "sources" : [
+        "webdav"
+      ],
+      "title" : "OpenFuse"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "WebDAV WebDAV：1 个作品",
+  "visible" : [
+    "OpenFuse"
+  ],
+  "works" : 1
+}
