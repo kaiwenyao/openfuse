@@ -1,0 +1,14 @@
+OpenFuse M4z iPhone HTTPS sync evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; iPhone 18 Pro simulator iOS 27.2.
+Server: progress_sync_fixture HTTPS 8131, Bearer sync-test, self-signed CA.
+CA copied to app container Documents/ca.pem and passed via OPENFUSE_SYNC_CA.
+
+Results:
+  iPhone GET/POST reached HTTPS service.
+  Resume report: key jellyfin://c135.../c9a8.../c9a8..., position11, resume11.0.
+  Scripts/run-ios-sync-https.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  CA distribution UI, public CA, concurrent sync, real device, audio.

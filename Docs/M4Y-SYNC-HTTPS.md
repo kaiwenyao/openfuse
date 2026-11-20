@@ -34,4 +34,4 @@ M4w 的 token 仍走 HTTP 明文。本轮给 HTTP transport 增加 `OPENFUSE_SYN
 
 ## 下一项
 
-M4z/M6d：iPhone CA 分发、并发同步、CloudKit 真机；SMB >2GB/DFS；音频/HDR/visionOS。
+iPhone HTTPS/CA 固定已在 [M4z 验收](Docs/M4Z-IOS-SYNC-HTTPS.md) 完成模拟器验证。剩余 M5ao/M6d：SMB >2GB/DFS、CA 导入 UI、并发同步、CloudKit 真机、音频/HDR/visionOS。

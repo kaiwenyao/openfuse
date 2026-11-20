@@ -108,6 +108,11 @@ Docs/                   决策、素材、验收、证据
 - container 按逗号拆分识别 mp4；http(s) 统一 AVURLAsset header。
 - 手机样片修正为首帧0s/hvc1/faststart；续播画面11.0s/HUD11.0s对齐。
 
+## iPhone HTTPS/CA 固定（M4z）
+
+- 测试 CA 复制到模拟器 Documents，OPENFUSE_SYNC_CA 指向容器路径。
+- HTTPS GET/POST、resume11.0；CA 导入 UI/公共 CA/并发未验证。
+
 ## 同步 HTTPS/CA 固定（M4y）
 
 - PinnedTrustDelegate 用 OPENFUSE_SYNC_CA 作唯一锚；未固定证书被拒。
