@@ -1,0 +1,26 @@
+OpenFuse M3 T07 scan-while-playing evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Scenario 1: corrupt single file
+  Copied fixture library + added "Broken.Movie.2026.mkv" (text).
+  Separate support dir; scan produced 4 works / 5 episodes and did not abort.
+  The broken file remains a (non-playable) work; not filtered.
+
+Scenario 2: rescan while playing
+  Valid local library in a fresh support dir; play 示例剧 S01E01.
+  At +3s, --rescan-local build/library-fixture starts a local scan while the
+  player is open. At +15s report/capture: position 12.0s, libraryStatus
+  contains 扫描, player still running; screenshot 69.
+  CLI hook: --rescan-local <dir>.
+  Script Scripts/run-scan-while-playing.sh PASS.
+
+Builds/tests:
+  28/28 swift tests
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+
+Caveat:
+  Scanning a different local directory in the same support dir accumulated
+  works instead of replacing (Broken Movie remained). The test uses separate
+  support dirs; product decision needed for multi-root local libraries.

@@ -1355,6 +1355,7 @@ final class AppModel: ObservableObject {
             "videoOutParams": player.engine.getPropertyString("video-out-params") ?? "",
             "selectedSubtitle": player.selectedSubtitleID ?? "off",
             "selectedAudio": player.selectedAudioID ?? "default",
+            "libraryStatus": libraryStatus ?? "",
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
             "arguments": CommandLine.arguments,
             "logs": Array(player.logs.suffix(40)),

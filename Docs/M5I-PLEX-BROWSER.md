@@ -36,4 +36,4 @@ Plex 不再只有扫描后的海报库：新增 Plex Direct 浏览，按 section
 
 ## 下一项
 
-M5j：Plex 详情/播放点击自动化、音轨/版本 UI；版本级去重；真实服务器；SMB/HDR/AirPlay；CloudKit/Trakt；音频；M3 尾项。
+T07 扫描中播放已在 [M3l 验收](Docs/M3L-T07.md) 完成。剩余 M5j/M3m：Plex 详情点击/音轨、版本级去重、真实服务器、SMB/HDR/AirPlay、CloudKit/Trakt、音频、多根本地库/损坏过滤/WebDAV MKV 分辨率。

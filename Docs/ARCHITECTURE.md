@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## T07 扫描中播放（M3l）
+
+- 新增 CLI `--rescan-local <dir>`，在播放中触发本地重扫。
+- 播放器报告 `libraryStatus`；实测 12.0s 播放未中断，扫描完成。
+- 损坏单文件不拖垮扫描，但未过滤；不同本地目录会累积作品。
+- 未做多根本地库策略、损坏条目过滤、重启字幕更新、WebDAV MKV 分辨率。
+
 ## Plex Direct 浏览（M5i）
 
 - AppRoute.plexBrowser + PlexBrowserView：NavigationStack sections → items → metadata；show/season children；movie/episode 播放。

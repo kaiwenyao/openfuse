@@ -18,7 +18,7 @@
 - **M3e 手动整理：完成本地验证。** 详情可把同类型作品手动合并、拆分或恢复自动分组；分组键持久化；编辑信息可搜索 TMDB 候选并一键填入标题/年份/简介/海报。记录：[M3e 手动整理验收](Docs/M3E-MANUAL.md)。
 - **M3f WebDAV 元数据：完成本地验证。** WebDAV 扫描下载 NFO，使用 movie/tvshow/单集 NFO 的标题/简介/海报；海报经 Basic Auth 下载并缓存，海报库不再依赖 TMDB。记录：[M3f WebDAV NFO 验收](Docs/M3F-WEBDAV-NFO.md)。
 - **M3g 媒体库排序/筛选：完成本地验证。** 标题/年份/最近添加/集数排序，电影/剧集筛选，搜索组合；`addedAt` 来自本地 mtime、WebDAV mtime、Jellyfin DateCreated。记录：[M3g 排序筛选验收](Docs/M3G-FILTERS.md)。
-- **尚未完成：** 防剧透、观看状态/分辨率筛选、继续观看排序、T07 扫描中播放/超时恢复、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
+- **M3 尾项：** T07 扫描中播放/损坏文件已由 M3l 验证；多根本地库累积与损坏条目过滤仍待处理。真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测仍缺。
 - **M3h 观看状态/防剧透：完成本地验证。** 未看/观看中/已看筛选，最近播放排序，4K/1080p/720p 过滤；防剧透隐藏详情/单集简介；WebDAV NFO 中点标题正确合并。记录：[M3h 观看状态验收](Docs/M3H-WATCH.md)。
 - **M4a 跨平台数据层与 iOS 首版：构建完成，运行待验证。** 拆分 `OpenFuseData`（媒体库/WebDAV/Jellyfin/SQLite/记录）供全平台复用；新增 iPhone/iPad SwiftUI 应用、示例 MP4、Files 导入、AVPlayer 播放与续播。iOS Simulator/device generic 构建均成功；本轮无模拟器 runtime，启动/触控/后台恢复标「待验证」。记录：[M4a 移动端验收](Docs/M4-MOBILE.md)。
 - **M4b 移动端来源：构建完成，运行待验证。** 设置「媒体来源」支持添加/扫描/删除 WebDAV（OpenList）与 Jellyfin，凭据存 Keychain，库扫描复用 `OpenFuseData`；Jellyfin 海报按 token 生成。远程播放（转码/HLS/鉴权代理/MKV）仍未接。Simulator/device 构建均成功。记录：[M4 移动端验收](Docs/M4-MOBILE.md)。
@@ -48,7 +48,8 @@
 - **M5g 聚合去重/Emby 进度：完成本地验证。** Jellyfin+Emby 双来源原始 4 作品/6 集聚合为 2 组、sources 同时含两者；Emby Sessions/Playing（99170000 ticks）与 Progress（101670000）已回写。脚本可复现。记录：[M5g 验收](Docs/M5G-DEDUPE-EMBY-PROGRESS.md)。
 - **M5h Plex 多版本：完成本地验证。** 扫描遍历全部 `Media[]`，电影/每集保留 2 个版本；`--library-version 1` 实际播放 720p 备版（part 4012），字幕/进度回归通过。记录：[M5h 验收](Docs/M5H-PLEX-VERSIONS.md)。
 - **M5i Plex 直连浏览：完成。** 新增 Plex Direct NavigationStack：sections → 电影/剧 → 季/集 → 详情/播放；实测进入电影 section 并显示条目网格，请求带 token。播放按钮复用已验证的 `openPlexMetadata`。记录：[M5i 验收](Docs/M5I-PLEX-BROWSER.md)。
-- **下一项：** M5j：Plex 详情/播放点击自动化、音轨/版本 UI；版本级去重；真实服务器；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3 尾项。
+- **M3l T07 扫描中播放：完成本地验证。** `--rescan-local` 在播放中重扫，播放器到 12.0s 未中断；损坏单文件不拖垮扫描（仍留下不可播条目）。不同本地目录会累积作品，测试改用独立 support。记录：[M3l 验收](Docs/M3L-T07.md)。
+- **下一项：** M5j：Plex 详情/播放点击自动化、音轨/版本 UI；版本级去重；真实服务器；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3m 多根本地库/损坏过滤。
 
 开发入口：
 
@@ -78,7 +79,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5i-plex-browser`（基于 M5h 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3l-t07`（基于 M5i 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

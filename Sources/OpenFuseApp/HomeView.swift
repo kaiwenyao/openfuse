@@ -335,6 +335,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let subtitleTag = value(after: "--subtitle", in: arguments) {
             model.player?.selectSubtitle(language: subtitleTag, attempts: 10)
         }
+        if let rescan = value(after: "--rescan-local", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                model.startLocalScan(URL(fileURLWithPath: rescan))
+            }
+        }
         if let freezeAt = value(after: "--freeze-at", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 model.player?.freeze(at: freezeAt)
