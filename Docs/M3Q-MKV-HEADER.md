@@ -35,4 +35,4 @@ iOS/tvOS/visionOS 没有 ffprobe，WebDAV 远程 MKV 分辨率/HDR 为空。本�
 
 ## 下一项
 
-M3r/M5aa：真实 OpenList/大头部 EBML；iOS 运行期扫描；扬声器听测；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+iOS 运行期扫描已在 [M3r 验收](Docs/M3R-IOS-MKV-RUNTIME.md) 完成。剩余 M3s/M5aa：真实 OpenList/大头部 EBML、扬声器听测/设备路由、SMB/WebDAV 指纹、HDR 直通、真实 SMB3/Trakt、AirPlay、CloudKit。

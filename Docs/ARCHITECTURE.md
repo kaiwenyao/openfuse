@@ -103,6 +103,11 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## iOS 运行期 MKV 验证（M3r）
+
+- iPhone 18 Pro 模拟器启动后 WebDAV 扫描 HDR MKV；沙盒 SQLite dynamic_range=HDR10/1080p。
+- 真机/OpenList/大头部 EBML 未验证。
+
 ## 纯 Swift MKV 头部解析（M3q）
 
 - MatroskaProbe 解析 2MB Range EBML：PixelWidth/Height、Colour Transfer/Primaries；截断主元素按可用数据。

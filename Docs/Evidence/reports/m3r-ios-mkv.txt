@@ -1,0 +1,19 @@
+OpenFuse M3r iOS runtime MKV header evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2.
+
+Flow:
+  WebDAV fixture (port 8122) serves 1080p Main10 HDR10 MKV.
+  Build simulator app, uninstall/install, launch with SIMCTL_CHILD
+  OPENFUSE_TEST_WEBDAV_*; wait 10s; screenshot; read app container SQLite.
+
+Results:
+  versions rows:
+    ('1080p · 本地', '1080p', NULL)
+    ('1080p · WebDAV', '1080p', 'HDR10')
+  Screenshot shows iPhone library with WebDAV work.
+  Scripts/run-ios-mkv-runtime.sh PASS.
+  swift test 31/31; all five platforms/device/Mac build succeed.
+
+Not verified:
+  Large headers >2MB, malformed EBML, real OpenList; audio listening.

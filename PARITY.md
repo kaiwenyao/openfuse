@@ -455,3 +455,11 @@
 | iOS 运行期扫描 | 同上 | iPhone/iPad | 待采样 | 仅构建，未跑扫描 | — | 待验证 |
 | 大头部/畸形 EBML | 同上 | 大文件 | 待采样 | 未测 | — | 待验证 |
 | Stereo downmix | 同上 | 5.1 样片 | 待人工 | 2ch 非静音 | `reports/m5z-stereo-probe.json` | 通过（解码） |
+
+### M3r iOS 运行期 MKV 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iOS 远程 MKV | iPhone 18 Pro 模拟器／iOS 27.2 | WebDAV HDR10 MKV | Infuse 未安装 | SQLite `1080p · WebDAV`/HDR10 | Evidence 90、`reports/m3r-ios-mkv.txt` | 通过 |
+| 真实 OpenList/大头部 | 同上 | 真实服务 | 待采样 | 未测 | — | 待验证 |
+| 扬声器听测 | 同上 | 5.1 样片 | 待人工 | 未做 | — | 待验证 |

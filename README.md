@@ -72,7 +72,8 @@
 - **M3p 跨根去重：完成本地验证。** 本地版本记录 size+首尾 64KB SHA-256 contentKey；同内容跨根版本合并为 1 条（rawWorks=2/groups=1）。非全文件哈希，SMB/WebDAV 无指纹。记录：[M3p 验收](Docs/M3P-LOCAL-DEDUPE.md)。
 - **M5z 5.1 解码：完成 PCM 验证。** `OPENFUSE_AO_PCM` 测试模式将 E-AC-3 解码为 48kHz/6声道/5.1，FL/FR/FC/LFE/BL/BR 六路均非静音；但**未做扬声器/耳机听测**。记录：[M5z 验收](Docs/M5Z-AUDIO-PCM.md)。
 - **M3q MKV 头部解析：完成本地验证。** 纯 Swift EBML 解析 2MB Range，iOS 远程 MKV 可得到 1080p/HDR10；单元测试 31/31。iOS 运行期扫描未跑。另补 5.1→stereo downmix PCM（2ch 非静音）。记录：[M3q 验收](Docs/M3Q-MKV-HEADER.md)。
-- **下一项：** M3r/M5aa：真实 OpenList/大头部 EBML；iOS 运行期扫描；扬声器听测/设备路由；SMB/WebDAV 指纹；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+- **M3r iOS 运行期 MKV：完成模拟器验证。** iPhone 18 Pro 模拟器启动后扫描 WebDAV HDR MKV，沙盒 SQLite 得到 `1080p · WebDAV` / `dynamic_range=HDR10`，并有截图。真实 OpenList/大头部 EBML 未测。记录：[M3r 验收](Docs/M3R-IOS-MKV-RUNTIME.md)。
+- **下一项：** M3s/M5aa：真实 OpenList/大头部 EBML；扬声器听测/设备路由；SMB/WebDAV 指纹；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
 
 开发入口：
 
@@ -103,7 +104,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m3q-mkv-header`（基于 M5z 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3r-ios-mkv-runtime`（基于 M3q 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本
