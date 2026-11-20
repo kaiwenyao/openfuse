@@ -70,7 +70,7 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 
 脚本会：检查 Xcode / XcodeGen / Apple Development 身份 / 已连接设备 → 用稳定 Bundle ID `com.openfuse.mobile` 和自动签名构建 → `devicectl` 覆盖安装并启动 → 读取 `embedded.mobileprovision` 的到期日并打印剩余天数。免费 Personal Team 的签名 7 天到期，到期前重复同一条命令即可续签；覆盖安装保留 App 数据与 Keychain（Bundle ID 与 Team 不变）。
 
-当前状态：本机没有连接 iPhone/iPad，也没有 Apple Development 身份，因此**设备安装尚未执行**。脚本在无设备时会打印上面四步并退出，不会误装。
+构建状态：`xcodebuild -destination generic/platform=iOS` 已用 MPVKit 编译通过（未签名，63 MB Debug）。脚本在无设备时会打印上面四步并退出，不会误装。
 
 模拟器已做的事（不代表真机）：iPhone 18 Pro 模拟器上安装并启动 `com.openfuse.mobile`，用 `SIMCTL_CHILD_OPENFUSE_TEST_JELLYFIN_*` 注入真实 Jellyfin 账号（仅在内存/临时来源，不落 Keychain），`OPENFUSE_AUTOPLAY_*` 打开《进击的巨人》S03E13 并跳到 300 s，截图确认 HLS 转码播放与音轨信息。
 
