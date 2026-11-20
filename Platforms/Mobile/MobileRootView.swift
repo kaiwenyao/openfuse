@@ -51,7 +51,21 @@ struct MobileRootView: View {
                 }
             }
             guard let work = (candidates.first ?? model.groups.first)?.primary else { return }
-            autoplayItem = await model.playbackItemAsync(for: work)
+            // Optional episode selector for acceptance runs: a title substring
+            // ("初始的街道") or a 1-based episode number within the work.
+            var chosenEpisode: LibraryEpisode?
+            if let query = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_EPISODE"], !query.isEmpty {
+                let episodes = model.episodes(for: work.id)
+                if let index = Int(query), index > 0, index <= episodes.count {
+                    chosenEpisode = episodes[index - 1]
+                } else {
+                    chosenEpisode = episodes.first { episode in
+                        episode.title.localizedCaseInsensitiveContains(query)
+                            || (episode.episodeLabel ?? "").localizedCaseInsensitiveContains(query)
+                    }
+                }
+            }
+            autoplayItem = await model.playbackItemAsync(for: work, episode: chosenEpisode)
 
         }
         .fullScreenCover(item: $autoplayItem) { item in
