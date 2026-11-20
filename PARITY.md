@@ -500,3 +500,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | SMB MP4 | MacBook Pro M2 Pro／macOS 27.2.1 | 1080p MP4 | Infuse 未安装 | `1080p · SMB`，contentKey | `reports/m5af-smb-mp4.json` | 通过 |
 | 尾部/碎片/HDR | 同上 | 特殊 MP4 | 待采样 | 未测 | — | 待验证 |
+
+### M5ag 尾部/HDR MP4 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| tail-moov HDR | MacBook Pro M2 Pro／macOS 27.2.1 | 20s HDR10 MP4 over SMB | Infuse 未安装 | `1080p · SMB`/HDR10 | `reports/m5ag-smb-hdr-mp4.json` | 通过 |
+| SMB Range 回归 | 同上 | 主 fixture | 待采样 | 并发 Range 哈希仍一致 | 脚本 PASS | 通过 |
+| 碎片/moov >8MB | 同上 | 特殊 MP4 | 待采样 | 未做 | — | 待验证 |

@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## SMB 尾部/HDR MP4（M5ag）
+
+- MP4Probe 跳 stsd 8B/sample entry 78B，解析 colr/nclx。
+- SMB read 1MB 分块循环解决短读；MP4 头4MB/尾8MB回退；实测 1080p/HDR10。
+- moov >8MB、碎片 MP4、性能未验证。
+
 ## SMB MP4 元数据（M5af）
 
 - MP4Probe 遍历 moov/trak/tkhd/colr；宽高 16.16，nclx HDR 标签。

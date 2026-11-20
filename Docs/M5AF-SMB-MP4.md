@@ -32,4 +32,4 @@ M5ae 只解析 SMB MKV。本轮加纯 Swift `MP4Probe`（moov/tkhd/colr），SMB
 
 ## 下一项
 
-M5ag：尾部/碎片 MP4、HDR colr、SMB 性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+尾部 moov/HDR colr MP4 已在 [M5ag 验收](Docs/M5AG-TAIL-MP4.md) 完成。剩余 M5ah：moov 扫描/碎片 MP4、SMB 性能、听测/热插拔、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

@@ -222,14 +222,33 @@ public final class SMBClient: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         let smbPath = Self.normalized(path)
         let handle = try handleLocked(smbPath, context: context)
-        var buffer = [UInt8](repeating: 0, count: max(0, length))
-        let count = buffer.withUnsafeMutableBytes { raw in
-            smb2_pread(context, handle, raw.baseAddress!.assumingMemoryBound(to: UInt8.self), UInt32(length), UInt64(offset))
+        var result = Data()
+        var position = offset
+        var remaining = max(0, length)
+        while remaining > 0 {
+            let chunk = min(remaining, 1 << 20)
+            var buffer = [UInt8](repeating: 0, count: chunk)
+            let count = buffer.withUnsafeMutableBytes { raw in
+                smb2_pread(
+                    context, handle,
+                    raw.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    UInt32(chunk), UInt64(position)
+                )
+            }
+            guard count >= 0 else {
+                throw SMBError.operation(String(cString: smb2_get_error(context)))
+            }
+            if count == 0 { break }
+            result.append(contentsOf: buffer.prefix(Int(count)))
+            position += Int64(count)
+            remaining -= Int(count)
+            if Int(count) < chunk {
+                // Short read can happen near EOF or with server chunk limits;
+                // keep requesting until EOF/complete instead of returning early.
+                continue
+            }
         }
-        guard count >= 0 else {
-            throw SMBError.operation(String(cString: smb2_get_error(context)))
-        }
-        return Data(buffer.prefix(Int(count)))
+        return result
     }
 
     private static func normalized(_ path: String) -> String {

@@ -1,0 +1,20 @@
+OpenFuse M5ag SMB tail-moov HDR MP4 evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: 20s 1080p Main10 HDR10 MP4, moov at end, colr/nclx primaries=9/transfer=16.
+
+Implementation:
+  MP4Probe skips stsd version/count (8B) and visual sample entry header (78B)
+  before children, so colr/nclx is parsed. SMB reads head 4MB, falls back to
+  last 8MB; SMBClient.read loops 1MB preads until requested length/EOF.
+  run-smb-range and run-smb-hdr-mp4 add Trakt test token to avoid Keychain.
+
+Results:
+  SMB HDR MP4: "1080p · SMB", resolution=1080p, dynamicRange=HDR10.
+  MP4ProbeTests 2 pass; total 33/33.
+  Scripts/run-smb-hdr-mp4.sh PASS; run-smb-range-concurrency.sh regression PASS.
+  Five platforms/device/Mac build succeed.
+
+Not verified:
+  moov outside last 8MB/partial tail, fragmented MP4, real SMB3/performance;
+  audio listening.

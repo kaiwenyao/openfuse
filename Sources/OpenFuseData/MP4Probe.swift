@@ -51,8 +51,16 @@ public enum MP4Probe {
             let payloadStart = offset + header
             let payloadEnd = offset + size
             switch type {
-            case "moov", "trak", "mdia", "minf", "stbl", "stsd", "avc1", "hvc1", "hev1", "encv", "mp4v":
+            case "moov", "trak", "mdia", "minf", "stbl":
                 _ = walk(bytes, payloadStart, payloadEnd, info: &info, depth: depth + 1)
+            case "stsd":
+                if payloadStart + 8 <= payloadEnd {
+                    _ = walk(bytes, payloadStart + 8, payloadEnd, info: &info, depth: depth + 1)
+                }
+            case "avc1", "hvc1", "hev1", "encv", "mp4v":
+                if payloadStart + 78 <= payloadEnd {
+                    _ = walk(bytes, payloadStart + 78, payloadEnd, info: &info, depth: depth + 1)
+                }
             case "tkhd":
                 readTrackHeader(bytes, payloadStart, payloadEnd, info: &info)
             case "colr":

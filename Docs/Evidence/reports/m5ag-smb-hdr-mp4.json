@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T07:37:24Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse",
+      "primary" : "OpenFuse",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-df8fa95f309b7640"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-df8fa95f309b7640-main",
+          "remotePath" : "\/Movie\/OpenFuse.HDR.mp4",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse",
+          "versions" : [
+            {
+              "contentKey" : "edc6d0da6aa9caa9915f277cae77f0e3",
+              "dynamicRange" : "HDR10",
+              "fileURL" : "",
+              "id" : "smb-df8fa95f309b7640-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · SMB",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-df8fa95f309b7640",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse",
+          "versions" : [
+            "SMB · 1080p · SMB · HDR10"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB SMB：1 个作品",
+  "visible" : [
+    "OpenFuse"
+  ],
+  "works" : 1
+}
