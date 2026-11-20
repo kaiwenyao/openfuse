@@ -1,0 +1,158 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T07:22:42Z",
+  "groups" : [
+    {
+      "key" : "movie|remote dup",
+      "primary" : "Remote Dup",
+      "sources" : [
+        "local",
+        "smb",
+        "webdav"
+      ],
+      "workIDs" : [
+        "local-529afa3e12049cba",
+        "smb-a09a5febfba0ed26",
+        "webdav-554f313ca096d2a7"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "file:\/\/\/Users\/ykw\/Documents\/openfuse\/build\/cross-source-dedupe\/local\/Movies\/Remote%20Dup%20(2026).mkv",
+          "id" : "local-529afa3e12049cba-main",
+          "remotePath" : "",
+          "season" : 0,
+          "sourceKind" : "local",
+          "title" : "Remote Dup",
+          "versions" : [
+            {
+              "contentKey" : "3b02310a2a04f4eb68fc527b4312f56d",
+              "dynamicRange" : "HDR10",
+              "fileURL" : "file:\/\/\/Users\/ykw\/Documents\/openfuse\/build\/cross-source-dedupe\/local\/Movies\/Remote%20Dup%20(2026).mkv",
+              "id" : "local-529afa3e12049cba-main-v0",
+              "mediaSourceID" : "",
+              "name" : "本地文件",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "local-529afa3e12049cba",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "local-614a301ef323fd96",
+      "sourceKind" : "local",
+      "title" : "Remote Dup",
+      "year" : 2026
+    },
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "webdav-554f313ca096d2a7-main",
+          "remotePath" : "Movie\/Remote Dup (2026).mkv",
+          "season" : 0,
+          "sourceKind" : "webdav",
+          "title" : "Remote Dup",
+          "versions" : [
+            {
+              "contentKey" : "3b02310a2a04f4eb68fc527b4312f56d",
+              "dynamicRange" : "HDR10",
+              "fileURL" : "",
+              "id" : "webdav-554f313ca096d2a7-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · WebDAV",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "webdav-554f313ca096d2a7",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c8e376ed97ead924",
+      "sourceKind" : "webdav",
+      "title" : "Remote Dup",
+      "year" : 2026
+    },
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-a09a5febfba0ed26-main",
+          "remotePath" : "\/Movie\/Remote Dup (2026).mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "Remote Dup",
+          "versions" : [
+            {
+              "contentKey" : "3b02310a2a04f4eb68fc527b4312f56d",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-a09a5febfba0ed26-main-v0",
+              "mediaSourceID" : "",
+              "name" : "SMB",
+              "resolution" : ""
+            }
+          ]
+        }
+      ],
+      "id" : "smb-a09a5febfba0ed26",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "Remote Dup",
+      "year" : 2026
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "Remote Dup",
+          "versions" : [
+            "本地\/SMB\/WebDAV · 本地文件 · HDR10"
+          ]
+        }
+      ],
+      "key" : "movie|remote dup",
+      "sources" : [
+        "local",
+        "smb",
+        "webdav"
+      ],
+      "title" : "Remote Dup"
+    }
+  ],
+  "rawEpisodes" : 3,
+  "rawWorks" : 3,
+  "status" : "SMB SMB：3 个作品",
+  "visible" : [
+    "Remote Dup"
+  ],
+  "works" : 1
+}

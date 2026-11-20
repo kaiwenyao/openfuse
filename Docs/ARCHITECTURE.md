@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## 跨来源内容指纹（M5ad）
+
+- ContentFingerprint size+首尾64KB SHA-256；local/WebDAV Range/SMB pread 共用。
+- versionIdentity contentKey 单独身份，跨本地/WebDAV/SMB 合并。
+- 首尾抽样非全文件哈希；SMB HDR 元数据/远程性能未验证。
+
 ## CoreAudio 输出设备选择（M5ac）
 
 - AudioDevices 枚举 UID/名称/输出声道；PlayerModel 菜单与 selectAudioDevice。

@@ -342,6 +342,19 @@ public enum SMBLibraryScanner {
             return try? client.fetch(path: path)
         }
 
+        func contentFingerprint(_ entry: SMBEntry) -> String? {
+            guard entry.size > 0 else { return nil }
+            let chunk = Int64(ContentFingerprint.chunkSize)
+            let firstLength = Int(min(chunk, entry.size))
+            guard let first = try? client.read(path: entry.path, offset: 0, length: firstLength),
+                  !first.isEmpty else { return nil }
+            var last: Data?
+            if entry.size > chunk {
+                last = try? client.read(path: entry.path, offset: entry.size - chunk, length: Int(chunk))
+            }
+            return ContentFingerprint.key(size: entry.size, first: first, last: last)
+        }
+
         while !queue.isEmpty {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let directory = queue.removeFirst()
@@ -442,7 +455,8 @@ public enum SMBLibraryScanner {
                         nfo: nfo,
                         showNFO: effectiveShowNFO,
                         modifiedAt: entry.modifiedAt,
-                        resolution: nil
+                        resolution: nil,
+                        contentKey: contentFingerprint(entry)
                     )
                 )
             }

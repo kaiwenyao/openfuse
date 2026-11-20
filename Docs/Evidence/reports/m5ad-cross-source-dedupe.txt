@@ -1,0 +1,20 @@
+OpenFuse M5ad cross-source content fingerprint evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Sources: local + WebDAV (8122) + SMB (impacket 1445), same HDR10 MKV.
+
+Implementation:
+  ContentFingerprint shared by local (FileHandle), WebDAV (Range 0..64K and
+  tail), SMB (pread 64K/tail); contentKey stored in versions. versionIdentity
+  uses contentKey alone so labels/resolutions from different sources merge.
+
+Results:
+  groups=1, sources local+webdav+smb, merged versions=1:
+    "本地/WebDAV/SMB · 本地文件 · HDR10"
+  All versions share contentKey 3b02310a2a04f4eb68fc527b4312f56d.
+  Scripts/run-cross-source-dedupe.sh PASS; local two-root dedupe regression PASS.
+  swift test 31/31; five platforms/device/Mac build succeed.
+
+Not verified:
+  Whole-file hash collisions; SMB HDR metadata (SMB scanner does not probe);
+  remote first/last unchanged but middle changed; audio listening.

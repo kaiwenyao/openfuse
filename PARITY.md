@@ -478,3 +478,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 设备枚举/切换 | MacBook Pro M2 Pro／macOS 27.2.1 | 5.1 样片 | Infuse 未安装 | selected/active BuiltInSpeakerDevice；AO coreaudio；6ch | `reports/m5ac-audio-device-play.json` | 通过（属性） |
 | 实际听测/热插拔 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |
+
+### M5ad 跨来源指纹执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 三源去重 | MacBook Pro M2 Pro／macOS 27.2.1 | local+WebDAV+SMB 同 HDR 文件 | Infuse 未安装 | groups=1/versions=1，三源 contentKey 一致 | `reports/m5ad-cross-source-dedupe.json` | 通过 |
+| 全文件哈希 | 同上 | 同尺寸不同中段 | 待采样 | 未做 | — | 待验证 |
+| 远程性能 | 同上 | 大库/慢网 | 待采样 | 未压测 | — | 待验证 |

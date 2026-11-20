@@ -49,6 +49,7 @@ public enum LibraryScanner {
         var modifiedAt: Date? = nil
         var resolution: String? = nil
         var dynamicRange: String? = nil
+        var contentKey: String? = nil
     }
 
     // MARK: - Local
@@ -288,6 +289,7 @@ public enum LibraryScanner {
                 container: (candidate.name as NSString).pathExtension.uppercased(),
                 resolution: candidate.resolution,
                 dynamicRange: candidate.dynamicRange,
+                contentKey: candidate.contentKey,
                 remotePath: candidate.remotePath,
                 fileURL: candidate.fileURL?.absoluteString
             )
@@ -343,6 +345,7 @@ public enum LibraryScanner {
                     container: (candidate.name as NSString).pathExtension.uppercased(),
                     resolution: candidate.resolution,
                     dynamicRange: candidate.dynamicRange,
+                    contentKey: candidate.contentKey,
                     remotePath: candidate.remotePath,
                     fileURL: candidate.fileURL?.absoluteString
                 )
@@ -689,6 +692,23 @@ public enum LibraryScanner {
             ) ?? (nil, nil)
         }
 
+        func contentFingerprint(_ entry: RemoteEntry) async -> String? {
+            guard entry.size > 0 else { return nil }
+            let chunk = Int64(ContentFingerprint.chunkSize)
+            let firstLength = min(chunk, entry.size)
+            guard let (first, _) = try? await client.fetch(
+                path: entry.path, range: 0..<firstLength
+            ), !first.isEmpty else { return nil }
+            var last: Data?
+            if entry.size > chunk,
+               let (value, _) = try? await client.fetch(
+                   path: entry.path, range: (entry.size - chunk)..<entry.size
+               ) {
+                last = value
+            }
+            return ContentFingerprint.key(size: entry.size, first: first, last: last)
+        }
+
         func cachePoster(remotePath: String) async -> String? {
             guard let posterCacheDirectory, downloadedPosters < 300, !remotePath.isEmpty else { return nil }
             let ext = (remotePath as NSString).pathExtension.lowercased()
@@ -793,6 +813,7 @@ public enum LibraryScanner {
                 }
 
                 let probe = await probeRemoteHeight(entry.path)
+                let contentKey = await contentFingerprint(entry)
                 candidates.append(
                     FileCandidate(
                         relativePath: entry.path,
@@ -805,7 +826,8 @@ public enum LibraryScanner {
                         showNFO: showNFO,
                         modifiedAt: entry.modifiedAt,
                         resolution: probe.height,
-                        dynamicRange: probe.dynamicRange
+                        dynamicRange: probe.dynamicRange,
+                        contentKey: contentKey
                     )
                 )
             }

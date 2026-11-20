@@ -38,4 +38,4 @@
 
 ## 下一项
 
-M5ad：听测/热插拔/exclusive；HDR 测量；SMB/WebDAV 指纹；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+跨来源内容指纹已在 [M5ad 验收](Docs/M5AD-CROSS-SOURCE-FINGERPRINT.md) 完成。剩余 M5ae：全文件/可配置哈希、SMB HDR 探测、远程指纹性能、听测/热插拔、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。
