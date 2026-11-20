@@ -1,6 +1,6 @@
 # OpenFuse 安装与续签（macOS / iPhone / iPad）
 
-版本：0.2.0 · 提交 `af2f28d`（Mac 安装包）、`2fa2608`（iOS 构建与 USB 脚本）
+版本：0.2.0 · 提交 `5ae0ecc`（Mac 安装包，含 iOS libmpv 工作；Mac 行为不变）
 日期：2026-11-20
 
 ## 一、macOS：一条命令安装与升级
@@ -8,7 +8,7 @@
 私有仓库，先用已登录的 `gh` 取安装脚本，再运行：
 
 ```bash
-gh release download v0.2.0-af2f28d -R kaiwenyao/openfuse \
+gh release download v0.2.0-5ae0ecc -R kaiwenyao/openfuse \
   -p install-openfuse-macos.sh -O /tmp/install-openfuse-macos.sh
 bash /tmp/install-openfuse-macos.sh
 ```
@@ -16,7 +16,7 @@ bash /tmp/install-openfuse-macos.sh
 我已在本机跑过这条命令（`--no-launch`），安装到 `/Applications/OpenFuse.app`：
 
 ```
-Installed 0.2.0 (af2f28d) at /Applications/OpenFuse.app
+Installed 0.2.0 (5ae0ecc) at /Applications/OpenFuse.app
 User data kept: 1 sources, 8 Keychain credential(s), playback history present.
 ```
 
@@ -47,10 +47,10 @@ bash install-openfuse-macos.sh --app OpenFuse-macOS-0.2.0-af2f28d.zip
 
 | 文件 | 说明 |
 | --- | --- |
-| `build/OpenFuse-macOS-0.2.0-af2f28d.zip` | 自包含 .app（含 50 个 dylib） |
-| `build/OpenFuse-macOS-0.2.0-af2f28d.zip.sha256` | `e8b1f798…03ff79`（重打包会变，以 Release 资产为准） |
+| `build/OpenFuse-macOS-0.2.0-5ae0ecc.zip` | 自包含 .app（含 50 个 dylib），从最新提交打包 |
+| `build/OpenFuse-macOS-0.2.0-5ae0ecc.zip.sha256` | `541435a7…293059` |
 | `build/install-openfuse-macos.sh` | 安装脚本 |
-| GitHub Release | `v0.2.0-af2f28d`（私有仓库，需登录 gh） |
+| GitHub Release | `v0.2.0-5ae0ecc`（私有仓库，需登录 gh；含 zip、sha256、安装脚本） |
 
 ## 二、iPhone / iPad：数据线安装与 7 天续签
 
@@ -70,7 +70,7 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 
 脚本会：检查 Xcode / XcodeGen / Apple Development 身份 / 已连接设备 → 用稳定 Bundle ID `com.openfuse.mobile` 和自动签名构建 → `devicectl` 覆盖安装并启动 → 读取 `embedded.mobileprovision` 的到期日并打印剩余天数。免费 Personal Team 的签名 7 天到期，到期前重复同一条命令即可续签；覆盖安装保留 App 数据与 Keychain（Bundle ID 与 Team 不变）。
 
-构建状态：`xcodebuild -destination generic/platform=iOS` 已用 MPVKit 编译通过（未签名，63 MB Debug）。脚本在无设备时会打印上面四步并退出，不会误装。
+构建状态：`xcodebuild -destination generic/platform=iOS` 已用 MPVKit 编译通过（未签名）。产物大小：Debug 63 MB、Release 56 MB（内嵌 27 个 framework），安装到真机时由 Xcode 自动签名。脚本在无设备时会打印上面四步并退出，不会误装。
 
 模拟器已做的事（不代表真机）：iPhone 18 Pro 模拟器上安装并启动 `com.openfuse.mobile`，用 `SIMCTL_CHILD_OPENFUSE_TEST_JELLYFIN_*` 注入真实 Jellyfin 账号（仅在内存/临时来源，不落 Keychain），`OPENFUSE_AUTOPLAY_*` 打开《进击的巨人》S03E13 并跳到 300 s，截图确认 HLS 转码播放与音轨信息。
 
