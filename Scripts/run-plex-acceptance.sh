@@ -35,6 +35,10 @@ OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
   --capture-after 14 --report "$OUT/play.json" --quit-after 16 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
+  --library-play "$EPISODE" --library-version 1 --freeze-at 9.9 \
+  --capture "$OUT/version.png" --report "$OUT/version.json" --capture-after 12 --quit-after 14 >"$OUT/app.log" 2>&1 || true
+sleep 0.5
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
   --library-play "$EPISODE" --seek 59 --report "$OUT/scrobble.json" \
   --capture-after 9 --quit-after 11 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
@@ -49,6 +53,10 @@ if not all(item["sourceKind"] == "plex" for item in library["items"]):
     errors.append("sourceKind not plex")
 if not any(item["poster"].startswith("plex:") for item in library["items"]):
     errors.append("plex poster refs missing")
+for item in library["items"]:
+    for episode in item["episodes"]:
+        if len(episode.get("versions", [])) < 2:
+            errors.append(f"{item['title']} missing Plex alternate version")
 play = json.load(open(os.path.join(out, "play.json")))
 if play.get("sourceKind") != "plex" or not 9.8 <= play.get("position", 0) <= 10.1:
     errors.append(f"play {play.get('sourceKind')} {play.get('position')}")
@@ -56,6 +64,9 @@ if not any("Plex 外挂简体" in item.get("name", "") for item in play.get("sub
     errors.append("Plex external subtitle not loaded")
 if not str(play.get("selectedSubtitle", "")).startswith("mpv:"):
     errors.append(f"subtitle not selected: {play.get('selectedSubtitle')}")
+version = json.load(open(os.path.join(out, "version.json")))
+if "4012" not in version.get("remotePath", ""):
+    errors.append(f"alternate Plex version not played: {version.get('remotePath')}")
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")

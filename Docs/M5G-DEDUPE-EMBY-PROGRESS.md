@@ -29,4 +29,4 @@
 
 ## 下一项
 
-M5h：真实服务器验证、版本级去重策略；Plex 直连/音轨/版本；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3 尾项。
+Plex 多版本已在 [M5h 验收](M5H-PLEX-VERSIONS.md) 完成。剩余 M5i：Plex 直连/音轨、版本级去重、真实服务器、SMB/HDR/AirPlay、CloudKit/Trakt、音频、M3 尾项。

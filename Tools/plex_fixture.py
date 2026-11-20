@@ -26,13 +26,14 @@ def section(key, kind, title):
 
 
 def media(part_id):
+    size = os.path.getsize(FIXTURE) if os.path.exists(FIXTURE) else 0
     return [{
         "videoResolution": "1080",
         "container": "mkv",
         "Part": [{
             "key": f"/library/parts/{part_id}/file.mkv",
             "file": f"/media/{part_id}/file.mkv",
-            "size": os.path.getsize(FIXTURE) if os.path.exists(FIXTURE) else 0,
+            "size": size,
             "Stream": [{
                 "streamType": 3,
                 "key": f"/library/streams/{part_id}-srt",
@@ -41,6 +42,14 @@ def media(part_id):
                 "displayTitle": "Plex 外挂简体",
                 "forced": False,
             }],
+        }],
+    }, {
+        "videoResolution": "720",
+        "container": "mkv",
+        "Part": [{
+            "key": f"/library/parts/{part_id}2/file.mkv",
+            "file": f"/media/{part_id}/compact.mkv",
+            "size": size,
         }],
     }]
 

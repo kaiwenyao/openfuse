@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex 多版本（M5h）
+
+- Scanner 遍历 Plex `Media[]`，每个条目生成 ScannedVersion（分辨率/容器/part）。
+- 电影/剧集保留全部版本；detail 版本菜单复用；CLI `--library-version N` 验收。
+- 夹具 1080p+720p 实测备版 remotePath 4012；真实 Plex 与版本级去重未验证。
+
 ## Jellyfin+Emby 聚合去重（M5g）
 
 - 分组按 mergeKey（kind+normalizedTitle）；同源/异源重复作品落同组，sources 合并。

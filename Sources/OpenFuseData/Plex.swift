@@ -325,19 +325,9 @@ public enum PlexLibraryScanner {
     }
 
     private static func buildMovie(movie: PlexMetadata, source: PlexSource, client: PlexClient) -> ScannedWork? {
-        guard let part = movie.media?.first?.parts?.first else { return nil }
         let id = "plex:\(source.id):\(movie.ratingKey)"
-        let media = movie.media?.first
-        let resolution = resolutionLabel(media?.videoResolution)
-        let version = ScannedVersion(
-            id: id + "-v0",
-            name: resolution ?? media?.container?.uppercased() ?? "Plex",
-            mediaSourceID: nil,
-            container: media?.container,
-            resolution: resolution,
-            remotePath: part.key,
-            fileURL: nil
-        )
+        let versions = makeVersions(media: movie.media ?? [], baseID: id)
+        guard let first = versions.first, let partKey = first.remotePath else { return nil }
         let episode = ScannedEpisode(
             id: id + "-main",
             seasonNumber: 0,
@@ -347,10 +337,10 @@ public enum PlexLibraryScanner {
             runtime: Double(movie.duration ?? 0) / 1000,
             poster: nil,
             serverID: movie.ratingKey,
-            remotePath: part.key,
+            remotePath: partKey,
             remoteVariant: nil,
             fileURL: nil,
-            versions: [version]
+            versions: versions
         )
         let poster = PosterRef.plex(itemID: movie.ratingKey)
         return ScannedWork(
@@ -377,20 +367,11 @@ public enum PlexLibraryScanner {
             guard let episodesMetadata = try? await client.children(ratingKey: seasonMeta.ratingKey) else { continue }
             var episodes: [ScannedEpisode] = []
             for episodeMeta in episodesMetadata where (episodeMeta.type ?? "") == "episode" {
-                guard let part = episodeMeta.media?.first?.parts?.first else { continue }
                 let season = episodeMeta.parentIndex ?? seasonMeta.index ?? 1
                 let number = episodeMeta.index ?? 0
-                let media = episodeMeta.media?.first
                 let episodeID = "plex:\(source.id):\(episodeMeta.ratingKey)"
-                let version = ScannedVersion(
-                    id: episodeID + "-v0",
-                    name: resolutionLabel(media?.videoResolution) ?? "Plex",
-                    mediaSourceID: nil,
-                    container: media?.container,
-                    resolution: resolutionLabel(media?.videoResolution),
-                    remotePath: part.key,
-                    fileURL: nil
-                )
+                let versions = makeVersions(media: episodeMeta.media ?? [], baseID: episodeID)
+                guard let first = versions.first, let partKey = first.remotePath else { continue }
                 episodes.append(
                     ScannedEpisode(
                         id: episodeID,
@@ -401,10 +382,10 @@ public enum PlexLibraryScanner {
                         runtime: Double(episodeMeta.duration ?? 0) / 1000,
                         poster: nil,
                         serverID: episodeMeta.ratingKey,
-                        remotePath: part.key,
+                        remotePath: partKey,
                         remoteVariant: nil,
                         fileURL: nil,
-                        versions: [version]
+                        versions: versions
                     )
                 )
             }
@@ -438,6 +419,25 @@ public enum PlexLibraryScanner {
             seasons: seasons,
             movie: nil
         )
+    }
+
+    private static func makeVersions(media: [PlexMedia], baseID: String) -> [ScannedVersion] {
+        media.enumerated().compactMap { index, item in
+            guard let part = item.parts?.first else { return nil }
+            let resolution = resolutionLabel(item.videoResolution)
+            let container = item.container?.uppercased()
+            let parts = [resolution, container].compactMap { $0 }
+            let name = parts.isEmpty ? "Plex" : parts.joined(separator: " ")
+            return ScannedVersion(
+                id: "\(baseID)-v\(index)",
+                name: name,
+                mediaSourceID: nil,
+                container: item.container,
+                resolution: resolution,
+                remotePath: part.key,
+                fileURL: nil
+            )
+        }
     }
 
     private static func resolutionLabel(_ value: String?) -> String? {

@@ -1089,22 +1089,22 @@ final class AppModel: ObservableObject {
     }
 
     @discardableResult
-    func playLibraryEpisode(id: String) -> Bool {
+    func playLibraryEpisode(id: String, versionIndex: Int? = nil) -> Bool {
         for work in libraryWorks {
             let seasons = librarySeasons(workID: work.id)
+            let episode: LibraryEpisode?
             if seasons.isEmpty {
-                if let episode = libraryEpisodes(workID: work.id).first(where: { $0.id == id }) {
-                    playLibrary(work: work, episode: episode)
-                    return true
-                }
+                episode = libraryEpisodes(workID: work.id).first(where: { $0.id == id })
             } else {
-                for season in seasons {
-                    if let episode = libraryEpisodes(workID: work.id, seasonID: season.id).first(where: { $0.id == id }) {
-                        playLibrary(work: work, episode: episode)
-                        return true
-                    }
-                }
+                episode = seasons.lazy
+                    .compactMap { self.libraryEpisodes(workID: work.id, seasonID: $0.id).first(where: { $0.id == id }) }
+                    .first
             }
+            guard let episode else { continue }
+            let versions = libraryVersions(itemID: episode.id)
+            let version = versionIndex.flatMap { versions.indices.contains($0) ? versions[$0] : nil }
+            playLibrary(work: work, episode: episode, version: version)
+            return true
         }
         return false
     }

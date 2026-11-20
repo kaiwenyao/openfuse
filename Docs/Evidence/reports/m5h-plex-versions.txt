@@ -1,0 +1,25 @@
+OpenFuse M5h Plex multi-version evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py with 1080p + 720p Media entries, port 32400
+
+Scanner:
+  PlexLibraryScanner iterates every Media entry (not only [0]); each gets a
+  ScannedVersion with resolution/container/part key.
+  Report: movie 2 versions; each episode 2 versions.
+  Names: "1080p MKV", "720p MKV".
+
+Playback:
+  App CLI --library-version 1 selects the second version.
+  Report remotePath contains /library/parts/4012/file.mkv (720p), sourceKind plex.
+  Capture at 9.9s from alternate version.
+
+Verification:
+  Scripts/run-plex-acceptance.sh PASS:
+  2 works/3 episodes, every episode >=2 versions, alternate remotePath 4012,
+  subtitle selected, timeline/scrobble assertions.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Plex version ordering/labels; version-level dedupe with Jellyfin/Emby;
+  direct browse; audio tracks; Emby/SMB/HDR/AirPlay; CloudKit/Trakt; audio.

@@ -83,7 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let playID = value(after: "--library-play", in: arguments) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                guard model.playLibraryEpisode(id: playID) else {
+                let versionIndex = self.value(after: "--library-version", in: arguments).flatMap(Int.init)
+                guard model.playLibraryEpisode(id: playID, versionIndex: versionIndex) else {
                     self.scheduleQuitOnly(arguments: arguments)
                     return
                 }
