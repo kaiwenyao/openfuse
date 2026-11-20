@@ -22,7 +22,8 @@
 - **M3h 观看状态/防剧透：完成本地验证。** 未看/观看中/已看筛选，最近播放排序，4K/1080p/720p 过滤；防剧透隐藏详情/单集简介；WebDAV NFO 中点标题正确合并。记录：[M3h 观看状态验收](Docs/M3H-WATCH.md)。
 - **M4a 跨平台数据层与 iOS 首版：构建完成，运行待验证。** 拆分 `OpenFuseData`（媒体库/WebDAV/Jellyfin/SQLite/记录）供全平台复用；新增 iPhone/iPad SwiftUI 应用、示例 MP4、Files 导入、AVPlayer 播放与续播。iOS Simulator/device generic 构建均成功；本轮无模拟器 runtime，启动/触控/后台恢复标「待验证」。记录：[M4a 移动端验收](Docs/M4-MOBILE.md)。
 - **M4b 移动端来源：构建完成，运行待验证。** 设置「媒体来源」支持添加/扫描/删除 WebDAV（OpenList）与 Jellyfin，凭据存 Keychain，库扫描复用 `OpenFuseData`；Jellyfin 海报按 token 生成。远程播放（转码/HLS/鉴权代理/MKV）仍未接。Simulator/device 构建均成功。记录：[M4 移动端验收](Docs/M4-MOBILE.md)。
-- **下一项：** M4c：模拟器 runtime 启动/截图；远程播放代理/转码、MKV/字幕/音轨、iPad 分栏、tvOS/visionOS、CloudKit/Trakt。M3 剩余 T07 深入与画质元数据补全。
+- **M4c iPad 分栏与 tvOS/visionOS：构建完成，运行待验证。** iPad 常规宽度使用 NavigationSplitView 侧栏+详情；Apple TV 焦点卡片与 AVPlayer；Vision Pro 分栏/详情/播放。三端与 iPhone 共享 `MobileLibraryModel`/示例 MP4；iOS Simulator/device、tvOS Simulator、visionOS Simulator 均构建成功。无 runtime，UI/遥控/手势/空间布局待验证。记录：[M4c 平台验收](Docs/M4C-PLATFORMS.md)。
+- **下一项：** M4d：模拟器 runtime 完成后实际启动三端并截图；远程播放代理/转码、MKV/字幕/音轨、tvOS/visionOS 来源与焦点细节、CloudKit/Trakt。M3 剩余 T07 深入与画质元数据补全。
 
 开发入口：
 
@@ -44,10 +45,11 @@ Scripts/run-manual-merge.sh         # 手动合并/拆分与分组持久化
 Scripts/run-webdav-metadata.sh      # WebDAV NFO 与认证海报缓存
 Scripts/run-library-filters.sh      # 排序/类型筛选/搜索组合
 Scripts/build-ios.sh                # iPhone/iPad（XcodeGen + xcodebuild）
+Scripts/build-platforms.sh          # iOS/iPadOS + tvOS + visionOS 构建
 open build/OpenFuse.app
 ```
 
-当前分支 `m4b-mobile-sources`（基于 M3h 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4c-ipad`（基于 M4b 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

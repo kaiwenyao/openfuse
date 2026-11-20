@@ -32,3 +32,11 @@ M4b source-management build (2026-11-20):
   swift test: 25/25 passed
   Mobile source manager: WebDAV/Jellyfin add, Keychain credentials, scan, delete.
   Simulator runtime: still downloading (~8.32 GB) at build time; launch not run.
+
+M4c platform builds (2026-11-20):
+  OpenFuseMobile (iOS Simulator): BUILD SUCCEEDED
+  OpenFuseMobile (iOS device Release): BUILD SUCCEEDED
+  OpenFuseTV (tvOS Simulator): BUILD SUCCEEDED
+  OpenFuseVision (visionOS Simulator): BUILD SUCCEEDED
+  swift test: 25/25
+  Runtime download: ~37% of 8.32 GB at this build; no launch/screenshot.

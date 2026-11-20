@@ -128,6 +128,14 @@
 | 移动端构建 | 同上 | 同上 | 待采样 | Simulator + device generic 均 BUILD SUCCEEDED；25/25 测试 | 同上 | 构建通过 |
 | 移动端远程播放 | 同上 | Jellyfin/WebDAV 媒体 | 待采样 | 未接转码/HLS/鉴权代理，remote 条目提示待接入 | — | 待验证/未完成 |
 
+### M4c iPad/tvOS/visionOS 构建执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iPad 分栏 | MacBook Pro M2 Pro／Xcode 27.2 | 示例 MP4 + 媒体库 | Infuse 未安装 | 常规宽度 NavigationSplitView 侧栏+详情；构建成功 | `reports/m4-ios-build.txt` | 构建通过；布局待运行验证 |
+| tvOS | 同上 | 示例 MP4 | 待采样 | 焦点网格 + AVPlayer；BUILD SUCCEEDED | 同上 | 构建通过；焦点/播放待真机或 runtime |
+| visionOS | 同上 | 示例 MP4 | 待采样 | NavigationSplitView + 播放 sheet；BUILD SUCCEEDED | 同上 | 构建通过；空间布局待 runtime |
+
 
 
 

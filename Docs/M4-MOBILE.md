@@ -61,4 +61,4 @@ build/mobile-device/Build/Products/Release-iphoneos/OpenFuse.app
 
 ## 下一项
 
-M4c：完成模拟器 runtime 安装并实际启动/截图；远程播放（Jellyfin 转码/HLS 或 libmpv、WebDAV 鉴权代理）；MKV/字幕/音轨；iPad 分栏；tvOS/visionOS；CloudKit/Trakt。
+M4d：完成模拟器 runtime 安装并实际启动/截图；远程播放（Jellyfin 转码/HLS 或 libmpv、WebDAV 鉴权代理）；MKV/字幕/音轨；tvOS/visionOS 来源/焦点细节；CloudKit/Trakt。iPad 分栏与 tvOS/visionOS 构建已在 [M4c 平台验收](M4C-PLATFORMS.md) 完成。

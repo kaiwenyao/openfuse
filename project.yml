@@ -32,7 +32,56 @@ targets:
         SWIFT_VERSION: "5.0"
         CODE_SIGNING_ALLOWED: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+  OpenFuseTV:
+    type: application
+    platform: tvOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Platforms/TV
+      - path: Platforms/Mobile/MobileLibraryModel.swift
+      - path: Fixtures/mobile
+        buildPhase: resources
+    dependencies:
+      - package: OpenFuse
+        product: OpenFuseData
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.openfuse.tv
+        PRODUCT_NAME: OpenFuse
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: OpenFuse
+        TARGETED_DEVICE_FAMILY: "3"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: NO
+  OpenFuseVision:
+    type: application
+    platform: visionOS
+    deploymentTarget: "2.0"
+    sources:
+      - path: Platforms/Vision
+      - path: Platforms/Mobile/MobileLibraryModel.swift
+      - path: Fixtures/mobile
+        buildPhase: resources
+    dependencies:
+      - package: OpenFuse
+        product: OpenFuseData
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.openfuse.vision
+        PRODUCT_NAME: OpenFuse
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: OpenFuse
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: NO
 schemes:
+  OpenFuseTV:
+    build:
+      targets:
+        OpenFuseTV: all
+  OpenFuseVision:
+    build:
+      targets:
+        OpenFuseVision: all
   OpenFuseMobile:
     build:
       targets:

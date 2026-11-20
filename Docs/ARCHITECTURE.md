@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## iPad 分栏与 tvOS/visionOS（M4c）
+
+- iPad 常规宽度：`NavigationSplitView`（侧栏媒体库列表 + 详情），iPhone compact 仍 NavigationStack。
+- tvOS：`OpenFuseTV` target，`TVRootView` 焦点网格 `.buttonStyle(.card)`，`TVPlayerView` AVPlayer + 续播。
+- visionOS：`OpenFuseVision` target，`NavigationSplitView` 侧栏/详情 + 播放 sheet，默认窗口 1100×760。
+- 三端共享 `MobileLibraryModel` 与示例 MP4；tvOS/visionOS 未包含服务器来源 UI。
+- 生成工程由 `project.yml` 管理，`Scripts/build-platforms.sh` 构建三端。
+
 ## 观看状态、最近播放与防剧透（M3h）
 
 - `AppModel.watchState(for:)`：按季/集聚合组内来源，匹配本地路径、`webdav://source/path`、`jellyfin://source/item/mediaSource` 记录；全看完=已看、有进度=观看中。

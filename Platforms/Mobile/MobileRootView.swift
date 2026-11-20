@@ -5,11 +5,40 @@ import UniformTypeIdentifiers
 
 struct MobileRootView: View {
     @EnvironmentObject private var model: MobileLibraryModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var selectedWorkID: String?
     @State private var showImporter = false
     @State private var showAbout = false
     @State private var showSources = false
 
     var body: some View {
+        Group {
+            if horizontalSizeClass == .regular {
+                splitView
+            } else {
+                compactView
+            }
+        }
+        .tint(.cyan)
+        .fileImporter(
+            isPresented: $showImporter,
+            allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                model.importVideo(from: url)
+            }
+        }
+        .sheet(isPresented: $showAbout) {
+            MobileAboutView()
+        }
+        .sheet(isPresented: $showSources) {
+            MobileSourcesView()
+                .environmentObject(model)
+        }
+    }
+
+    private var compactView: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -28,51 +57,76 @@ struct MobileRootView: View {
                 .padding(20)
             }
             .background(Color.black.ignoresSafeArea())
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSources = true
-                    } label: {
-                        Label("媒体来源", systemImage: "server.rack")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showImporter = true
-                    } label: {
-                        Label("导入视频", systemImage: "square.and.arrow.down")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAbout = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                }
-            }
-            .fileImporter(
-                isPresented: $showImporter,
-                allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie],
-                allowsMultipleSelection: false
-            ) { result in
-                if case .success(let urls) = result, let url = urls.first {
-                    model.importVideo(from: url)
-                }
-            }
-            .sheet(isPresented: $showAbout) {
-                MobileAboutView()
-            }
-            .sheet(isPresented: $showSources) {
-                MobileSourcesView()
-                    .environmentObject(model)
-            }
+            .toolbar { libraryToolbar }
             .navigationDestination(for: LibraryWork.self) { work in
                 MobileDetailView(work: work)
                     .environmentObject(model)
             }
         }
-        .tint(.cyan)
+    }
+
+    private var splitView: some View {
+        NavigationSplitView {
+            List(selection: $selectedWorkID) {
+                ForEach(model.groups) { group in
+                    HStack(spacing: 10) {
+                        MobilePoster(work: group.primary)
+                            .frame(width: 42, height: 63)
+                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.primary.title)
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(2)
+                            HStack(spacing: 5) {
+                                if let year = group.primary.year { Text(String(year)) }
+                                Text(group.primary.kind == .movie ? "电影" : "\(group.primary.episodeCount) 集")
+                            }
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .tag(group.primary.id)
+                }
+            }
+            .navigationTitle("OpenFuse")
+            .toolbar { libraryToolbar }
+            .overlay {
+                if model.groups.isEmpty {
+                    ContentUnavailableView("还没有媒体", systemImage: "rectangle.stack")
+                }
+            }
+        } detail: {
+            if let selectedWorkID, let work = model.works.first(where: { $0.id == selectedWorkID }) {
+                MobileDetailView(work: work)
+                    .environmentObject(model)
+            } else {
+                ContentUnavailableView(
+                    "选择一部作品",
+                    systemImage: "play.rectangle",
+                    description: Text("从左侧媒体库选择电影或剧集。")
+                )
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+
+    @ToolbarContentBuilder
+    private var libraryToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { showSources = true } label: {
+                Label("媒体来源", systemImage: "server.rack")
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { showImporter = true } label: {
+                Label("导入视频", systemImage: "square.and.arrow.down")
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { showAbout = true } label: {
+                Image(systemName: "gearshape")
+            }
+        }
     }
 
     private var header: some View {

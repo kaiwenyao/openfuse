@@ -48,7 +48,7 @@
 | `reports/m3f-webdav-nfo.json` | WebDAV NFO/海报扫描报告 | 应用 `--library-report` |
 | `36-library-filters.jpg` | 电影筛选 + 年份排序后的媒体库 | 应用内窗口快照 |
 | `reports/m3g-filter-*.json` | 类型筛选/集数排序/搜索报告 | 应用 `--library-report` |
-| `reports/m4-ios-build.txt` | iOS Simulator/device 构建、M4b 来源管理、未验证项 | `xcodebuild` 日志摘要 |
+| `reports/m4-ios-build.txt` | iOS/ tvOS/visionOS 构建、来源管理、未验证项 | `xcodebuild` 日志摘要 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
