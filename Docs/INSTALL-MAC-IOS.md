@@ -82,7 +82,8 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | Jellyfin 剧→季→集、HLS 转码播放、音字幕选择、进度回写、续播 | 已有，模拟器可跑；真机待验 |
 | Jellyfin 直放/转码选择 | 已有界面与逻辑，待真机验证 |
 | Jellyfin 外挂 ASS（简/繁） | 已实现：Jellyfin 12 不返回 `DeliveryUrl` 时回退 `/Videos/{id}/{source}/Subtitles/{index}/Stream.ass`，下载到 `SubtitleCache` 后按纯文本渲染，默认简体、可切繁體 |
-| Jellyfin 进度回写与跨设备续播 | 已实现：`Sessions/Playing`、`/Progress`、`/Stopped`；无本地记录时用服务器位置起播 |
+| Jellyfin 进度回写与跨设备续播 | 已实现：`Sessions/Playing`、`/Progress`、`/Stopped`；无本地记录时用服务器位置起播；播到结尾时服务器标记 `Played=true` |
+| 移动端自动下一集 | 已实现：`AVPlayerItemDidPlayToEndTime` + `time >= duration-2.5` 兜底，切集时重建播放器；真实 Jellyfin HLS 在 1428/1436.5 s 处提前停住，模拟器未触发，需真机或本地文件复测 |
 | WebDAV 上的 MKV 直放（HEVC Main 10 / E-AC-3 5.1 / 内外挂 ASS） | **未实现**：AVPlayer 不支持 MKV，需要引入 iOS 端的 mpv/VLC 类引擎（当前工程没有） |
 | ASS 样式排版 | 外挂 ASS 解析保留 `\N` 换行并去样式标签，按纯文本显示；斜体/定位/字体回退未做 |
 
