@@ -374,3 +374,11 @@
 | 设置页渲染 | MacBook Pro M2 Pro／macOS 27.2.1 | env 预填 | Infuse 未安装 | Client ID/Secret/API/状态/按钮 | Evidence 86 | 通过（UI） |
 | 设备码/轮询 | 同上 | Trakt 夹具 | 待采样 | 协议已在 M4q probe 验证；UI 点击未自动化 | — | 部分通过 |
 | 真实 Trakt/Keychain | 同上 | 真实账号/签名 | 待采样 | 未测 | — | 待验证 |
+
+### M5u SMB 并发执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 并发 Range | MacBook Pro M2 Pro／macOS 27.2.1 | impacket SMB2 | Infuse 未安装 | 两并发 1MB Range，SHA-256 与 fixture 一致 | `reports/m5u-smb-concurrency.txt` | 通过 |
+| SIGPIPE | 同上 | 客户端中断 | 待采样 | SO_NOSIGPIPE 已设；并发上限 4 | 同上 | 通过 |
+| 真实 SMB3/大文件 | 同上 | 真实服务器 | 待采样 | 未测 | — | 待验证 |

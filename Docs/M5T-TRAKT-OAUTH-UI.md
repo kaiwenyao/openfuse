@@ -40,4 +40,4 @@ Trakt 此前只能环境变量配置。现在有设置页：填写 Client ID/Sec
 
 ## 下一项
 
-M5u：真实 Trakt/自动轮询；音频听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+SMB 并发 Range 已在 [M5u 验收](Docs/M5U-SMB-CONCURRENCY.md) 完成。剩余 M5v：真实 SMB3/大文件压力、Trakt 自动轮询、音频听测、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

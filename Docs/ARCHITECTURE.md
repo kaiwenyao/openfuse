@@ -126,6 +126,12 @@ Docs/                   决策、素材、验收、证据
 - 1080p/720p 仍分开；库报告 merged 暴露；单元测试覆盖。
 - 真实服务器 ID 形态/跨服务器碰撞/音频轨去重未验证。
 
+## SMB 流并发/SIGPIPE（M5u）
+
+- SMBStreamServer connectionQueue 并发 + 4 连接 semaphore；listener/conn SO_NOSIGPIPE；accept EINTR/退避。
+- 两个并发 HTTP Range 与 fixture SHA-256 一致；SMBClient 读仍串行。
+- 真实 SMB3/大文件压力/背压未验证。
+
 ## SMB 跨季 tvshow NFO/重连（M5o）
 
 - showNFOByDirectory/showPosterByDirectory + showContext 祖先查找；单集/电影 NFO 优先。

@@ -62,7 +62,8 @@
 - **M4s Trakt 历史：完成夹具验证。** 拉取 `/sync/history/movies|shows`，匹配本地库并把电影+剧集 3 集标记已看；watched 筛选显示电影与整剧。真实账号/OAuth UI/远程来源标记未做。记录：[M4s 验收](Docs/M4S-TRAKT-HISTORY.md)。
 - **M4t Trakt 远程历史：完成 Jellyfin 验证。** 为 Jellyfin/Emby/WebDAV/SMB/Plex 生成播放器 fingerprint key，history 匹配后标记已看；Jellyfin 远程 watched 显示电影+剧集。WebDAV/SMB/Plex 路径代码已接未逐一验收。记录：[M4t 验收](Docs/M4T-TRAKT-REMOTE-HISTORY.md)。
 - **M5t Trakt OAuth 设置：完成 UI/协议验证。** 设置页填写 Client ID/Secret/API 地址，保存 UserDefaults + Keychain；设备码/轮询按钮；环境变量仍为测试覆盖。设置页实际渲染，点击未自动化。记录：[M5t 验收](Docs/M5T-TRAKT-OAUTH-UI.md)。
-- **下一项：** M5u：真实 Trakt/自动轮询；音频听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+- **M5u SMB 并发：完成本地验证。** 回环 Range 服务器并发连接上限 4，socket 设 SO_NOSIGPIPE；两个并发 Range 请求 SHA-256 与 fixture 片段一致。真实 SMB3/大文件压力待验证。记录：[M5u 验收](Docs/M5U-SMB-CONCURRENCY.md)。
+- **下一项：** M5v：真实 SMB3/大文件压力；Trakt 自动轮询；音频听测；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -93,7 +94,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5t-trakt-oauth-ui`（基于 M4t 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5u-smb-concurrency`（基于 M5t 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

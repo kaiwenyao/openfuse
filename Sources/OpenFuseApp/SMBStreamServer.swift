@@ -4,8 +4,8 @@ import OpenFuseCore
 
 /// Loopback HTTP/1.1 server exposing one SMB file with Range support.
 /// Network.framework's NWListener fails with EINVAL in this environment, so
-/// the listener uses a plain BSD socket; each connection is served on a
-/// serial queue and reads SMB chunks through libsmb2 on demand.
+/// the listener uses a plain BSD socket; connections are served concurrently
+/// (bounded) and read SMB chunks through libsmb2 on demand.
 final class SMBStreamServer: @unchecked Sendable {
     let url: URL
     private let client: SMBClient
@@ -13,7 +13,12 @@ final class SMBStreamServer: @unchecked Sendable {
     private let size: Int64
     private var listenFD: Int32
     private let acceptQueue = DispatchQueue(label: "com.openfuse.smb-stream.accept", qos: .userInitiated)
-    private let connectionQueue = DispatchQueue(label: "com.openfuse.smb-stream.connection", qos: .userInitiated)
+    private let connectionQueue = DispatchQueue(
+        label: "com.openfuse.smb-stream.connection",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+    private let connectionLimit = DispatchSemaphore(value: 4)
     private let lock = NSLock()
     private var running = true
     private(set) var requestCount = 0
@@ -32,6 +37,7 @@ final class SMBStreamServer: @unchecked Sendable {
         guard fd >= 0 else { throw SMBError.operation("socket failed") }
         var yes: Int32 = 1
         setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, socklen_t(MemoryLayout<Int32>.size))
         var address = sockaddr_in()
         address.sin_family = sa_family_t(AF_INET)
         address.sin_addr.s_addr = inet_addr("127.0.0.1")
@@ -82,9 +88,18 @@ final class SMBStreamServer: @unchecked Sendable {
             let fd = accept(listenFD, &address, &length)
             if fd < 0 {
                 if !isRunning { break }
+                if errno == EINTR { continue }
+                usleep(20_000)
+                continue
+            }
+            var noSigPipe: Int32 = 1
+            setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
+            guard connectionLimit.wait(timeout: .now()) == .success else {
+                close(fd)
                 continue
             }
             connectionQueue.async { [weak self] in
+                defer { self?.connectionLimit.signal() }
                 self?.handle(fd)
             }
         }
