@@ -47,6 +47,10 @@ public final class MPVEngine: @unchecked Sendable {
     public var onTracksChanged: (([MPVTrackInfo]) -> Void)?
     public var onFileLoaded: (() -> Void)?
     public var onEndFile: ((String) -> Void)?
+    /// Fired once when `eof-reached` becomes true. With `keep-open=yes` mpv keeps
+    /// the last frame on screen instead of emitting end-file, so this is the
+    /// signal the player uses to mark an episode finished and move to the next.
+    public var onEOFReached: (() -> Void)?
     public var onLog: ((String) -> Void)?
     public var onRenderContextReady: (() -> Void)?
 
@@ -394,7 +398,11 @@ public final class MPVEngine: @unchecked Sendable {
         case "track-list":
             refreshTracks()
         case "eof-reached":
-            break
+            guard property.format == MPV_FORMAT_FLAG, let value = property.data else { return }
+            let reached = value.assumingMemoryBound(to: Int32.self).pointee != 0
+            if reached {
+                DispatchQueue.main.async { [weak self] in self?.onEOFReached?() }
+            }
         default:
             break
         }

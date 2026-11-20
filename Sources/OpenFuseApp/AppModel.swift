@@ -141,6 +141,12 @@ final class AppModel: ObservableObject {
     private var sessionSMBPasswords: [String: String] = [:]
     private var traktPollTask: Task<Void, Never>?
     private var playerMenuObservation: AnyCancellable?
+    /// Set when the item being played has a following episode/file. Cleared when
+    /// a new player starts; consumed by the end-of-playback handler.
+    private var pendingNextPlayback: (() -> Void)?
+    /// Identifies the item the pending next-episode closure belongs to, so a
+    /// stale lookup can never start the wrong file.
+    private var pendingNextOwner: String?
     private var keychainPromptedAccounts: Set<String> = []
 
     init(supportDirectory: URL? = nil) {
@@ -471,6 +477,8 @@ final class AppModel: ObservableObject {
     ) {
         smbStreamServer?.stop()
         smbStreamServer = nil
+        pendingNextPlayback = nil
+        pendingNextOwner = nil
         if let current = player {
             current.stopAndClose()
         }
@@ -511,7 +519,22 @@ final class AppModel: ObservableObject {
             self?.refreshRecent()
         }
         model.onFinished = { [weak self] in
-            self?.refreshRecent()
+            guard let self else { return }
+            self.refreshRecent()
+            let autoplay = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] != "0"
+            let currentOwner = self.player?.item.remotePath?.split(separator: "|").first.map(String.init)
+            self.autoplayDebugLog("onFinished autoplay=\(autoplay) pending=\(self.pendingNextPlayback != nil) owner=\(self.pendingNextOwner ?? "-") current=\(currentOwner ?? "-")")
+            guard autoplay,
+                  let next = self.pendingNextPlayback,
+                  self.pendingNextOwner == currentOwner
+            else { return }
+            self.pendingNextPlayback = nil
+            self.pendingNextOwner = nil
+            // Let the finished player tear down first; starting the next item
+            // re-enters startPlayer(), which stops the old engine itself.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                next()
+            }
         }
         player = model
         route = .player
@@ -653,6 +676,15 @@ final class AppModel: ObservableObject {
         let subtitles = WebDAVClient.subtitleTracks(for: entry, siblings: directoryEntries)
         let item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
         startPlayer(with: item)
+        if let next = PlaylistOrder.nextPlayableEntry(after: entry, among: directoryEntries) {
+            autoplayDebugLog("webdav next=\(next.name) owner=\(entry.path) siblings=\(directoryEntries.count)")
+            pendingNextOwner = entry.path
+            pendingNextPlayback = { [weak self] in
+                Task { @MainActor in
+                    await self?.openRemote(source: source, entry: next, siblings: directoryEntries)
+                }
+            }
+        }
     }
 
     func openRemote(source: WebDAVSource, path: String) async {
@@ -674,6 +706,8 @@ final class AppModel: ObservableObject {
     }
 
     func closePlayer() {
+        pendingNextPlayback = nil
+        pendingNextOwner = nil
         smbStreamServer?.stop()
         smbStreamServer = nil
         player?.stopAndClose()
@@ -1264,8 +1298,29 @@ final class AppModel: ObservableObject {
                 serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks),
                 serverLastPlayedAt: item.userData?.lastPlayedAt
             )
+            scheduleNextJellyfinEpisode(source: source, item: item)
         } catch {
             statusMessage = error.localizedDescription
+        }
+    }
+
+    /// Looks up the following episode of the same season in the background. The
+    /// closure is only kept if the item is still the one playing when it lands.
+    private func scheduleNextJellyfinEpisode(source: JellyfinSource, item: JellyfinItem) {
+        guard item.itemType == "Episode", let seasonID = item.seasonID else { return }
+        let owner = item.id
+        Task { @MainActor [weak self] in
+            guard let self, let client = self.jellyfinClient(for: source) else { return }
+            guard let episodes = try? await client.items(parentID: seasonID) else { return }
+            guard let next = PlaylistOrder.nextEpisode(after: item, among: episodes) else { return }
+            let playingOwner = self.player?.item.remotePath?.split(separator: "|").first.map(String.init)
+            guard playingOwner == owner else { return }
+            self.pendingNextOwner = owner
+            self.pendingNextPlayback = { [weak self] in
+                Task { @MainActor in
+                    await self?.openJellyfinItem(source: source, itemID: next.id)
+                }
+            }
         }
     }
 
@@ -2095,6 +2150,20 @@ final class AppModel: ObservableObject {
         return formatter.string(from: Date())
     }
 
+    func autoplayDebugLog(_ message: String) {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_AUTOPLAY"] == "1" else { return }
+        let url = acceptanceDirectory().appendingPathComponent("autoplay.log")
+        let line = "\(Date().timeIntervalSince1970) \(message)\n"
+        let data = Data(line.utf8)
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(data)
+            try? handle.close()
+        } else {
+            try? data.write(to: url)
+        }
+    }
+
     func acceptanceDirectory() -> URL {
         let dir = supportDirectory.appendingPathComponent("Acceptance", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -2407,8 +2476,11 @@ final class PlayerModel: ObservableObject {
         engine.onEndFile = { [weak self] reason in
             guard let self else { return }
             if reason == "eof" {
-                self.finishPlayback()
+                self.finishPlaybackIfNeeded()
             }
+        }
+        engine.onEOFReached = { [weak self] in
+            self?.finishPlaybackIfNeeded()
         }
         engine.onLog = { [weak self] message in
             guard let self else { return }
@@ -2754,6 +2826,11 @@ final class PlayerModel: ObservableObject {
                 isPaused: isPaused
             )
         }
+    }
+
+    private func finishPlaybackIfNeeded() {
+        guard !hasFinished, fileLoaded else { return }
+        finishPlayback()
     }
 
     private func finishPlayback() {

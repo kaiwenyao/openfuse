@@ -136,6 +136,23 @@ WebDAV `…/电视剧/Sex Education (2019)/Season 01/Sex Education (2019) - S01E
 - Infuse 播放器内的**字幕菜单列表**（是否列出侧挂简体/繁体）、拖动的主观观感、Pro 弹窗出现的具体时机：受 Catalyst 界面不可读 + 无录屏权限限制，需要人工在 Infuse 窗口里看。
 - Infuse 走 **Jellyfin 集成**时对两路外挂 ASS 的默认选择：日志只能证明本地文件路径下的行为；Jellyfin 路径需要人工在 Infuse 里点开同一集确认。
 
+## 5b. 对标 Infuse：补齐「自动连播下一集」（本轮新增）
+
+Infuse 的剧集播放会在结束时接上下一集（Up Next）。OpenFuse 原来在 EOF 处停住。本轮补上：
+
+- **根因**：mpv 用了 `keep-open=yes`，放完不会发 `end-file`，而是把 `eof-reached` 置为 true 并停在最后一帧；原代码只监听 `end-file`，所以“播完”从未触发。
+- **修复**：`MPVEngine` 暴露 `onEOFReached`，`PlayerModel` 用 `finishPlaybackIfNeeded()` 只触发一次；`AppModel` 在开始播放时就地为当前条目算好下一集（WebDAV 用同目录视频自然排序，Jellyfin 用同季 `IndexNumber` 排序，规则在 `OpenFuseData/PlaylistOrder`，有单元测试），播完后 0.6 s 启动下一集；条目 id 对不上时不会误播。
+- `OPENFUSE_AUTOPLAY=0` 可关闭自动连播；`OPENFUSE_DEBUG_AUTOPLAY=1` 把决策写进 `<support>/Acceptance/autoplay.log`。
+
+实测（CLI 自动化，同一套 `PlayerModel`）：
+
+| 来源 | 结果 |
+| --- | --- |
+| WebDAV | S03E13 在 1428 s 起播，播完自动进 S03E14（报告标题 `Shingeki no Kyojin - S03E14 - Thunder Spears`，position 0）；日志显示 E14 又把下一集排到 S03E15 |
+| Jellyfin | S03E13「初始的街道」播完自动进 S03E14「雷枪」（`/Videos/95d56b1b…`），完成后服务器记录 E13 `Played=true`，已恢复为 `0 / 未看` |
+
+单测新增 `PlaylistOrderTests`（自然排序、跳过字幕文件、季末返回 nil、按集号取下一集），总计 **54 个测试全过**。
+
 ## 6. 哪些是从窗口里亲手完成的
 
 窗口内完成（用 macOS 辅助功能驱动真实控件，等价于点按）：
