@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex Direct 浏览（M5i）
+
+- AppRoute.plexBrowser + PlexBrowserView：NavigationStack sections → items → metadata；show/season children；movie/episode 播放。
+- PlexClient sections/items/children；token 动态海报；openPlexMetadata 复用字幕/mpv。
+- 实测 sections 与电影网格；详情/播放点击未自动化，真实 Plex 未验证。
+
 ## Plex 多版本（M5h）
 
 - Scanner 遍历 Plex `Media[]`，每个条目生成 ScannedVersion（分辨率/容器/part）。

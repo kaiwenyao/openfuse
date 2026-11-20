@@ -116,6 +116,10 @@
 | `66-plex-alternate-version.jpg` | Plex 720p 备版播放 | 播放器抓帧 |
 | `reports/m5h-plex-*.json` | Plex 多版本库/播放报告 | 应用报告 |
 | `reports/m5h-plex-versions.txt` | Plex 多版本摘要 | 运行记录 |
+| `67-plex-browser-sections.jpg` | Plex Direct sections | 应用内窗口快照 |
+| `68-plex-browser-movies.jpg` | Plex 电影 section 网格 | 同上 |
+| `reports/m5i-plex-browser.jsonl` | Plex 浏览请求（脱敏） | 夹具日志 |
+| `reports/m5i-plex-browser.txt` | Plex 浏览摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

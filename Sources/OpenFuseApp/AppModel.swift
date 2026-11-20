@@ -9,6 +9,7 @@ enum AppRoute: Equatable {
     case player
     case browser(WebDAVSource)
     case jellyfinBrowser(JellyfinSource)
+    case plexBrowser(PlexSource)
     case library(LibraryWork)
 }
 
@@ -502,6 +503,30 @@ final class AppModel: ObservableObject {
 
     func browseJellyfin(_ source: JellyfinSource) {
         route = .jellyfinBrowser(source)
+    }
+
+    func browsePlex(_ source: PlexSource) {
+        route = .plexBrowser(source)
+    }
+
+    func plexClient(for source: PlexSource) -> PlexClient? {
+        guard let token = plexToken(for: source) else { return nil }
+        return PlexClient(source: source, token: token)
+    }
+
+    func openPlexMetadata(_ metadata: PlexMetadata, source: PlexSource) async {
+        guard let part = metadata.media?.first?.parts?.first else {
+            libraryStatus = "Plex 条目没有可播放文件"
+            return
+        }
+        await openPlexItem(
+            source: source,
+            token: plexToken(for: source) ?? "",
+            ratingKey: metadata.ratingKey,
+            partKey: part.key,
+            title: metadata.title,
+            duration: Double(metadata.duration ?? 0) / 1000
+        )
     }
 
     func jellyfinImageURL(source: JellyfinSource, item: JellyfinItem, maxWidth: Int = 480) -> URL? {

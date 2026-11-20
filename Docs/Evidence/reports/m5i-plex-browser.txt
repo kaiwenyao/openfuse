@@ -1,0 +1,20 @@
+OpenFuse M5i Plex Direct browser evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, port 32400
+
+Flow:
+  App --plex-browse opens NavigationStack Plex Direct.
+  Sections fetched from /library/sections (movie + show); OPENFUSE_PLEX_SECTION=1
+  auto-pushes section 1, /library/sections/1/all fetched, movie grid rendered.
+  Metadata detail supports show -> children seasons, season -> episodes,
+  movie/episode -> play button calling openPlexMetadata (token/subtitles/mpv).
+
+Acceptance:
+  Scripts/run-plex-browser.sh PASS: sections.png + section.png non-empty,
+  requests contain /library/sections and /library/sections/1/all with token.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Automated mouse click into metadata detail/play; real Plex; audio track
+  selection; version-level dedupe; SMB/HDR/AirPlay; CloudKit/Trakt; audio.

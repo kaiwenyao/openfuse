@@ -64,7 +64,8 @@ public struct PlexMedia: Codable, Hashable, Sendable {
     }
 }
 
-public struct PlexMetadata: Codable, Hashable, Sendable {
+public struct PlexMetadata: Codable, Hashable, Identifiable, Sendable {
+    public var id: String { ratingKey }
     public var ratingKey: String
     public var key: String?
     public var type: String?

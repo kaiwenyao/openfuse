@@ -179,7 +179,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Task { @MainActor in
                     let ok = await model.addPlexSource(name: name, urlText: plexURL, token: token)
                     if ok {
-                        self.finishLibraryLaunch(model: model, arguments: arguments)
+                        if arguments.contains("--plex-browse") {
+                            if let plexSource = model.plexSources.last {
+                                model.browsePlex(plexSource)
+                            }
+                            self.scheduleQuitOnly(arguments: arguments)
+                        } else {
+                            self.finishLibraryLaunch(model: model, arguments: arguments)
+                        }
                     } else {
                         self.scheduleQuitOnly(arguments: arguments)
                     }
@@ -399,6 +406,8 @@ struct RootView: View {
                 WebDAVBrowserView(source: source)
             case .jellyfinBrowser(let source):
                 JellyfinBrowserView(source: source)
+            case .plexBrowser(let source):
+                PlexBrowserView(source: source)
             case .library(let work):
                 LibraryDetailView(work: work)
             }
@@ -893,6 +902,8 @@ struct HomeView: View {
                             .lineLimit(1)
                     }
                     Spacer()
+                    Button("浏览") { model.browsePlex(source) }
+                        .buttonStyle(.bordered)
                     Button("扫描") {
                         Task { await model.scanPlexSource(source) }
                     }
