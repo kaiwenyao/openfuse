@@ -16,11 +16,11 @@ for _ in {1..40}; do
      && curl -sS --max-time 1 http://127.0.0.1:8097/System/Info/Public >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" --jellyfin-url http://127.0.0.1:8096 \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN=jf-test-token "$APP" --jellyfin-url http://127.0.0.1:8096 \
   --jellyfin-user test --jellyfin-pass test --jellyfin-name Jellyfin --jellyfin-scan \
   --library-report "$OUT/jellyfin.json" --quit-after 8 >"$OUT/jf-app.log" 2>&1 || true
 sleep 0.5
-OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" --emby-url http://127.0.0.1:8097 \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_EMBY_PASSWORD=test OPENFUSE_EMBY_TOKEN=jf-test-token OPENFUSE_JELLYFIN_TOKEN=jf-test-token OPENFUSE_JELLYFIN_PASSWORD=test "$APP" --emby-url http://127.0.0.1:8097 \
   --emby-user test --emby-pass test --emby-name Emby --emby-scan \
   --library-report "$OUT/both.json" --capture-ui "$OUT/library.png" --ui-after 5 \
   --quit-after 8 >"$OUT/emby-app.log" 2>&1 || true
@@ -37,6 +37,15 @@ if len(data["groups"]) != 2:
 for group in data["groups"]:
     if set(group.get("sources", [])) != {"jellyfin", "emby"}:
         errors.append(f"group sources {group.get('sources')}")
+for merged in data.get("merged", []):
+    for episode in merged.get("episodes", []):
+        labels = episode.get("versions", [])
+        if not labels:
+            errors.append(f"version missing {merged.get('title')}")
+        elif not all("/" in label for label in labels):
+            errors.append(f"source merge label {merged.get('title')} {labels}")
+        elif len(labels) != len(set(labels)):
+            errors.append(f"duplicate labels {labels}")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)

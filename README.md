@@ -56,7 +56,8 @@
 - **M5m SMB 边下边播：完成本地验证。** BSD socket 回环 HTTP Range 服务器 + libsmb2 pread；`--seek 30` 后播放到 31.0s，无整文件缓存。NWListener 在当前环境 EINVAL，已改 BSD socket。记录：[M5m 验收](Docs/M5M-SMB-STREAMING.md)。
 - **M5n SMB NFO/海报/字幕：完成本地验证。** SMB 句柄复用；扫描读取 NFO 并缓存 poster/folder/cover；播放前列同目录字幕、下载 SRT 并选中 mpv:1；回环 Range seek 31s、无整文件缓存。剧集跨季 tvshow NFO、真实 SMB3 待验证。记录：[M5n 验收](Docs/M5N-SMB-METADATA.md)。
 - **M5o SMB 跨季 NFO/重连：完成本地验证。** 剧集继承 tvshow.nfo/海报，单集 NFO 优先；修复扫描中 STATUS_SHUTDOWN 漏掉第二季（重连重试）。夹具 2 作品/3 集，S01E01 NFO 标题、seek31、字幕、无缓存。记录：[M5o 验收](Docs/M5O-SMB-SHOW-NFO.md)。
-- **下一项：** M5p：真实 SMB3/并发/大文件；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
+- **M5p 版本级去重：完成本地验证。** Jellyfin/Emby 同 mediaSourceID+名称+分辨率版本合并为 `Jellyfin/Emby · …`，1080p/720p 仍分开；单元测试 29/29。顺带修复 Emby 测试 env 触发 Keychain。记录：[M5p 验收](Docs/M5P-VERSION-DEDUPE.md)。
+- **下一项：** M5q：真实服务器版本 ID/顺序；音频轨去重；SMB3/并发；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -87,7 +88,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5o-smb-show-nfo`（基于 M5n 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5p-version-dedupe`（基于 M5o 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Jellyfin/Emby 版本级去重（M5p）
+
+- mergedEpisodes 以 mediaSourceID+name+resolution（回退 remotePath/fileURL/id）合并版本；标签拼接 Jellyfin/Emby。
+- 1080p/720p 仍分开；库报告 merged 暴露；单元测试覆盖。
+- 真实服务器 ID 形态/跨服务器碰撞/音频轨去重未验证。
+
 ## SMB 跨季 tvshow NFO/重连（M5o）
 
 - showNFOByDirectory/showPosterByDirectory + showContext 祖先查找；单集/电影 NFO 优先。

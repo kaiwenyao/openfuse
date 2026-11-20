@@ -40,4 +40,4 @@ SMB 剧集此前只读当前目录 NFO，季目录里的集无法继承 show 标
 
 ## 下一项
 
-M5p：真实 SMB3/并发/大文件；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
+Jellyfin/Emby 版本级去重已在 [M5p 验收](Docs/M5P-VERSION-DEDUPE.md) 完成。剩余 M5q：真实服务器版本 ID/顺序、音频轨去重、SMB3/并发、HDR/AirPlay 实机、CloudKit/Trakt、音频、M3 多根/损坏过滤。

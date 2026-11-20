@@ -637,8 +637,12 @@ final class AppModel: ObservableObject {
             let client = JellyfinClient(source: source, token: session.accessToken)
             let views = try await client.views()
             sessionJellyfinTokens[source.id] = session.accessToken
-            let usesEnvironment = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_PASSWORD"] != nil
-                || ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_TOKEN"] != nil
+            let environment = ProcessInfo.processInfo.environment
+            let prefix = source.kind == "emby" ? "OPENFUSE_EMBY" : "OPENFUSE_JELLYFIN"
+            let usesEnvironment = environment[prefix + "_PASSWORD"] != nil
+                || environment[prefix + "_TOKEN"] != nil
+                || environment["OPENFUSE_JELLYFIN_PASSWORD"] != nil
+                || environment["OPENFUSE_JELLYFIN_TOKEN"] != nil
             if !usesEnvironment {
                 try? CredentialStore.save(password: session.accessToken, account: source.id, service: "com.openfuse.jellyfin")
             }

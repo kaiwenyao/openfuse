@@ -245,6 +245,48 @@ final class LibraryTests: XCTestCase {
                        ["Jellyfin ", "本地 "])
     }
 
+    func testVersionDedupeMergesJellyfinAndEmby() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-version-dedupe-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try LibraryStore(directory: directory)
+
+        func work(kind: String, sourceID: String) -> ScannedWork {
+            let episodeID = "dup-main-\(kind)"
+            return ScannedWork(
+                id: "dup-\(kind)", kind: .movie, title: "Dup Movie", sortTitle: "Dup Movie",
+                year: 2026, overview: nil, poster: nil, sourceKind: kind, sourceID: sourceID,
+                serverID: "movie-dup", seasons: [],
+                movie: ScannedEpisode(
+                    id: episodeID, seasonNumber: 0, episodeNumber: 1, title: "Dup Movie",
+                    overview: nil, runtime: 60, poster: nil, serverID: "movie-dup",
+                    remotePath: "movie-dup", remoteVariant: nil, fileURL: nil,
+                    versions: [ScannedVersion(
+                        id: episodeID + "-v0", name: "1080p HEVC 5.1",
+                        mediaSourceID: "ms-movie-1080", container: "MKV",
+                        resolution: "1080p", remotePath: "movie-dup", fileURL: nil
+                    )]
+                )
+            )
+        }
+        try store.replace(source: ScannedLibrary(
+            sourceKind: "jellyfin", sourceID: "j", sourceName: "Jellyfin",
+            works: [work(kind: "jellyfin", sourceID: "j")]
+        ))
+        try store.replace(source: ScannedLibrary(
+            sourceKind: "emby", sourceID: "e", sourceName: "Emby",
+            works: [work(kind: "emby", sourceID: "e")]
+        ))
+        let works = try store.works()
+        let primary = works.first { $0.sourceKind == "jellyfin" }!
+        let group = LibraryGroup(id: primary.id, key: primary.mergeKey, primary: primary, works: works)
+        let merged = try LibraryAggregation.mergedEpisodes(group: group, store: store)
+        XCTAssertEqual(merged.count, 1)
+        XCTAssertEqual(merged[0].versions.count, 1)
+        XCTAssertTrue(merged[0].versions[0].label.contains("Jellyfin/Emby"))
+    }
+
     func testNFODataParsingKeepsRemotePosterReference() throws {
         let xml = """
         <movie><title>远程电影</title><year>2026</year><plot>简介</plot><poster>poster.jpg</poster></movie>

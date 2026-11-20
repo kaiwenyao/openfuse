@@ -76,10 +76,24 @@ public enum LibraryAggregation {
                 if bucket.overview == nil { bucket.overview = episode.overview }
                 if bucket.runtime == 0 { bucket.runtime = episode.runtime }
                 for version in try store.versions(itemID: episode.id) {
+                    let source = sourceLabel(work.sourceKind)
+                    let identity = versionIdentity(version, episode: episode)
+                    if let index = bucket.versions.firstIndex(where: { existing in
+                        versionIdentity(existing.version, episode: existing.episode) == identity
+                    }) {
+                        var existing = bucket.versions[index]
+                        let previousSource = existing.label.components(separatedBy: " · ").first ?? ""
+                        if !previousSource.split(separator: "/").contains(Substring(source)) {
+                            let rest = existing.label.dropFirst(previousSource.count + 3)
+                            existing.label = "\(previousSource)/\(source) · \(rest)"
+                        }
+                        bucket.versions[index] = existing
+                        continue
+                    }
                     bucket.versions.append(
                         MergedLibraryVersion(
                             id: version.id + "@" + work.id,
-                            label: "\(sourceLabel(work.sourceKind)) · \(version.name)",
+                            label: "\(source) · \(version.name)",
                             work: work,
                             episode: episode,
                             version: version
@@ -113,6 +127,20 @@ public enum LibraryAggregation {
                 )
             }
             .sorted { ($0.seasonNumber, $0.episodeNumber) < ($1.seasonNumber, $1.episodeNumber) }
+    }
+
+    private static func versionIdentity(_ version: LibraryVersion?, episode: LibraryEpisode) -> String {
+        guard let version else { return "episode|\(episode.id)" }
+        if let mediaSourceID = version.mediaSourceID, !mediaSourceID.isEmpty {
+            return "media|\(mediaSourceID)|\(version.name)|\(version.resolution ?? "")"
+        }
+        if let remotePath = version.remotePath, !remotePath.isEmpty {
+            return "path|\(remotePath)|\(version.name)"
+        }
+        if let fileURL = version.fileURL, !fileURL.isEmpty {
+            return "file|\(fileURL)|\(version.name)"
+        }
+        return "id|\(version.id)|\(version.name)"
     }
 
     public static func sourceLabel(_ kind: String) -> String {

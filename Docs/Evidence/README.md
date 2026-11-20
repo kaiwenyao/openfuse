@@ -149,6 +149,9 @@
 | `80-smb-show-play.jpg` | SMB 跨季剧集播放 31s | 播放器抓帧 |
 | `reports/m5o-smb-*.json` | SMB 跨季库/播放报告 | 应用报告 |
 | `reports/m5o-smb-show.txt` | 跨季 NFO/重连摘要 | 运行记录 |
+| `81-version-dedupe.jpg` | Jellyfin/Emby 版本合并库 | 应用内窗口快照 |
+| `reports/m5p-dedupe.json` | 版本级去重报告 | 应用报告 |
+| `reports/m5p-version-dedupe.txt` | 版本去重摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

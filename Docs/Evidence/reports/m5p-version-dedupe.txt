@@ -1,0 +1,22 @@
+OpenFuse M5p version-level dedupe evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Implementation:
+  LibraryAggregation.mergedEpisodes dedupes versions by mediaSourceID+name+
+  resolution (fallback remote path/file/id); merged label becomes
+  "Jellyfin/Emby · <version>".
+
+Results:
+  Jellyfin+Emby same fixtures, one support dir:
+    raw 4 works/6 episodes -> 2 groups; each group sources both.
+    merged movie versions: ["Emby/Jellyfin · 1080p HEVC 5.1",
+                            "Emby/Jellyfin · 720p 压缩版"] (2 real versions).
+    No duplicate labels.
+  Scripts/run-jellyfin-emby-dedupe.sh PASS.
+  Unit test testVersionDedupeMergesJellyfinAndEmby PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Emby/Jellyfin IDs; accidental mediaSourceID collisions across distinct
+  servers; version ordering; audio.
