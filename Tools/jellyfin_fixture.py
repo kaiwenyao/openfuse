@@ -199,6 +199,9 @@ def media_streams() -> list[dict]:
          "DisplayTitle": "服务器音轨 · E-AC-3 5.1", "IsDefault": True},
         {"Type": "Subtitle", "Index": 2, "Codec": "ass", "Language": "chi",
          "DisplayTitle": "服务器字幕 · 中日双语", "IsExternal": False, "IsDefault": True},
+        {"Type": "Subtitle", "Index": 3, "Codec": "srt", "Language": "zho",
+         "DisplayTitle": "外挂简体中文", "IsExternal": True, "IsDefault": False,
+         "DeliveryUrl": "/Videos/movie-1/subtitles/zh-Hans.srt"},
     ]
 
 
@@ -220,6 +223,9 @@ def playback_info(item_id: str) -> dict:
                          "DisplayTitle": "720p H.264", "IsDefault": True},
                         {"Type": "Audio", "Index": 1, "Codec": "aac", "Language": "und", "Channels": 2,
                          "DisplayTitle": "AAC 立体声", "IsDefault": True},
+                        {"Type": "Subtitle", "Index": 2, "Codec": "srt", "Language": "zho",
+                         "DisplayTitle": "外挂简体中文", "IsExternal": True, "IsDefault": False,
+                         "DeliveryUrl": "/Videos/movie-mobile/subtitles/zh-Hans.srt"},
                     ],
                 }
             ],
@@ -349,6 +355,20 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/Items/") and path.endswith("/Images/Primary"):
             item_id = path.split("/")[2]
             self._serve_image(item_id)
+            return
+        if path in ("/Videos/movie-mobile/subtitles/zh-Hans.srt", "/Videos/movie-1/subtitles/zh-Hans.srt"):
+            subtitle = os.path.abspath("Fixtures/mobile/openfuse-mobile.zh-Hans.srt")
+            if not os.path.exists(subtitle):
+                self._empty(404)
+                return
+            with open(subtitle, "rb") as handle:
+                data = handle.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-subrip; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            self._record(200, {"subtitle": "zh-Hans"})
             return
         if path.startswith("/Videos/") and path.endswith("/stream"):
             item_id = path.split("/")[2]

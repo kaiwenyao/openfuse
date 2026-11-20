@@ -81,6 +81,8 @@
 | `reports/m4k-remote-subs.txt` | WebDAV 字幕下载/构建摘要 | 运行记录 |
 | `52-ios-webdav-subtitle.jpg` | WebDAV 远程字幕 4.6/20.0s 实际显示 | `simctl io screenshot` |
 | `reports/m4l-remote-subtitle.txt` | 远程时长/字幕修复摘要 | 运行记录 |
+| `53-ios-webdav-seek-subtitle.jpg` | WebDAV 远程 seek 10s + 第二句字幕 | `simctl io screenshot` |
+| `reports/m4m-seek-jfsubs.txt` | 远程 seek/Jellyfin 字幕管线摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 远程精确 seek（M4m）
+
+- `preciseSeek`：AVPlayer.seek(to:toleranceBefore:.zero,toleranceAfter:.zero, completionHandler) 包装为 async，返回 finished。
+- seek 前暂停，完成后等待 300ms；ticker 重新计算字幕 cue。
+- WebDAV 远程 seek 10s 实测 HUD 10.0/20.0，第二句字幕同步。
+- Jellyfin DeliveryUrl 外挂字幕下载到 `SubtitleCache`；画面待验证。
+
 ## 远程 WebDAV 字幕画面修复（M4l）
 
 - 时长从 `player.currentItem.asset`（认证 loader asset）读取，避免新建无认证 AVURLAsset 得到 0。

@@ -1,0 +1,29 @@
+OpenFuse M4m remote seek + Jellyfin external subtitle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2
+
+WebDAV precise seek:
+  preciseSeek uses AVPlayer.seek(to:toleranceBefore:.zero,toleranceAfter:.zero,
+  completionHandler) wrapped in continuation; player paused before seek.
+  Run: WebDAV source, subtitle index=1, seek=10, pause=1.
+  Result: HUD 10.0/20.0s, frame time 15.0 (source +5s), subtitle
+  "第二句：拖动后字幕仍同步。/ 二番目の字幕。シーク後も同期。"
+  → remote seek + cue sync verified.
+
+Jellyfin external subtitles:
+  Fixture now declares external SRT DeliveryUrl for movie-1/movie-mobile and
+  serves /Videos/{item}/subtitles/zh-Hans.srt.
+  App remotePlaybackItem downloads DeliveryUrl with token into SubtitleCache
+  and adds SubtitleTrack(.downloaded).
+  This run autoplay returned to Home (remote item nil) instead of opening the
+  player; visual result not verified. Code builds; route exists.
+
+Builds/tests:
+  27/27 swift tests
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+  visionOS runtime download ~74.0% (7.65GB), not installed.
+
+Not verified:
+  Jellyfin external subtitle visual; audio output; visionOS runtime;
+  real services; CloudKit/Trakt.

@@ -31,6 +31,7 @@ struct MobilePlayerView: View {
     @State private var cues: [SubtitleCue] = []
     @State private var subtitleText = ""
     @State private var didPauseAtTarget = false
+    @State private var seekError: String?
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -65,6 +66,12 @@ struct MobilePlayerView: View {
                         .padding(.horizontal, 24)
                         .padding(.bottom, showsHUD ? 132 : 60)
                 }
+            }
+            if let seekError {
+                Text(seekError)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.top, 100)
             }
             if let errorText {
                 Text(errorText)
@@ -308,8 +315,10 @@ struct MobilePlayerView: View {
             await waitUntilReady(player)
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SEEK"],
                let seconds = Double(raw) {
-                await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
-                try? await Task.sleep(nanoseconds: 500_000_000)
+                player.pause()
+                let finished = await preciseSeek(player, to: seconds)
+                seekError = finished ? nil : "精确 seek 未完成"
+                try? await Task.sleep(nanoseconds: 300_000_000)
                 if ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_PAUSE"] == "1" {
                     player.pause()
                 } else {
@@ -318,7 +327,7 @@ struct MobilePlayerView: View {
                 tick()
             } else {
                 if let resume = item.resumePosition, resume > 0 {
-                    await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
+                    _ = await preciseSeek(player, to: resume)
                 }
                 player.play()
             }
@@ -335,6 +344,18 @@ struct MobilePlayerView: View {
                 try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
                 saveProgress()
                 dismiss()
+            }
+        }
+    }
+
+    private func preciseSeek(_ player: AVPlayer, to seconds: TimeInterval) async -> Bool {
+        await withCheckedContinuation { continuation in
+            player.seek(
+                to: CMTime(seconds: seconds, preferredTimescale: 600),
+                toleranceBefore: .zero,
+                toleranceAfter: .zero
+            ) { finished in
+                continuation.resume(returning: finished)
             }
         }
     }

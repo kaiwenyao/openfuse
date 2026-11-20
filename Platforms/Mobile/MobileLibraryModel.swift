@@ -123,6 +123,40 @@ final class MobileLibraryModel: ObservableObject {
                 ?? client.streamURL(itemID: itemID, mediaSource: media)
         }
         guard let url else { return nil }
+        var sidecars: [SubtitleTrack] = []
+        let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        for stream in media.mediaStreams ?? [] where stream.type == "Subtitle" && stream.isExternal == true {
+            guard let delivery = stream.deliveryURL,
+                  var components = URLComponents(
+                    url: URL(string: delivery, relativeTo: source.normalizedBaseURL)?.absoluteURL ?? source.normalizedBaseURL,
+                    resolvingAgainstBaseURL: false
+                  ) else { continue }
+            var query = components.queryItems ?? []
+            query.append(URLQueryItem(name: "api_key", value: token))
+            components.queryItems = query
+            guard let remote = components.url else { continue }
+            var request = URLRequest(url: remote)
+            request.setValue(token, forHTTPHeaderField: "X-Emby-Token")
+            request.setValue("MediaBrowser Token=\"\(token)\"", forHTTPHeaderField: "Authorization")
+            guard let (data, _) = try? await URLSession.shared.data(for: request), !data.isEmpty else { continue }
+            let ext = (stream.deliveryURL as NSString?)?.pathExtension.lowercased()
+            let suffix = (ext?.isEmpty == false ? ext! : "srt")
+            let target = cache.appendingPathComponent(
+                LibraryID.hash("\(itemID)|subtitle|\(stream.index)") + "." + suffix
+            )
+            try? data.write(to: target, options: .atomic)
+            sidecars.append(
+                SubtitleTrack(
+                    id: "jellyfin-ext:\(itemID):\(stream.index)",
+                    displayName: stream.displayTitle ?? "服务器字幕",
+                    language: stream.language,
+                    format: SubtitleFormat(fileExtension: suffix),
+                    source: .downloaded,
+                    url: target
+                )
+            )
+        }
         let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
         let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
         let record = playbackStore.record(forPath: key)
@@ -136,7 +170,8 @@ final class MobileLibraryModel: ObservableObject {
             sourceID: source.id,
             remotePath: "\(itemID)|\(media.id)",
             remoteURL: url.absoluteString,
-            httpHeaders: headers
+            httpHeaders: headers,
+            sidecarSubtitles: sidecars
         )
     }
 

@@ -205,6 +205,15 @@
 | 本地字幕回归 | 同上 | 本地 SRT | 待采样 | M4j 简体/繁体/seek 截图通过 | Evidence 49–50 | 通过 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 
+### M4m 远程 seek/Jellyfin 字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 精确 seek | iPhone 18 Pro Simulator／iOS 27.2 | WebDAV MP4 + SRT | Infuse 未安装 | seek 10s，HUD 10.0/20.0，第二句字幕同步 | Evidence 53 | 通过 |
+| 远程字幕同步 | 同上 | 同上 | 待采样 | 拖动后重算 cue，显示「第二句…」 | 同上 | 通过 |
+| Jellyfin 外挂字幕 | 同上 | DeliveryUrl SRT | 待采样 | 下载管线已写；autoplay 返回主页，画面未验证 | `reports/m4m-seek-jfsubs.txt` | 部分通过/待验证 |
+| 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
 ### M4l 远程字幕画面执行记录（2026-11-20）
 
 | 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
@@ -212,6 +221,15 @@
 | WebDAV 远程时长 | iPhone 18 Pro Simulator／iOS 27.2 | WebDAV MP4 + SRT | Infuse 未安装 | 时长 20.0s（此前 0.0） | `reports/m4l-remote-subtitle.txt` | 通过 |
 | 远程字幕显示 | 同上 | 同上 | 待采样 | pause-at 4.5s，HUD 4.6/20.0，显示第一句字幕 | Evidence 52 | 通过 |
 | 远程 seek 同步 | 同上 | 同上 | 待采样 | seek 不稳定，未证明；用 pause-at 验证 | — | 待修 |
+| 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
+### M4m 远程 seek/Jellyfin 字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 精确 seek | iPhone 18 Pro Simulator／iOS 27.2 | WebDAV MP4 + SRT | Infuse 未安装 | seek 10s，HUD 10.0/20.0，第二句字幕同步 | Evidence 53 | 通过 |
+| 远程字幕同步 | 同上 | 同上 | 待采样 | 拖动后重算 cue，显示「第二句…」 | 同上 | 通过 |
+| Jellyfin 外挂字幕 | 同上 | DeliveryUrl SRT | 待采样 | 下载管线已写；autoplay 返回主页，画面未验证 | `reports/m4m-seek-jfsubs.txt` | 部分通过/待验证 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
