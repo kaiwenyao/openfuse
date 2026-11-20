@@ -76,6 +76,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
     public var runTimeTicks: Int64?
     public var imageTags: [String: String]?
     public var userData: JellyfinUserData?
+    public var dateCreated: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -93,6 +94,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         case runTimeTicks = "RunTimeTicks"
         case imageTags = "ImageTags"
         case userData = "UserData"
+        case dateCreated = "DateCreated"
     }
 
     public var isPlayable: Bool {

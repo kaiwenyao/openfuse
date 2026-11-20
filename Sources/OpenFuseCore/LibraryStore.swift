@@ -86,7 +86,7 @@ public final class LibraryStore: @unchecked Sendable {
                     .text(work.id), .text(work.kind.rawValue), .text(work.title), .text(work.sortTitle),
                     work.year.map { .int(Int64($0)) } ?? .null, .text(work.overview), .text(work.poster),
                     .text(work.sourceKind), .text(work.sourceID), .text(work.serverID),
-                    .double(now), .double(now),
+                    .double(work.addedAt?.timeIntervalSince1970 ?? now), .double(now),
                 ])
                 if let movie = work.movie {
                     try insertEpisode(movie, workID: work.id, seasonID: nil, sourceKind: work.sourceKind, sourceID: work.sourceID, sql: episodeSQL)

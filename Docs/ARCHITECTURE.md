@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 排序、筛选与最近添加（M3g）
+
+- `ScannedWork.addedAt`：本地 mtime、WebDAV modifiedAt、Jellyfin DateCreated；LibraryStore 写入 `added_at`。
+- `AppModel.visibleLibraryGroups`：类型筛选 → 搜索 → 排序（title/year/added/episodes），UI 与验收报告共用。
+- 首页媒体库 Picker/Menu：全部/电影/剧集、标题/年份/最近添加/集数、搜索框。
+- 未做：防剧透、观看状态/分辨率筛选、继续观看专用排序。
+
 ## WebDAV NFO 与海报缓存（M3f）
 
 - 扫描时对远程 `.nfo` 发带凭据 GET，`NFOReader.parse(data:baseURL:)` 保留 `posterReference`；movie/tvshow/episode 三种作用域。

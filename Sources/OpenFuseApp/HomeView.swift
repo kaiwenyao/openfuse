@@ -92,6 +92,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let search = self.value(after: "--library-search", in: arguments) {
                     model.librarySearch = search
                 }
+                if let sort = self.value(after: "--library-sort", in: arguments),
+                   let parsed = LibrarySort(rawValue: sort) {
+                    model.librarySort = parsed
+                }
+                if let filter = self.value(after: "--library-filter", in: arguments) {
+                    model.libraryKindFilter = filter == "movie" ? .movie : (filter == "series" ? .series : nil)
+                }
                 if let query = self.value(after: "--library-work", in: arguments),
                    let work = model.findWork(matching: query) {
                     if arguments.contains("--library-clear-override") {
@@ -230,6 +237,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func finishLibraryLaunch(model: AppModel, arguments: [String]) {
         if let search = value(after: "--library-search", in: arguments) {
             model.librarySearch = search
+        }
+        if let sort = value(after: "--library-sort", in: arguments),
+           let parsed = LibrarySort(rawValue: sort) {
+            model.librarySort = parsed
+        }
+        if let filter = value(after: "--library-filter", in: arguments) {
+            model.libraryKindFilter = filter == "movie" ? .movie : (filter == "series" ? .series : nil)
         }
         if let query = value(after: "--library-work", in: arguments),
            let work = model.findWork(matching: query) {
@@ -591,9 +605,39 @@ struct HomeView: View {
                     .font(.system(size: 11.5))
                     .foregroundStyle(Theme.secondary)
                 Spacer()
+                Menu {
+                    Button("全部") { model.libraryKindFilter = nil }
+                    Button("电影") { model.libraryKindFilter = .movie }
+                    Button("剧集") { model.libraryKindFilter = .series }
+                } label: {
+                    Text(model.libraryKindFilter.map { $0 == .movie ? "电影" : "剧集" } ?? "全部")
+                        .font(.system(size: 11.5, weight: .medium))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+
+                Menu {
+                    ForEach(LibrarySort.allCases) { sort in
+                        Button {
+                            model.librarySort = sort
+                        } label: {
+                            if model.librarySort == sort {
+                                Label(sort.label, systemImage: "checkmark")
+                            } else {
+                                Text(sort.label)
+                            }
+                        }
+                    }
+                } label: {
+                    Label(model.librarySort.label, systemImage: "arrow.up.arrow.down")
+                        .font(.system(size: 11.5, weight: .medium))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+
                 TextField("搜索片名", text: $model.librarySearch)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 180)
+                    .frame(width: 160)
                 if model.isScanningLibrary {
                     ProgressView().controlSize(.small)
                     Text("\(model.scanProgress) 项")
@@ -632,7 +676,7 @@ struct HomeView: View {
                     alignment: .leading,
                     spacing: 22
                 ) {
-                    ForEach(filteredGroups) { group in
+                    ForEach(model.visibleLibraryGroups) { group in
                         LibraryCard(group: group)
                     }
                 }
@@ -642,16 +686,6 @@ struct HomeView: View {
                 Text(status)
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.secondary)
-            }
-        }
-    }
-
-    private var filteredGroups: [LibraryGroup] {
-        let query = model.librarySearch.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return model.libraryGroups }
-        return model.libraryGroups.filter { group in
-            group.works.contains {
-                $0.title.localizedCaseInsensitiveContains(query) || ($0.overview ?? "").localizedCaseInsensitiveContains(query)
             }
         }
     }

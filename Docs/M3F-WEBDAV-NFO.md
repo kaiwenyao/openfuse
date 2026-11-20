@@ -41,4 +41,4 @@ PASS: WebDAV NFO titles/overview/episode title, authenticated posters cached
 
 ## 下一项
 
-M3g：最近添加/继续观看排序、类型/分辨率/观看状态筛选、防剧透、T07 扫描中播放/超时恢复；完成后进入 M4 家庭设备与状态同步。
+排序与类型筛选已在 [M3g 排序筛选验收](M3G-FILTERS.md) 完成。剩余 M3h：防剧透、观看状态/分辨率筛选、继续观看排序、T07 深入；完成后进入 M4。

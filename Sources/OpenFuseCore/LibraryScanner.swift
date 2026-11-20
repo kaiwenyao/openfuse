@@ -45,6 +45,7 @@ public enum LibraryScanner {
         var posterURL: String?
         var nfo: NFOMetadata?
         var showNFO: NFOMetadata?
+        var modifiedAt: Date? = nil
     }
 
     // MARK: - Local
@@ -63,7 +64,7 @@ public enum LibraryScanner {
             throw LibraryScanError.invalidFolder
         }
         let sourceID = "local-" + LibraryID.hash(directory.path).replacingOccurrences(of: "local-", with: "")
-        var videoFiles: [(URL, String, NFOMetadata?, NFOMetadata?)] = []
+        var videoFiles: [(URL, String, NFOMetadata?, NFOMetadata?, Date?)] = []
         var posterMap: [String: String] = [:]
         var fileCount = 0
         while let file = enumerator.nextObject() as? URL {
@@ -89,9 +90,10 @@ public enum LibraryScanner {
             let episodeNFO = NFOReader.readEpisode(videoURL: file)
             let movieNFO = NFOReader.readMovie(videoURL: file)
             let showNFO = NFOReader.readShow(showDirectory: showDirectory)
-            videoFiles.append((file, relative, movieNFO ?? episodeNFO, showNFO))
+            let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            videoFiles.append((file, relative, movieNFO ?? episodeNFO, showNFO, modified))
         }
-        let candidates = videoFiles.map { file, relative, nfo, showNFO in
+        let candidates = videoFiles.map { file, relative, nfo, showNFO, modified in
             FileCandidate(
                 relativePath: relative,
                 name: file.lastPathComponent,
@@ -100,7 +102,8 @@ public enum LibraryScanner {
                 posterPath: findLocalPoster(for: file, relativePath: relative, directory: directory, posterMap: posterMap),
                 posterURL: nil,
                 nfo: nfo,
-                showNFO: showNFO
+                showNFO: showNFO,
+                modifiedAt: modified
             )
         }
         let sourceName = directory.lastPathComponent.isEmpty ? "本地文件夹" : directory.lastPathComponent
@@ -146,6 +149,7 @@ public enum LibraryScanner {
             var overview: String?
             var posterPath: String?
             var posterURL: String?
+            var addedAt: Date?
             var episodes: [(ParsedMediaName, FileCandidate)] = []
         }
         var movies: [(ParsedMediaName, FileCandidate)] = []
@@ -170,6 +174,9 @@ public enum LibraryScanner {
                 }
                 if bucket.posterURL == nil {
                     bucket.posterURL = candidate.showNFO?.posterURL?.absoluteString ?? candidate.posterURL
+                }
+                if let modified = candidate.modifiedAt {
+                    bucket.addedAt = max(bucket.addedAt ?? modified, modified)
                 }
                 bucket.episodes.append((parsed, candidate))
                 series[key] = bucket
@@ -225,6 +232,7 @@ public enum LibraryScanner {
                     sourceKind: sourceKind,
                     sourceID: sourceID,
                     serverID: nil,
+                    addedAt: candidate.modifiedAt,
                     seasons: [],
                     movie: episode
                 )
@@ -289,6 +297,7 @@ public enum LibraryScanner {
                     sourceKind: sourceKind,
                     sourceID: sourceID,
                     serverID: nil,
+                    addedAt: bucket.addedAt,
                     seasons: seasons,
                     movie: nil
                 )
@@ -402,6 +411,7 @@ public enum LibraryScanner {
                     sourceKind: "jellyfin",
                     sourceID: source.id,
                     serverID: movie.id,
+                    addedAt: Self.jellyfinDate(movie.dateCreated),
                     seasons: [],
                     movie: episode
                 )
@@ -488,6 +498,7 @@ public enum LibraryScanner {
                     sourceKind: "jellyfin",
                     sourceID: source.id,
                     serverID: seriesID,
+                    addedAt: Self.jellyfinDate(seriesItem.dateCreated),
                     seasons: seasons,
                     movie: nil
                 )
@@ -500,6 +511,15 @@ public enum LibraryScanner {
             sourceName: source.name,
             works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending }
         )
+    }
+
+    static func jellyfinDate(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: value) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 
     // MARK: - WebDAV
@@ -630,7 +650,8 @@ public enum LibraryScanner {
                         posterPath: posterPath,
                         posterURL: posterURL,
                         nfo: nfo,
-                        showNFO: showNFO
+                        showNFO: showNFO,
+                        modifiedAt: entry.modifiedAt
                     )
                 )
             }

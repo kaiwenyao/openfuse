@@ -17,8 +17,9 @@
 - **M3d 手动纠错与扫描：完成本地验证。** 详情可改标题/年份/简介/海报并持久化/清除；扫描可取消并显示进度，取消保留旧库；10,000 条目完整扫描 6.52 s，取消后旧库 10,000 条不变。记录：[M3d 编辑/扫描验收](Docs/M3D-EDIT-SCAN.md)。
 - **M3e 手动整理：完成本地验证。** 详情可把同类型作品手动合并、拆分或恢复自动分组；分组键持久化；编辑信息可搜索 TMDB 候选并一键填入标题/年份/简介/海报。记录：[M3e 手动整理验收](Docs/M3E-MANUAL.md)。
 - **M3f WebDAV 元数据：完成本地验证。** WebDAV 扫描下载 NFO，使用 movie/tvshow/单集 NFO 的标题/简介/海报；海报经 Basic Auth 下载并缓存，海报库不再依赖 TMDB。记录：[M3f WebDAV NFO 验收](Docs/M3F-WEBDAV-NFO.md)。
-- **尚未完成：** 最近添加/继续观看排序、类型/分辨率/观看状态筛选、防剧透、T07 扫描中播放/超时恢复、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
-- **下一项：** M3g：最近添加/继续观看排序、筛选与防剧透、T07 扫描中播放/超时恢复；完成后进入 M4 家庭设备与状态同步。
+- **M3g 媒体库排序/筛选：完成本地验证。** 标题/年份/最近添加/集数排序，电影/剧集筛选，搜索组合；`addedAt` 来自本地 mtime、WebDAV mtime、Jellyfin DateCreated。记录：[M3g 排序筛选验收](Docs/M3G-FILTERS.md)。
+- **尚未完成：** 防剧透、观看状态/分辨率筛选、继续观看排序、T07 扫描中播放/超时恢复、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
+- **下一项：** M3h：防剧透、观看状态/分辨率筛选、继续观看排序；或进入 M4 家庭设备与状态同步（M3 剩余项单列待办）。
 
 开发入口：
 
@@ -38,10 +39,11 @@ Scripts/run-editing-acceptance.sh   # 手动纠错持久化/清除
 Scripts/run-scan-stress.sh          # 10,000 条目扫描、取消与旧库保留
 Scripts/run-manual-merge.sh         # 手动合并/拆分与分组持久化
 Scripts/run-webdav-metadata.sh      # WebDAV NFO 与认证海报缓存
+Scripts/run-library-filters.sh      # 排序/类型筛选/搜索组合
 open build/OpenFuse.app
 ```
 
-当前分支 `m3f-webdav`（从 `m3e-manual` 拉出）。每个里程碑使用独立分支；M3g 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
+当前分支 `m3g-filters`（从 `m3f-webdav` 拉出）。每个里程碑使用独立分支；M3h 或 M4 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

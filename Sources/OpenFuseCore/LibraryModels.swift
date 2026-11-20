@@ -128,6 +128,7 @@ public struct ScannedWork: Sendable {
     public var sourceKind: String
     public var sourceID: String
     public var serverID: String?
+    public var addedAt: Date? = nil
     public var seasons: [ScannedSeason]
     public var movie: ScannedEpisode?
 }

@@ -95,6 +95,14 @@
 | WebDAV NFO | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 WebDAV 夹具含 movie/tvshow/集 NFO | Infuse 未安装，待采样 | 标题/年份/简介/单集标题来自 NFO；TMDB 不覆盖 | `reports/m3f-webdav-nfo.json`、Evidence 34–35 | 本地通过；真实 OpenList 待验证 |
 | 认证海报缓存 | 同上 | WebDAV poster.jpg | 待采样 | 带 Basic Auth 下载 2 张海报到 PosterCache，库中 `file:` 引用且文件存在 | 脚本断言、Evidence 34 | 本地通过 |
 
+### M3g 排序/筛选执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 类型筛选 | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 3 组（电影+2 剧） | Infuse 未安装，待采样 | 电影筛选只剩 1 部；报告 visible 一致 | `reports/m3g-filter-movies.json`、Evidence 36 | 本地通过 |
+| 集数排序 | 同上 | 同上 | 待采样 | 剧集按集数：《示例剧》2 集在《另一部剧》1 集前 | `reports/m3g-filter-series.json` | 本地通过 |
+| 搜索+排序 | 同上 | 同上 | 待采样 | 「示例」只剩《示例剧》 | `reports/m3g-filter-search.json` | 本地通过 |
+
 
 
 

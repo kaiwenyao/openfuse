@@ -86,10 +86,14 @@ def item(
     run_time: int | None = None,
     collection_type: str | None = None,
 ) -> dict:
+    created = {"movie-1": "2026-01-10T00:00:00Z", "series-1": "2026-02-10T00:00:00Z"}.get(
+        id, "2026-02-11T00:00:00Z"
+    )
     result = {
         "Id": id,
         "Name": name,
         "Type": type,
+        "DateCreated": created,
         "ImageTags": {"Primary": image_tag or id},
         "UserData": {
             "PlaybackPositionTicks": POSITIONS.get(id, 0),

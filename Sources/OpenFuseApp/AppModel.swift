@@ -12,6 +12,23 @@ enum AppRoute: Equatable {
     case library(LibraryWork)
 }
 
+enum LibrarySort: String, CaseIterable, Identifiable {
+    case title
+    case year
+    case added
+    case episodes
+
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .title: return "标题"
+        case .year: return "年份"
+        case .added: return "最近添加"
+        case .episodes: return "集数"
+        }
+    }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     static let shared = AppModel()
@@ -32,6 +49,8 @@ final class AppModel: ObservableObject {
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
     @Published var librarySearch = ""
+    @Published var librarySort: LibrarySort = .title
+    @Published var libraryKindFilter: LibraryKind?
     @Published var scanProgress = 0
     private var activeScanToken: ScanCancellationToken?
     private var activeScanTask: Task<Void, Never>?
@@ -626,6 +645,33 @@ final class AppModel: ObservableObject {
         }
     }
 
+    var visibleLibraryGroups: [LibraryGroup] {
+        var groups = libraryGroups
+        if let libraryKindFilter {
+            groups = groups.filter { $0.primary.kind == libraryKindFilter }
+        }
+        let query = librarySearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !query.isEmpty {
+            groups = groups.filter { group in
+                group.works.contains {
+                    $0.title.localizedCaseInsensitiveContains(query)
+                        || ($0.overview ?? "").localizedCaseInsensitiveContains(query)
+                }
+            }
+        }
+        switch librarySort {
+        case .title:
+            groups.sort { $0.primary.sortTitle.localizedStandardCompare($1.primary.sortTitle) == .orderedAscending }
+        case .year:
+            groups.sort { ($0.primary.year ?? 0) > ($1.primary.year ?? 0) }
+        case .added:
+            groups.sort { $0.primary.addedAt > $1.primary.addedAt }
+        case .episodes:
+            groups.sort { $0.primary.episodeCount > $1.primary.episodeCount }
+        }
+        return groups
+    }
+
     func group(for work: LibraryWork) -> LibraryGroup? {
         if let direct = libraryGroups.first(where: { $0.works.contains { $0.id == work.id } }) {
             return direct
@@ -790,6 +836,7 @@ final class AppModel: ObservableObject {
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
             "status": libraryStatus ?? "",
         ]
+        payload["visible"] = visibleLibraryGroups.map { $0.primary.title }
         payload["groups"] = libraryGroups.map { group -> [String: Any] in
             [
                 "key": group.key,
