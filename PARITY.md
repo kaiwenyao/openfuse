@@ -672,3 +672,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | iPhone CA 固定 | iPhone 18 Pro 模拟器／iOS 27.2 | HTTPS sync + CA in Documents | Infuse 未安装 | GET/POST 到达；resume 11.00s | Evidence 109、`reports/m4z-*` | 通过（模拟器） |
 | CA 导入 UI/公共 CA/并发 | 同上 | 生产同步 | 待采样 | 未测 | — | 待验证 |
+
+### M5ao >2GB SMB 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2.4GB seek | Mac M2 Pro／macOS 27.2.1 | 1800s/2.4GB over Samba | Infuse 未安装 | seek 1202.13/1800；RSS≈113MB | Evidence 110、`reports/m5ao-*` | 通过 |
+| >4GB/并发/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |

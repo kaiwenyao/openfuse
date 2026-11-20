@@ -9,16 +9,16 @@
 | M2 远程播放 | 部分完成：WebDAV(OpenList) + Jellyfin | Mac+iPhone 真实 OpenList；Mac Jellyfin 多用户进度/权限隔离；iPhone HLS 1080p。百度网盘、HTTPS/4K/UI 用户切换/并发未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3s | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07；本地/WebDAV/SMB 损坏签名过滤；多根；跨来源指纹去重；MKV/MP4 分辨率/HDR（尾部 moov）；iOS 运行期验证。碎片 MP4/性能、真实 OpenList、全文件哈希仍待。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M5ac | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；Trakt 自动轮询/历史；E-AC-3 5.1 PCM+stereo 验证；CoreAudio 设备选择。真实账号/自动同步、扬声器听测/热插拔未做。 |
-| M5 其余来源与高级播放 | 部分完成：M5a–M5an | Plex 全链路；Emby；Jellyfin+Emby 去重；SMB SMB3 签名加密/1.4GB seek；HDR10/EDR 直通。未公证/仅 arm64；SMB >2GB/DFS/域、HDR 测量、AirPlay 实机、CloudKit 未做。 |
+| M5 其余来源与高级播放 | 部分完成：M5a–M5ao | Plex 全链路；Emby；Jellyfin+Emby 去重；SMB SMB3/2.4GB seek；HDR10/EDR 直通。未公证/仅 arm64；SMB >4GB/DFS/域、HDR 测量、AirPlay 实机、CloudKit 未做。 |
 | M6 Vision Pro | 部分完成：M6a–M6c | `.full` 沉浸实际出画；星点环境、3D 播放/关闭球、进度条；窗口切换；自动关闭写回进度；空间音频 intended experience。真机手势/空间音频/HDR 待验证。 |
 
 ## 当前分支
 
-`m4z-ios-sync-https`（基于 M4y 提交）。M5ao/M6d 从该分支继续。
+`m5ao-samba-2gb`（基于 M4z 提交）。M5ap/M6d 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M5ao/M6d：SMB >2GB/DFS；CA 导入 UI、并发同步、CloudKit 真机；切换面板自动化；音频/HDR/visionOS。
+1. M5ap/M6d：SMB >4GB/并发/DFS；CA 导入 UI、同步并发、CloudKit 真机；切换面板自动化；音频/HDR/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

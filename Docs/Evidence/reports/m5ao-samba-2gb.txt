@@ -1,0 +1,15 @@
+OpenFuse M5ao >2GB SMB evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 1800s 1280x720 HEVC/E-AC-3, 2.4GB.
+
+Results:
+  Scan: 1 work, 720p version.
+  Play seek1200 -> position 1202.13/1800.
+  sourceKind smb, loopback URL.
+  RSS ~113MB; no whole-file cache.
+  Scripts/run-samba-2gb.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  >4GB, concurrent range/backpressure, DFS/domain, real NAS; audio.

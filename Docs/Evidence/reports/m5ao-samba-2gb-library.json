@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T12:14:40Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse 2gb",
+      "primary" : "OpenFuse 2GB",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-80c45347530c8e2c"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-80c45347530c8e2c-main",
+          "remotePath" : "\/OpenFuse.2GB.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse 2GB",
+          "versions" : [
+            {
+              "contentKey" : "85126a4acca336dae952425a2da87146",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-80c45347530c8e2c-main-v0",
+              "mediaSourceID" : "",
+              "name" : "720p · SMB",
+              "resolution" : "720p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-80c45347530c8e2c",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse 2GB",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse 2GB",
+          "versions" : [
+            "SMB · 720p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse 2gb",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse 2GB"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse 2GB"
+  ],
+  "works" : 1
+}
