@@ -113,7 +113,8 @@ final class MobileLibraryModel: ObservableObject {
         let preferredID = versions.first?.mediaSourceID
         let media = info.mediaSources.first(where: { $0.id == preferredID }) ?? info.mediaSources[0]
         let container = (media.container ?? "").lowercased()
-        let directContainer = ["mp4", "m4v", "mov"].contains(container)
+        let containers = Set(container.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) })
+        let directContainer = !containers.isDisjoint(with: ["mp4", "m4v", "mov"])
         let url: URL?
         var headers: [String: String] = [:]
         if directContainer,
@@ -555,7 +556,7 @@ final class MobileLibraryModel: ObservableObject {
         if item.httpHeaders.isEmpty {
             return (AVPlayer(url: item.url), nil)
         }
-        if item.url.path.contains(".m3u8") {
+        if item.url.scheme == "http" || item.url.scheme == "https" {
             let asset = AVURLAsset(
                 url: item.url,
                 options: ["AVURLAssetHTTPHeaderFieldsKey": item.httpHeaders]

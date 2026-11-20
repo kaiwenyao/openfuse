@@ -1,0 +1,21 @@
+OpenFuse M4v direct MP4 container/header evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; iPhone 18 Pro simulator iOS 27.2.
+Source: real Jellyfin 12 OpenFuse Jellyfin MP4; Mac sync record 11.06.
+
+Changes:
+  Jellyfin container field "mov,mp4,m4a,3gp,3g2,mj2" is now split on commas;
+  mobile recognizes direct MP4 instead of forcing HLS.
+  All http(s) media uses AVURLAssetHTTPHeaderFieldsKey for Authorization,
+  bypassing the custom loader for Jellyfin direct/HLS.
+
+Results:
+  iPhone resume report: position 11.064, resume 10.02.
+  Direct URL: /Videos/<id>/stream?Static=true&MediaSourceId=...&api_key=...
+  Video plays; HUD 12.8/20.1 at screenshot, embedded timecode 16.833.
+  Scripts/run-cross-device-sync.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Known issue:
+  Direct MP4 seek display: embedded timecode leads HUD by ~4s (HLS previously
+  led by ~7s). Resume state is correct; AVPlayer edit-list/PTS offset needs fix.

@@ -629,3 +629,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | Mac→iPhone | Mac M2 Pro／iPhone 18 Pro 模拟器 | 真实 Jellyfin MP4 | Infuse 未安装 | Mac 11.022s；iPhone resume 10.02s/HUD10.0 | Evidence 103、`reports/m4u-*` | 通过（LAN HTTP） |
 | TLS/鉴权/CloudKit/真机 | 同上 | 生产同步 | 待采样 | 未测 | — | 待验证 |
+
+### M4v Jellyfin MP4 直连执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| MP4 直连续播 | iPhone 18 Pro 模拟器／iOS 27.2 | 真实 Jellyfin MP4 | Infuse 未安装 | resume10.02s；直连 URL；出画 | Evidence 104、`reports/m4v-*` | 部分通过 |
+| 时间戳 | 同上 | 同上 | 待采样 | 画面16.833s/HUD12.8s（+4s） | Evidence 104 | 未通过 |

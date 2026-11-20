@@ -103,6 +103,11 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## Jellyfin MP4 直连（M4v）
+
+- container 按逗号拆分识别 mp4；http(s) 统一 AVURLAsset header。
+- 续播10.02s、出画；画面时间码比 HUD 快约4s，待修。
+
 ## HTTP 跨设备续播（M4u）
 
 - HTTPProgressTransport + OPENFUSE_SYNC_URL；Mac push，iPhone await sync→autoplay。
