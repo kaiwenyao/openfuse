@@ -540,3 +540,11 @@
 | Full immersion | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | 测试图 11:22 出画；星点/3D 控件/进度条 | Evidence 94、`reports/m6c-vision-environment.txt` | 通过（模拟器） |
 | 窗口/进度 | 同上 | 同上 | 待真机 | 沉浸关窗；autoclose 写回进度 | `reports/m6c-vision-playback.json` | 通过 |
 | 3D 点击/空间音频 | 同上 | 同上 | 待真机 | 代码已接，未自动化/未听测 | — | 待验证 |
+
+### M3s 远程损坏过滤执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 坏文件 | MacBook Pro M2 Pro／macOS 27.2.1 | Good MP4 + text MKV | Infuse 未安装 | 仅 Good Movie 入库 | `reports/m3s-webdav-corrupt.json` | 通过 |
+| SMB 坏文件 | 同上 | 同上 | 待采样 | 仅 Good Movie 入库 | `reports/m3s-smb-corrupt.json` | 通过 |
+| 真实服务器/截断文件 | 同上 | 真实文件 | 待采样 | 未测 | — | 待验证 |

@@ -1,0 +1,21 @@
+OpenFuse M3s remote corrupt filtering evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixtures: WebDAV/SMB each with Good.Movie.mp4 and Broken.Movie.mkv (plain text).
+
+Implementation:
+  MediaSignature validates container magic (EBML, ftyp, RIFF, TS sync).
+  WebDAV reads 64B Range; SMB reads min(64,size) bytes. Unknown extensions/
+  read failures are kept. SMB read now retries once after reconnect, which
+  also fixed signature reads after NFO/poster fetches.
+
+Results:
+  WebDAV: only Good Movie in library.
+  SMB: only Good Movie in library.
+  MediaSignatureTests pass; total 36/36.
+  Scripts/run-remote-corrupt-filter.sh PASS.
+  Five platforms/device/Mac build succeed.
+
+Not verified:
+  Mislabeled/truncated files with valid magic, network read failures (kept by
+  design), real servers; audio.

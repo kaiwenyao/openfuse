@@ -41,4 +41,4 @@ M6b 用 `.mixed` 时窗口挡住画面、VideoMaterial 黑屏。切换 `.full` �
 
 ## 下一项
 
-M6d：真机 3D 控件/空间音频/HDR；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+WebDAV/SMB 损坏签名过滤已在 [M3s 验收](Docs/M3S-REMOTE-CORRUPT.md) 完成。剩余 M6d/M5ai：真机 3D 控件/空间音频/HDR、碎片 MP4/SMB 性能、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

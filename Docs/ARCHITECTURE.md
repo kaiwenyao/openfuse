@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## 远程损坏签名过滤（M3s）
+
+- MediaSignature 64B 魔数；WebDAV Range/SMB read；未知/失败保留。
+- SMB read 重连重试，修复 NFO 后失败；实测两源仅保留 Good。
+- 截断/魔数正确损坏、真实服务器未验证。
+
 ## visionOS full immersion/3D 控件（M6c）
 
 - .full immersion；地板/边框/星点；VideoMaterial 实际出画。

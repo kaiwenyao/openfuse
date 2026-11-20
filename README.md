@@ -83,7 +83,8 @@
 - **M6a visionOS 沉浸：完成模拟器验证。** 新增 ImmersiveSpace + RealityKit VideoMaterial 空间屏幕、播放/拖动/关闭控件；显式多场景 Info.plist 修复系统拒绝。模拟器 Metal 不可用导致 VideoMaterial 黑屏，真机待验证。记录：[M6a 验收](Docs/M6A-VISION-IMMERSIVE.md)。
 - **M6b visionOS 控制：完成进度回写验证。** 沉浸屏幕支持拖动/缩放；autoclose=6 后 PlaybackStore 写入 7.517s，窗口显示「从 7 秒继续」。模拟器 Metal 仍黑屏，真机手势/空间音频待验证。记录：[M6b 验收](Docs/M6B-VISION-CONTROLS.md)。
 - **M6c visionOS full immersion：完成模拟器验证。** `.full` 沉浸实际渲染测试图（00:00:11:22，HEVC/E-AC-3 标识），星点环境 + 3D 播放/关闭球 + 进度条；打开沉浸关闭主窗口，退出重开。真机空间音频/手势待验证。记录：[M6c 验收](Docs/M6C-VISION-IMMERSION.md)。
-- **下一项：** M6d：真机 3D 控件/空间音频/HDR；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+- **M3s 远程损坏过滤：完成本地验证。** WebDAV/SMB 读 64B 容器签名，Broken.Movie 不再入库；SMB read 重连重试修复 NFO 后读失败。单测 36/36。记录：[M3s 验收](Docs/M3S-REMOTE-CORRUPT.md)。
+- **下一项：** M6d/M5ai：真机 3D 控件/空间音频/HDR；碎片 MP4/SMB 性能；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
 
 开发入口：
 
@@ -114,7 +115,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m6c-full-immersion`（基于 M6b 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m3s-remote-corrupt`（基于 M6c 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

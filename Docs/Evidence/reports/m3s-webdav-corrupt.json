@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T08:29:59Z",
+  "groups" : [
+    {
+      "key" : "movie|good movie",
+      "primary" : "Good Movie",
+      "sources" : [
+        "webdav"
+      ],
+      "workIDs" : [
+        "webdav-3d60e5b1fa2184ea"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "webdav-3d60e5b1fa2184ea-main",
+          "remotePath" : "Movie\/Good.Movie.mp4",
+          "season" : 0,
+          "sourceKind" : "webdav",
+          "title" : "Good Movie",
+          "versions" : [
+            {
+              "contentKey" : "9f999c7471948cc928d58046c3e688d0",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "webdav-3d60e5b1fa2184ea-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · WebDAV",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "webdav-3d60e5b1fa2184ea",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c8e376ed97ead924",
+      "sourceKind" : "webdav",
+      "title" : "Good Movie",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "Good Movie",
+          "versions" : [
+            "WebDAV · 1080p · WebDAV"
+          ]
+        }
+      ],
+      "key" : "movie|good movie",
+      "sources" : [
+        "webdav"
+      ],
+      "title" : "Good Movie"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "WebDAV WebDAV：1 个作品",
+  "visible" : [
+    "Good Movie"
+  ],
+  "works" : 1
+}

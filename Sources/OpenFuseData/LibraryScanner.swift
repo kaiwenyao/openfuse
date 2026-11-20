@@ -812,6 +812,10 @@ public enum LibraryScanner {
                     }
                 }
 
+                if let (header, _) = try? await client.fetch(path: entry.path, range: 0..<64),
+                   !MediaSignature.looksLikeVideo(name: entry.name, header: header) {
+                    continue
+                }
                 let probe = await probeRemoteHeight(entry.path)
                 let contentKey = await contentFingerprint(entry)
                 candidates.append(

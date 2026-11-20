@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T08:30:10Z",
+  "groups" : [
+    {
+      "key" : "movie|good movie",
+      "primary" : "Good Movie",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-74d79112061f06bf"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-74d79112061f06bf-main",
+          "remotePath" : "\/Movie\/Good.Movie.mp4",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "Good Movie",
+          "versions" : [
+            {
+              "contentKey" : "9f999c7471948cc928d58046c3e688d0",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-74d79112061f06bf-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · SMB",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-74d79112061f06bf",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "Good Movie",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "Good Movie",
+          "versions" : [
+            "SMB · 1080p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|good movie",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "Good Movie"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB SMB：1 个作品",
+  "visible" : [
+    "Good Movie"
+  ],
+  "works" : 1
+}

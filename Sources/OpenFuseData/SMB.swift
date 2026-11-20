@@ -218,6 +218,15 @@ public final class SMBClient: @unchecked Sendable {
     }
 
     public func read(path: String, offset: Int64, length: Int) throws -> Data {
+        do {
+            return try readOnce(path: path, offset: offset, length: length)
+        } catch {
+            reconnect()
+            return try readOnce(path: path, offset: offset, length: length)
+        }
+    }
+
+    private func readOnce(path: String, offset: Int64, length: Int) throws -> Data {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }
         let smbPath = Self.normalized(path)
@@ -489,6 +498,16 @@ public enum SMBLibraryScanner {
                     }
                 } else if let remote = posterByBase[lowerBase] ?? directoryPoster {
                     posterPath = cachePoster(remote) ?? posterPath
+                }
+                do {
+                    let signature = try client.read(
+                        path: entry.path, offset: 0, length: Int(min(64, entry.size))
+                    )
+                    if !MediaSignature.looksLikeVideo(name: entry.name, header: signature) {
+                        continue
+                    }
+                } catch {
+                    // Network/read failure: keep the file (unknown, not proven corrupt).
                 }
                 let header = videoInfo(entry)
                 candidates.append(
