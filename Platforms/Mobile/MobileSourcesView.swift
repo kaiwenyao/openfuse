@@ -82,7 +82,7 @@ struct MobileSourcesView: View {
                 }
 
                 Section("说明") {
-                    Text("凭据存入 iOS Keychain；密码/token 不写入 sources.json。WebDAV MP4/MOV 可通过认证资源加载器远程播放；Jellyfin 远程播放与 MKV 仍需转码/代理。")
+                    Text("凭据存入 iOS Keychain；密码/token 不写入 sources.json。WebDAV MP4/MOV 走认证资源加载器；Jellyfin MP4 直连，MKV 走服务器 HLS 转码 URL。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

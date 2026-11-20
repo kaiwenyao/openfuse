@@ -25,7 +25,8 @@
 - **M4c iPad 分栏与 tvOS/visionOS：构建完成，运行待验证。** iPad 常规宽度使用 NavigationSplitView 侧栏+详情；Apple TV 焦点卡片与 AVPlayer；Vision Pro 分栏/详情/播放。三端与 iPhone 共享 `MobileLibraryModel`/示例 MP4；iOS Simulator/device、tvOS Simulator、visionOS Simulator 均构建成功。无 runtime，UI/遥控/手势/空间布局待验证。记录：[M4c 平台验收](Docs/M4C-PLATFORMS.md)。
 - **M4d 认证远程播放：完成本地验证。** `AuthenticatedAssetLoader` 为 AVPlayer 注入 WebDAV Basic/Jellyfin Token 头并处理 Range；移动端 WebDAV MP4/MOV 可远程播放与续播。实测 AVAsset 20s/1280×720、AVPlayer 4 秒推进 3.598s，错误密码失败。记录：[M4d 认证播放验收](Docs/M4D-AUTH-PLAYBACK.md)。
 - **M4e Jellyfin 移动远程：完成同链路验证。** 详情调用 PlaybackInfo/MediaSource，生成带 api_key 的直连 URL，经认证 loader 交给 AVPlayer；夹具 MP4 实测 20s/1280×720、6 秒推进 5.866s。MKV 仍需转码/libmpv。记录：[M4e Jellyfin 移动端验收](Docs/M4E-JELLYFIN-MOBILE.md)。
-- **下一项：** M4f：Jellyfin HLS 转码/MKV、字幕/音轨、runtime 完成后三端截图、tvOS/visionOS 远程来源、CloudKit/Trakt。M3 剩余 T07 深入与画质元数据补全。
+- **M4f Jellyfin HLS：完成同链路验证。** 非 MP4 容器走 `master.m3u8` H.264/AAC/TS 转码 URL；同源 MKV 夹具经 HLS 在 AVPlayer 播放 60s，6 秒到 5.954s。真实 Jellyfin 参数待验证。记录：[M4f HLS 验收](Docs/M4F-HLS.md)。
+- **下一项：** M4g：真实 Jellyfin HLS/PlaybackInfo 参数、字幕/音轨、runtime 完成后三端截图、tvOS/visionOS 远程来源、CloudKit/Trakt。M3 剩余 T07 深入与画质元数据补全。
 
 开发入口：
 
@@ -50,10 +51,11 @@ Scripts/build-ios.sh                # iPhone/iPad（XcodeGen + xcodebuild）
 Scripts/build-platforms.sh          # iOS/iPadOS + tvOS + visionOS 构建
 Scripts/test-auth-asset.sh          # WebDAV Basic Auth 远程 MP4 加载/播放
 Scripts/test-jellyfin-mobile.sh     # Jellyfin 认证/PlaybackInfo/token AVPlayer
+Scripts/test-jellyfin-hls.sh        # Jellyfin HLS 转码（MKV 源）
 open build/OpenFuse.app
 ```
 
-当前分支 `m4e-jellyfin`（基于 M4d 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4f-hls`（基于 M4e 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

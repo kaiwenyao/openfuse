@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## Jellyfin HLS 转码（M4f）
+
+- `JellyfinClient.hlsURL`：构造 `master.m3u8` + H.264/AAC/TS + api_key/DeviceId。
+- 移动端选择：MP4/MOV 直连 + 认证 loader；其他容器走 HLS；续播键统一。
+- 夹具从 MKV 预生成 HLS（ffmpeg），Jellyfin 夹具提供带 token 播放列表与无 token 分片；AVPlayer 60s/5.954s 实测。
+- 真实 Jellyfin 转码 profile/HTTPS/PlaySessionId 与字幕/音轨未验证。
+
 ## Jellyfin 移动端远程播放（M4e）
 
 - `MobileLibraryModel.remotePlaybackItem`：Keychain token → PlaybackInfo → 优先匹配版本 mediaSourceID → streamURL + api_key → `jellyfin://source/item/mediaSource` 续播键；loader 带 `X-Emby-Token`/MediaBrowser Authorization。

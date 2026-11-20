@@ -48,4 +48,4 @@ PASS: Jellyfin auth/PlaybackInfo/token URL/loader/AVPlayer remote playback
 
 ## 下一项
 
-M4f：Jellyfin HLS 转码/MKV、字幕/音轨、三端 runtime 启动截图、tvOS/visionOS 远程来源、CloudKit/Trakt；M3 T07/画质元数据。
+Jellyfin HLS 转码已在 [M4f HLS 验收](M4F-HLS.md) 完成（MKV 源经 HLS，AVPlayer 6s 5.954s）。剩余 M4g：真实 Jellyfin 转码参数、字幕/音轨、runtime 后三端截图、tvOS/visionOS 远程来源、CloudKit/Trakt。

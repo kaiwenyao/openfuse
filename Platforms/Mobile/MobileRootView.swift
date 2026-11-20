@@ -211,7 +211,7 @@ struct MobileRootView: View {
             Text("移动端首版")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("AVPlayer · 本地 MP4/MOV · WebDAV 认证 MP4 远程播放 · Jellyfin/MKV/字幕待接入")
+            Text("AVPlayer · 本地 MP4/MOV · WebDAV 认证 MP4 · Jellyfin HLS 转码 · 字幕/音轨待接入")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -357,7 +357,7 @@ struct MobileDetailView: View {
                                     if let item = await model.remotePlaybackItem(for: currentWork) {
                                         selectedItem = item
                                     } else {
-                                        remoteError = "Jellyfin 未返回可播放流；MKV/HEVC 需要转码或 libmpv。"
+                                        remoteError = "Jellyfin 未返回可播放流；检查服务器 HLS 转码或 libmpv。"
                                     }
                                     isLoadingRemote = false
                                 }

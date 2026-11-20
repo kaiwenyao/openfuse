@@ -98,12 +98,26 @@ final class MobileLibraryModel: ObservableObject {
         let versions = (try? libraryStore.versions(itemID: episode.id)) ?? []
         let preferredID = versions.first?.mediaSourceID
         let media = info.mediaSources.first(where: { $0.id == preferredID }) ?? info.mediaSources[0]
-        guard let stream = client.streamURL(itemID: itemID, mediaSource: media) else { return nil }
-        var components = URLComponents(url: stream, resolvingAgainstBaseURL: false)
-        var query = components?.queryItems ?? []
-        query.append(URLQueryItem(name: "api_key", value: token))
-        components?.queryItems = query
-        guard let url = components?.url else { return nil }
+        let container = (media.container ?? "").lowercased()
+        let directContainer = ["mp4", "m4v", "mov"].contains(container)
+        let url: URL?
+        var headers: [String: String] = [:]
+        if directContainer,
+           let stream = client.streamURL(itemID: itemID, mediaSource: media),
+           var components = URLComponents(url: stream, resolvingAgainstBaseURL: false) {
+            var query = components.queryItems ?? []
+            query.append(URLQueryItem(name: "api_key", value: token))
+            components.queryItems = query
+            url = components.url
+            headers = [
+                "X-Emby-Token": token,
+                "Authorization": "MediaBrowser Token=\"\(token)\"",
+            ]
+        } else {
+            url = client.hlsURL(itemID: itemID, mediaSourceID: media.id, token: token)
+                ?? client.streamURL(itemID: itemID, mediaSource: media)
+        }
+        guard let url else { return nil }
         let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
         let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
         let record = playbackStore.record(forPath: key)
@@ -117,10 +131,7 @@ final class MobileLibraryModel: ObservableObject {
             sourceID: source.id,
             remotePath: "\(itemID)|\(media.id)",
             remoteURL: url.absoluteString,
-            httpHeaders: [
-                "X-Emby-Token": token,
-                "Authorization": "MediaBrowser Token=\"\(token)\"",
-            ]
+            httpHeaders: headers
         )
     }
 

@@ -1,0 +1,21 @@
+OpenFuse M4f Jellyfin HLS transcode evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Server: Tools/jellyfin_fixture.py --port 8117 (test/test)
+Source: Fixtures/generated/openfuse-fixture.mkv (HEVC Main 10/E-AC-3, 60s)
+HLS: ffmpeg H.264/AAC VOD from the same MKV, build/hls-fixture
+
+Command:
+  Scripts/test-jellyfin-hls.sh
+
+Results:
+  Jellyfin auth + PlaybackInfo + master.m3u8 URL (H.264/AAC/TS/HLS, api_key)
+  AVPlayer HLS: duration 60.0s, position 5.954s after 6s, no error
+  swift test: 25/25
+  iOS/iPadOS, tvOS, visionOS generic simulator builds: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+
+Not verified:
+  Mobile UI/runtime not installed; actual device HLS playback not run.
+  Real Jellyfin transcode profile/HTTPS/reverse proxy not verified.
+  Subtitles/audio tracks not yet mapped.

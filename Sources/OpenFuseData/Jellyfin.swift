@@ -446,6 +446,21 @@ public actor JellyfinClient {
         return components.url
     }
 
+    public nonisolated func hlsURL(itemID: String, mediaSourceID: String, token: String) -> URL? {
+        var components = URLComponents(url: url(path: "Videos/\(itemID)/master.m3u8"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [
+            URLQueryItem(name: "MediaSourceId", value: mediaSourceID),
+            URLQueryItem(name: "VideoCodec", value: "h264"),
+            URLQueryItem(name: "AudioCodec", value: "aac"),
+            URLQueryItem(name: "TranscodingContainer", value: "ts"),
+            URLQueryItem(name: "TranscodingProtocol", value: "hls"),
+            URLQueryItem(name: "SegmentContainer", value: "ts"),
+            URLQueryItem(name: "DeviceId", value: source.deviceID),
+            URLQueryItem(name: "api_key", value: token),
+        ]
+        return components?.url
+    }
+
     public nonisolated func imageURL(itemID: String, tag: String?, maxWidth: Int = 480) -> URL? {
         var components = URLComponents(url: url(path: "Items/\(itemID)/Images/Primary"), resolvingAgainstBaseURL: false)
         var query = [

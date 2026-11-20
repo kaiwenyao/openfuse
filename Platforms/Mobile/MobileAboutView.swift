@@ -16,7 +16,7 @@ struct MobileAboutView: View {
                 Section("媒体库") {
                     LabeledContent("来源", value: "本地导入 + 内置示例 + 服务器扫描")
                     LabeledContent("WebDAV 远程", value: "MP4/MOV + Basic Auth 可播")
-                    LabeledContent("Jellyfin 远程", value: "转码/代理待接入")
+                    LabeledContent("Jellyfin 远程", value: "MP4 直连 / MKV HLS 转码")
                 }
                 Section("关于") {
                     LabeledContent("版本", value: "0.4.0-mobile")

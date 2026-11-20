@@ -153,6 +153,14 @@
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | Simulator/device 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 | MKV/字幕/音轨 | 同上 | 现有 MKV 夹具 | 待采样 | 未接转码/libmpv/字幕/音轨 | — | 待验证/未完成 |
 
+### M4f Jellyfin HLS 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| MKV→HLS 播放 | MacBook Pro M2 Pro／macOS 27.2.1 | 同源 MKV 60s（HEVC/E-AC-3）→ H.264/AAC TS | Infuse 未安装 | Jellyfin HLS URL；AVPlayer 6s 到 5.954s，duration 60 | `reports/m4f-hls.json`、`m4f-hls.txt` | 通过（夹具转码） |
+| 真实 Jellyfin 转码 | 同上 | 本地 Jellyfin 尚未配置 | 待采样 | 构造 URL 未在真实服务器验证 | — | 待验证 |
+| 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
+
 
 
 

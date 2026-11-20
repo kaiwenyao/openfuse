@@ -43,6 +43,7 @@ POSITIONS: dict[str, int] = {}
 RUN_TIME_TICKS = 600_000_000
 MOBILE_SAMPLE = False
 MOBILE_MP4 = os.path.abspath("Fixtures/mobile/openfuse-mobile.mp4")
+HLS_DIR = os.path.abspath("build/hls-fixture")
 
 
 def setup_posters() -> None:
@@ -337,7 +338,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/System/Info/Public":
             self._json({"ServerName": "OpenFuse Fixture", "Version": "10.10.0", "Id": "fixture-server"})
             return
+        if path.startswith("/Videos/movie-1/hls/") or path.startswith("/Videos/movie-mobile/hls/"):
+            self._serve_hls_segment(os.path.basename(path))
+            return
         if not self._require_auth():
+            return
+        if path.endswith("/master.m3u8") and path.startswith("/Videos/"):
+            self._serve_hls_playlist()
             return
         if path.startswith("/Items/") and path.endswith("/Images/Primary"):
             item_id = path.split("/")[2]
@@ -440,6 +447,43 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_HEAD(self) -> None:
         self.do_GET()
+
+    def _serve_hls_playlist(self) -> None:
+        playlist = os.path.join(HLS_DIR, "index.m3u8")
+        if not os.path.exists(playlist):
+            self._empty(404)
+            return
+        with open(playlist, "r", encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+        rewritten = []
+        for line in lines:
+            if line.startswith("#") or not line.strip():
+                rewritten.append(line)
+            else:
+                rewritten.append("hls/" + os.path.basename(line))
+        body = "\n".join(rewritten).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.apple.mpegurl")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+        self._record(200, {"hls": "playlist"})
+
+    def _serve_hls_segment(self, name: str) -> None:
+        path = os.path.join(HLS_DIR, name)
+        if not os.path.exists(path):
+            self._empty(404)
+            return
+        with open(path, "rb") as handle:
+            data = handle.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "video/mp2t")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(data)
+        self._record(200, {"hls": name, "bytes": len(data)})
 
     def _serve_stream(self, item_id: str) -> None:
         path = MOBILE_MP4 if item_id == "movie-mobile" else FIXTURE

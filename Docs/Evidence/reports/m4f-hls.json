@@ -1,0 +1,8 @@
+{
+  "duration" : 60,
+  "error" : "",
+  "position" : 5.9810374590000004,
+  "status" : 1,
+  "url" : "http:\/\/127.0.0.1:8117\/Videos\/movie-1\/master.m3u8?MediaSourceId=ms-movie-1080&VideoCodec=h264&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=hls&SegmentContainer=ts&DeviceId=openfuse-e88c5f064ad9444f&api_key=jf-test-token",
+  "videoTracks" : 0
+}

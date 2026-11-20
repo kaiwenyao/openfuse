@@ -306,6 +306,50 @@ case "jellyfin-remote":
     }
     RunLoop.main.run(until: Date().addingTimeInterval(12))
     exit(1)
+case "jellyfin-hls":
+    let base = URL(string: arguments[2])!
+    let user = arguments[3]
+    let password = arguments[4]
+    let itemID = arguments[5]
+    let source = JellyfinSource(name: "fixture", baseURL: base, username: user)
+    Task { @MainActor in
+        var payload: [String: Any] = [:]
+        do {
+            let session = try await JellyfinClient.authenticate(source: source, password: password)
+            var authenticated = source
+            authenticated.userID = session.userID
+            authenticated.serverID = session.serverID
+            let client = JellyfinClient(source: authenticated, token: session.accessToken)
+            let info = try await client.playbackInfo(itemID: itemID)
+            guard let media = info.mediaSources.first,
+                  let url = client.hlsURL(itemID: itemID, mediaSourceID: media.id, token: session.accessToken) else {
+                throw NSError(domain: "probe", code: 1, userInfo: [NSLocalizedDescriptionKey: "no hls url"])
+            }
+            let asset = AVURLAsset(url: url)
+            let duration = try await asset.load(.duration)
+            let tracks = try await asset.loadTracks(withMediaType: .video)
+            let item = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: item)
+            player.play()
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            payload = [
+                "duration": duration.seconds,
+                "videoTracks": tracks.count,
+                "position": player.currentTime().seconds.isFinite ? player.currentTime().seconds : 0,
+                "status": item.status.rawValue,
+                "error": item.error?.localizedDescription ?? "",
+                "url": url.absoluteString,
+            ]
+            player.pause()
+        } catch {
+            payload = ["error": error.localizedDescription]
+        }
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        print(String(data: data, encoding: .utf8)!)
+        exit(0)
+    }
+    RunLoop.main.run(until: Date().addingTimeInterval(12))
+    exit(1)
 case "jellyfin":
     let base = arguments[2]
     let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"
