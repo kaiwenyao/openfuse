@@ -211,7 +211,7 @@ struct MobileRootView: View {
             Text("移动端首版")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("AVPlayer · 本地 MP4/MOV · Jellyfin/WebDAV 可扫描 · 远程播放/MKV/字幕待接入")
+            Text("AVPlayer · 本地 MP4/MOV · WebDAV 认证 MP4 远程播放 · Jellyfin/MKV/字幕待接入")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -348,7 +348,7 @@ struct MobileDetailView: View {
                             }
                             .buttonStyle(.plain)
                         } else if currentWork.sourceKind != "local" {
-                            Text("服务器来源已入库；移动端远程播放需要转码/鉴权代理，待接入。")
+                            Text("Jellyfin 远程播放需转码/代理；WebDAV 仅 MP4/MOV 可播，MKV 待 libmpv。")
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                         } else {

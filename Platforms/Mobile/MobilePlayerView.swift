@@ -10,6 +10,7 @@ struct MobilePlayerView: View {
     let item: MobilePlaybackItem
 
     @State private var player: AVPlayer?
+    @State private var resourceLoader: AuthenticatedAssetLoader?
     @State private var timeObserver: Any?
     @State private var lastPosition: TimeInterval = 0
     @State private var duration: TimeInterval = 0
@@ -51,6 +52,7 @@ struct MobilePlayerView: View {
                 player.removeTimeObserver(timeObserver)
             }
             timeObserver = nil
+            resourceLoader = nil
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { saveProgress() }
@@ -66,8 +68,9 @@ struct MobilePlayerView: View {
             errorText = "音频会话失败：\(error.localizedDescription)"
         }
 
-        let player = AVPlayer(url: item.url)
+        let (player, loader) = model.makePlayer(for: item)
         self.player = player
+        self.resourceLoader = loader
         duration = 0
         lastPosition = 0
         timeObserver = player.addPeriodicTimeObserver(

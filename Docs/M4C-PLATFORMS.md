@@ -44,4 +44,4 @@ build/vision-derived/Build/Products/Debug-xrsimulator/OpenFuse.app
 
 ## 下一项
 
-M4d：runtime 完成后实际启动三端并截图；远程播放代理/转码；MKV/字幕/音轨；tvOS/visionOS 来源与焦点细节；CloudKit/Trakt 同步。
+认证 WebDAV 远程播放已完成，见 [M4d 认证播放验收](M4D-AUTH-PLAYBACK.md)。剩余 M4e：Jellyfin 远程/HLS、MKV/libmpv、字幕/音轨、runtime 后三端启动截图、tvOS/visionOS 来源/焦点、CloudKit/Trakt。

@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 认证资源加载与移动端远程播放（M4d）
+
+- `AuthenticatedAssetLoader`（OpenFuseData）：`openfuse-auth://` 自定义 scheme + AVAssetResourceLoader；HEAD 取长度/类型/Accept-Ranges，GET 带 Range 与 Authorization/X-Emby-Token，处理 206/200、偏移与取消。
+- 移动端 WebDAV 条目：Keychain 取密码，构造 Basic 头与 `webdav://source/path` 续播键；`makePlayer` 用 loader 创建 AVPlayerItem。本地文件仍直接 AVPlayer。
+- 桌面 probe 实测 AVAsset 20s/1280×720、AVPlayer 3.6s；错误密码失败。
+- 未做：Jellyfin 远程/HLS、MKV/libmpv、字幕/音轨、移动 runtime 实机验证。
+
 ## iPad 分栏与 tvOS/visionOS（M4c）
 
 - iPad 常规宽度：`NavigationSplitView`（侧栏媒体库列表 + 详情），iPhone compact 仍 NavigationStack。

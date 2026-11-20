@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import OpenFuseData
 
@@ -12,6 +13,7 @@ struct MobilePlaybackItem: Identifiable, Hashable {
     var sourceID: String
     var remotePath: String?
     var remoteURL: String?
+    var httpHeaders: [String: String] = [:]
 }
 
 @MainActor
@@ -96,29 +98,48 @@ final class MobileLibraryModel: ObservableObject {
 
     func playbackItem(work: LibraryWork, episode: LibraryEpisode) -> MobilePlaybackItem? {
         let versions = (try? libraryStore.versions(itemID: episode.id)) ?? []
-        let url: URL?
         if let file = versions.first?.fileURL ?? episode.fileURL {
-            url = URL(fileURLWithPath: file)
-        } else if let remote = episode.remotePath, episode.sourceKind == "webdav" {
-            url = nil // WebDAV mobile sources arrive with the source picker milestone.
-        } else {
-            url = nil
+            let url = URL(fileURLWithPath: file)
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            let fingerprint = (try? MediaFingerprint(url: url))
+                ?? MediaFingerprint(path: url.path, fileSize: 0, modifiedAt: nil)
+            let record = playbackStore.record(forPath: fingerprint.resumeKey)
+            return MobilePlaybackItem(
+                url: url,
+                title: work.title,
+                subtitle: episode.episodeLabel,
+                fingerprint: fingerprint,
+                resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
+                sourceKind: work.sourceKind,
+                sourceID: work.sourceID,
+                remotePath: episode.remotePath,
+                remoteURL: nil
+            )
         }
-        guard let url, FileManager.default.fileExists(atPath: url.path) else { return nil }
-        let fingerprint = (try? MediaFingerprint(url: url))
-            ?? MediaFingerprint(path: url.path, fileSize: 0, modifiedAt: nil)
-        let record = playbackStore.record(forPath: fingerprint.resumeKey)
-        return MobilePlaybackItem(
-            url: url,
-            title: work.title,
-            subtitle: episode.episodeLabel,
-            fingerprint: fingerprint,
-            resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
-            sourceKind: work.sourceKind,
-            sourceID: work.sourceID,
-            remotePath: episode.remotePath,
-            remoteURL: nil
-        )
+        if episode.sourceKind == "webdav",
+           let path = episode.remotePath,
+           let source = webdavSources.first(where: { $0.id == work.sourceID }),
+           let password = CredentialStore.load(account: source.id) {
+            let client = WebDAVClient(source: source, password: password)
+            let url = client.url(for: path)
+            let key = "webdav://\(source.id)/\(path)"
+            let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
+            let record = playbackStore.record(forPath: key)
+            let credential = Data("\(source.username):\(password)".utf8).base64EncodedString()
+            return MobilePlaybackItem(
+                url: url,
+                title: work.title,
+                subtitle: episode.episodeLabel,
+                fingerprint: fingerprint,
+                resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
+                sourceKind: "webdav",
+                sourceID: source.id,
+                remotePath: path,
+                remoteURL: url.absoluteString,
+                httpHeaders: ["Authorization": "Basic \(credential)"]
+            )
+        }
+        return nil
     }
 
     func recordProgress(item: MobilePlaybackItem, duration: TimeInterval, position: TimeInterval, finished: Bool? = nil) {
@@ -300,6 +321,15 @@ final class MobileLibraryModel: ObservableObject {
         } catch {
             status = "示例入库失败：\(error.localizedDescription)"
         }
+    }
+
+    func makePlayer(for item: MobilePlaybackItem) -> (AVPlayer, AuthenticatedAssetLoader?) {
+        if item.httpHeaders.isEmpty {
+            return (AVPlayer(url: item.url), nil)
+        }
+        let loader = AuthenticatedAssetLoader(url: item.url, headers: item.httpHeaders)
+        let asset = loader.makeAsset()
+        return (AVPlayer(playerItem: AVPlayerItem(asset: asset)), loader)
     }
 
     private func sourceRank(_ kind: String) -> Int {

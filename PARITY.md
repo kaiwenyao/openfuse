@@ -136,6 +136,15 @@
 | tvOS | 同上 | 示例 MP4 | 待采样 | 焦点网格 + AVPlayer；BUILD SUCCEEDED | 同上 | 构建通过；焦点/播放待真机或 runtime |
 | visionOS | 同上 | 示例 MP4 | 待采样 | NavigationSplitView + 播放 sheet；BUILD SUCCEEDED | 同上 | 构建通过；空间布局待 runtime |
 
+### M4d 认证远程播放执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 认证加载 | MacBook Pro M2 Pro／macOS 27.2.1 | Basic Auth WebDAV + 20s MP4 | Infuse 未安装 | AVAsset 20.0s、1 视频轨、1280×720 | `reports/m4d-auth-asset.json` | 通过 |
+| AVPlayer 实际播放 | 同上 | 同上 | 待采样 | 4 秒后 position 3.598s，无错误 | `reports/m4d-auth-play.json` | 通过（桌面 AVPlayer；移动端同链路待 runtime） |
+| 错误密码 | 同上 | 同上 | — | asset load 报错 | 测试脚本 | 通过 |
+| 移动端 UI/播放 | 同上 | iOS/tvOS/visionOS | 待采样 | Simulator/device 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
+
 
 
 

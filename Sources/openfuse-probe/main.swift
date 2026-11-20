@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import AVFoundation
 import Foundation
 import OpenFuseCore
 import QuartzCore
@@ -191,6 +192,63 @@ case "tmdb":
     }
     semaphore.wait()
     exit(0)
+case "authed-asset":
+    let url = URL(string: arguments[2])!
+    let user = arguments.count > 3 ? arguments[3] : ""
+    let password = arguments.count > 4 ? arguments[4] : ""
+    let credential = Data("\(user):\(password)".utf8).base64EncodedString()
+    let loader = AuthenticatedAssetLoader(
+        url: url,
+        headers: ["Authorization": "Basic \(credential)"]
+    )
+    let asset = loader.makeAsset()
+    let semaphore = DispatchSemaphore(value: 0)
+    Task {
+        var payload: [String: Any] = ["url": url.absoluteString]
+        do {
+            let duration = try await asset.load(.duration)
+            payload["duration"] = duration.seconds
+            let tracks = try await asset.loadTracks(withMediaType: .video)
+            payload["videoTracks"] = tracks.count
+            if let track = tracks.first {
+                let size = try await track.load(.naturalSize)
+                payload["width"] = Int(size.width)
+                payload["height"] = Int(size.height)
+            }
+        } catch {
+            payload["error"] = error.localizedDescription
+        }
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        print(String(data: data, encoding: .utf8)!)
+        semaphore.signal()
+    }
+    semaphore.wait()
+    exit(0)
+case "authed-play":
+    let url = URL(string: arguments[2])!
+    let user = arguments.count > 3 ? arguments[3] : ""
+    let password = arguments.count > 4 ? arguments[4] : ""
+    let credential = Data("\(user):\(password)".utf8).base64EncodedString()
+    let loader = AuthenticatedAssetLoader(
+        url: url,
+        headers: ["Authorization": "Basic \(credential)"]
+    )
+    let asset = loader.makeAsset()
+    let item = AVPlayerItem(asset: asset)
+    let player = AVPlayer(playerItem: item)
+    player.play()
+    RunLoop.main.run(until: Date().addingTimeInterval(4))
+    let seconds = player.currentTime().seconds
+    let payload: [String: Any] = [
+        "position": seconds.isFinite ? seconds : 0,
+        "status": item.status.rawValue,
+        "error": item.error?.localizedDescription ?? "",
+    ]
+    let data = try! JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+    print(String(data: data, encoding: .utf8)!)
+    player.pause()
+    _ = loader
+    exit(seconds > 0.3 ? 0 : 1)
 case "jellyfin":
     let base = arguments[2]
     let user = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? "test"

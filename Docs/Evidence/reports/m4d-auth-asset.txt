@@ -1,0 +1,20 @@
+OpenFuse M4d authenticated WebDAV playback evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Server: Tools/webdav_fixture.py --root build/auth-asset-root --port 8115
+Asset: Fixtures/mobile/openfuse-mobile.mp4 (H.264/AAC, 20s, 1280x720)
+
+Command:
+  Scripts/test-auth-asset.sh
+
+Results:
+  authed-asset (AVAsset load): duration 20.0, videoTracks 1, 1280x720
+  authed-play (AVPlayer): position 3.5977s after 4s, item status ready, no error
+  wrong password: asset load error
+  swift test: 25/25
+  iOS/iPadOS, tvOS, visionOS generic simulator builds: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+
+Not verified:
+  No installed iOS/tvOS/visionOS runtime; mobile UI/touch/focus/space playback not run.
+  Jellyfin remote playback, MKV, subtitles/audio tracks remain pending.

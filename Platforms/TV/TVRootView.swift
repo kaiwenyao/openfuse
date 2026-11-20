@@ -98,6 +98,7 @@ private struct TVPlayerView: View {
     @Environment(\.dismiss) private var dismiss
     let item: MobilePlaybackItem
     @State private var player: AVPlayer?
+    @State private var resourceLoader: AuthenticatedAssetLoader?
     @State private var observer: Any?
     @State private var duration: TimeInterval = 0
 
@@ -116,8 +117,9 @@ private struct TVPlayerView: View {
             .padding(30)
         }
         .onAppear {
-            let player = AVPlayer(url: item.url)
+            let (player, loader) = model.makePlayer(for: item)
             self.player = player
+            self.resourceLoader = loader
             observer = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 600), queue: .main) { time in
                 if time.seconds.isFinite, time.seconds > 0 { duration = max(duration, time.seconds) }
             }
@@ -141,6 +143,7 @@ private struct TVPlayerView: View {
                 player.pause()
                 if let observer { player.removeTimeObserver(observer) }
             }
+            resourceLoader = nil
         }
     }
 }
