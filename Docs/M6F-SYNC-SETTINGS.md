@@ -38,4 +38,4 @@
 
 ## 下一项
 
-M6g/M5at：物理5.1/HDMI；HDR测量；>64/长稳/DFS；CloudKit/visionOS。
+iPhone 同步设置持久化已在 [M6g 验收](Docs/M6G-IOS-SYNC-SETTINGS.md) 完成。剩余 M6h/M5au：物理5.1/HDMI、HDR测量、小时级/DFS、CloudKit/visionOS。

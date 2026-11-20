@@ -26,6 +26,10 @@ final class MobileLibraryModel: ObservableObject {
     @Published var recent: [PlaybackRecord] = []
     @Published var status: String?
     @Published var syncStatus: String?
+    @Published var syncURLText = ""
+    @Published var syncTokenInput = ""
+    @Published var syncCAPath: String?
+    @Published var syncBusy = false
     @Published var isWorking = false
     @Published var webdavSources: [WebDAVSource] = []
     @Published var jellyfinSources: [JellyfinSource] = []
@@ -41,11 +45,18 @@ final class MobileLibraryModel: ObservableObject {
     private var ephemeralTokens: [String: String] = [:]
     private var lastSyncAt = Date.distantPast
     private var syncURL: URL? {
-        guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"] else { return nil }
-        return URL(string: raw)
+        if let raw = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"],
+           let url = URL(string: raw) { return url }
+        return URL(string: UserDefaults.standard.string(forKey: "openfuse.sync.url") ?? "")
     }
     private var syncToken: String? {
-        ProcessInfo.processInfo.environment["OPENFUSE_SYNC_TOKEN"]
+        if let token = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_TOKEN"], !token.isEmpty {
+            return token
+        }
+        return CredentialStore.load(account: "sync-token", service: "com.openfuse.sync")
+    }
+    private var effectiveSyncCAPath: String? {
+        ProcessInfo.processInfo.environment["OPENFUSE_SYNC_CA"] ?? syncCAPath
     }
 
     init() {
@@ -62,6 +73,10 @@ final class MobileLibraryModel: ObservableObject {
         }
         webdavSources = sourceStore.sources
         jellyfinSources = jellyfinStore.sources
+        syncURLText = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"]
+            ?? UserDefaults.standard.string(forKey: "openfuse.sync.url")
+            ?? ""
+        syncCAPath = UserDefaults.standard.string(forKey: "openfuse.sync.ca")
         seedBundledSampleIfNeeded()
         reload()
         Task { await syncProgress(force: true) }
@@ -335,24 +350,71 @@ final class MobileLibraryModel: ObservableObject {
         Task { await syncProgress(force: true) }
     }
 
-    func syncProgress(force: Bool = false) async {
-        guard let syncURL else { return }
-        if !force, Date().timeIntervalSince(lastSyncAt) < 5 { return }
-        lastSyncAt = Date()
+    @discardableResult
+    func saveSyncSettings(urlText: String, token: String, caURL: URL?) -> Bool {
+        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            syncStatus = "同步地址需要 http:// 或 https://"
+            return false
+        }
+        let defaults = UserDefaults.standard
+        defaults.set(url.absoluteString, forKey: "openfuse.sync.url")
+        syncURLText = url.absoluteString
+        if let caURL {
+            let accessing = caURL.startAccessingSecurityScopedResource()
+            defer { if accessing { caURL.stopAccessingSecurityScopedResource() } }
+            let target = supportDirectory.appendingPathComponent("sync-ca.pem")
+            do {
+                try Data(contentsOf: caURL).write(to: target, options: .atomic)
+                syncCAPath = target.path
+                defaults.set(target.path, forKey: "openfuse.sync.ca")
+            } catch {
+                syncStatus = "CA 导入失败：\(error.localizedDescription)"
+                return false
+            }
+        }
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            try? CredentialStore.save(password: trimmed, account: "sync-token", service: "com.openfuse.sync")
+        }
+        syncTokenInput = ""
+        syncStatus = "同步设置已保存"
+        return true
+    }
+
+    func syncWithSettings() async {
+        syncBusy = true
+        defer { syncBusy = false }
+        guard let syncURL else {
+            syncStatus = "未配置同步地址"
+            return
+        }
+        await runSync(transport: HTTPProgressTransport(
+            url: syncURL,
+            token: syncToken,
+            caPath: effectiveSyncCAPath
+        ))
+    }
+
+    private func runSync(transport: ProgressSyncTransport) async {
         do {
-            let result = try await ProgressSyncService(
-                store: playbackStore,
-                transport: HTTPProgressTransport(
-                    url: syncURL,
-                    token: syncToken,
-                    caPath: ProcessInfo.processInfo.environment["OPENFUSE_SYNC_CA"]
-                )
-            ).sync()
+            let result = try await ProgressSyncService(store: playbackStore, transport: transport).sync()
             syncStatus = "同步：远端 \(result.remoteCount)，本地 \(result.localCount)，更新 \(result.changed)"
             recent = playbackStore.recentlyPlayed(limit: 12)
         } catch {
             syncStatus = "同步失败：\(error.localizedDescription)"
         }
+    }
+
+    func syncProgress(force: Bool = false) async {
+        guard let syncURL else { return }
+        if !force, Date().timeIntervalSince(lastSyncAt) < 5 { return }
+        lastSyncAt = Date()
+        await runSync(transport: HTTPProgressTransport(
+            url: syncURL,
+            token: syncToken,
+            caPath: syncCAPath
+        ))
     }
 
     func bootstrapTestSourcesIfRequested() async {

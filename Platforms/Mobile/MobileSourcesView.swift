@@ -1,11 +1,13 @@
 import OpenFuseData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MobileSourcesView: View {
     @EnvironmentObject private var model: MobileLibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var addKind: SourceKind?
     @State private var errorText: String?
+    @State private var showCAImporter = false
 
     enum SourceKind: String, Identifiable {
         case webdav
@@ -81,6 +83,39 @@ struct MobileSourcesView: View {
                     }
                 }
 
+                Section("进度同步") {
+                    TextField("同步地址（http/https）", text: $model.syncURLText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    SecureField("Bearer Token（留空保持）", text: $model.syncTokenInput)
+                    HStack {
+                        Text(model.syncCAPath == nil ? "未固定 CA（系统信任）" : "已固定 CA")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("选择 CA…") { showCAImporter = true }
+                    }
+                    HStack {
+                        if model.syncBusy { ProgressView().controlSize(.small) }
+                        Spacer()
+                        Button("保存并同步") {
+                            Task {
+                                if model.saveSyncSettings(
+                                    urlText: model.syncURLText,
+                                    token: model.syncTokenInput,
+                                    caURL: nil
+                                ) {
+                                    await model.syncWithSettings()
+                                }
+                            }
+                        }
+                        .disabled(model.syncBusy)
+                    }
+                    if let status = model.syncStatus {
+                        Text(status).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
                 Section("说明") {
                     Text("凭据存入 iOS Keychain；密码/token 不写入 sources.json。WebDAV MP4/MOV 走认证资源加载器；Jellyfin MP4 直连，MKV 走服务器 HLS 转码 URL。")
                         .font(.footnote)
@@ -98,6 +133,17 @@ struct MobileSourcesView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { dismiss() }
+                }
+            }
+            .fileImporter(isPresented: $showCAImporter, allowedContentTypes: [.data]) { result in
+                if case .success(let url) = result {
+                    if model.saveSyncSettings(
+                        urlText: model.syncURLText,
+                        token: model.syncTokenInput,
+                        caURL: url
+                    ) {
+                        Task { await model.syncWithSettings() }
+                    }
                 }
             }
             .sheet(item: $addKind) { kind in

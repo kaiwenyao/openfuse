@@ -1,0 +1,19 @@
+OpenFuse M6g iPhone persisted sync settings evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; iPhone 18 Pro simulator iOS 27.2.
+Server: HTTPS progress fixture 8131, Bearer sync-test, self-signed CA.
+
+Flow:
+  Install app; copy CA to Documents.
+  Write app preferences openfuse.sync.url / openfuse.sync.ca via simctl defaults.
+  Launch with only OPENFUSE_SYNC_TOKEN + Jellyfin test env; no URL/CA env.
+
+Results:
+  iPhone GET reached HTTPS service via persisted settings.
+  Resume report: position11, resume11.0.
+  Scripts/run-ios-sync-settings.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  UI click/fileImporter automation for Sources sheet, Keychain prompt, public CA,
+  concurrent sync, real device.
