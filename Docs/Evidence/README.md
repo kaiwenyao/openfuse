@@ -58,6 +58,11 @@
 | `reports/m4f-hls.json` | HLS 60s/5.954s 结果 | probe 输出 |
 | `reports/m3i-webdav-recovery.txt` | WebDAV 504 目录恢复摘要 | `test-webdav-recovery.sh` |
 | `reports/m3i-recovery-*.json` | 失败前后库报告 | 应用 `--library-report` |
+| `38-ios-home.jpg` | iPhone 首屏（真实模拟器） | `simctl io screenshot` |
+| `39-ios-playback.jpg` | iOS 样本播放 HUD 3.0/20.0s | 同上 |
+| `40-ios-resume.jpg` | 重启续播 HUD 12.0/20.0s | 同上 |
+| `41-ipad-split.jpg` | iPad NavigationSplitView 分栏 | 同上 |
+| `reports/m4g-ios-run.txt` | iOS 启动/播放/续播记录 | 测试脚本摘要 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## iOS 实际运行与续播（M4g）
+
+- iOS 27.2 Simulator 实际安装/启动；iPhone 单栏、iPad 常规宽度 NavigationSplitView。
+- 本地 `fileURL` 是 `file://` 字符串，移动端先 `URL(string:)` 再回退 `fileURLWithPath`；此前导致 `playbackItem=nil`。
+- 测试钩子：`OPENFUSE_AUTOPLAY=1` 启动即播，`OPENFUSE_AUTOPLAY_STOP_AFTER=N` 自动保存/关闭；HUD 仅钩子显示。
+- 实测播放 3.0/20s、保存 4.795s、重启续播 12.0/20s；音频/字幕未验证。
+- tvOS/visionOS runtime 未安装，仍为构建验证。
+
 ## WebDAV 目录超时恢复（M3i）
 
 - `ScannedLibrary.failedPaths` 记录 PROPFIND 失败目录；scanner 继续其他目录。

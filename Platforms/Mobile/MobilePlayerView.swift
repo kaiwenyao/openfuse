@@ -13,6 +13,7 @@ struct MobilePlayerView: View {
     @State private var resourceLoader: AuthenticatedAssetLoader?
     @State private var timeObserver: Any?
     @State private var lastPosition: TimeInterval = 0
+    @State private var currentTime: TimeInterval = 0
     @State private var duration: TimeInterval = 0
     @State private var errorText: String?
 
@@ -43,6 +44,22 @@ struct MobilePlayerView: View {
                     .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 60)
             }
+            if showsHUD {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Text(String(format: "%.1f / %.1f s", currentTime, duration))
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                            .background(.black.opacity(0.55), in: Capsule())
+                        Spacer()
+                    }
+                    .padding(18)
+                }
+            }
+
         }
         .onAppear { setupPlayer() }
         .onDisappear {
@@ -57,6 +74,11 @@ struct MobilePlayerView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { saveProgress() }
         }
+    }
+
+    private var showsHUD: Bool {
+        ProcessInfo.processInfo.arguments.contains("--autoplay-sample")
+            || ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1"
     }
 
     private func setupPlayer() {
@@ -78,6 +100,7 @@ struct MobilePlayerView: View {
             queue: .main
         ) { time in
             lastPosition = max(0, time.seconds.isFinite ? time.seconds : 0)
+            currentTime = lastPosition
             if let itemDuration = player.currentItem?.duration.seconds,
                itemDuration.isFinite, itemDuration > 0 {
                 duration = itemDuration
@@ -93,6 +116,12 @@ struct MobilePlayerView: View {
                 await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
             }
             player.play()
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_STOP_AFTER"],
+               let seconds = Double(raw), seconds > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                saveProgress()
+                dismiss()
+            }
         }
     }
 

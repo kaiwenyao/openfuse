@@ -51,4 +51,4 @@ PASS: Jellyfin HLS transcode URL/AVPlayer playback for MKV source
 
 ## 下一项
 
-M4g：真实 Jellyfin HLS/PlaybackInfo 参数、字幕/音轨、三端 runtime 截图、tvOS/visionOS 远程来源、CloudKit/Trakt；M3 T07 其他场景/画质元数据。WebDAV 504 目录恢复已在 [M3i 验收](M3I-RECOVERY.md) 完成。
+iOS 已在模拟器实际启动/播放/续播，见 [M4g iOS 运行验收](M4G-IOS-RUN.md)。剩余 M4h：tvOS/visionOS runtime、移动端远程实际播放、字幕/音轨、真实 Jellyfin HLS 参数、CloudKit/Trakt；M3 画质元数据/T07 其他场景。

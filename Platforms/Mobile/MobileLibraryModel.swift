@@ -27,6 +27,8 @@ final class MobileLibraryModel: ObservableObject {
     @Published var jellyfinSources: [JellyfinSource] = []
 
     let supportDirectory: URL
+    let autoplaySample = ProcessInfo.processInfo.arguments.contains("--autoplay-sample")
+        || ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1"
     private let libraryStore: LibraryStore
     private let playbackStore: PlaybackStore
     private let sourceStore: SourceStore
@@ -147,7 +149,7 @@ final class MobileLibraryModel: ObservableObject {
     func playbackItem(work: LibraryWork, episode: LibraryEpisode) -> MobilePlaybackItem? {
         let versions = (try? libraryStore.versions(itemID: episode.id)) ?? []
         if let file = versions.first?.fileURL ?? episode.fileURL {
-            let url = URL(fileURLWithPath: file)
+            let url = URL(string: file) ?? URL(fileURLWithPath: file)
             guard FileManager.default.fileExists(atPath: url.path) else { return nil }
             let fingerprint = (try? MediaFingerprint(url: url))
                 ?? MediaFingerprint(path: url.path, fileSize: 0, modifiedAt: nil)

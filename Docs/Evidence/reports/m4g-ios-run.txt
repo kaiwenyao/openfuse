@@ -1,0 +1,24 @@
+OpenFuse M4g iOS simulator run evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Runtime: iOS 27.2 (24B8117)
+Devices: iPhone 18 Pro (E3AEF363...), iPad Pro 13-inch M5 (477B8FDD...)
+
+Commands:
+  Scripts/build-ios.sh
+  xcrun simctl install <device> build/mobile-derived/Build/Products/Debug-iphonesimulator/OpenFuse.app
+  xcrun simctl launch <device> com.openfuse.mobile
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 xcrun simctl launch <device> com.openfuse.mobile
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 SIMCTL_CHILD_OPENFUSE_AUTOPLAY_STOP_AFTER=5 ... launch ...
+
+Results:
+  iPhone home: 1 work / 1 episode, sample poster and title visible.
+  iPad: NavigationSplitView sidebar + detail placeholder renders.
+  Playback: HUD 3.0 / 20.0 s, video frame timecode advanced, AVPlayer ready.
+  Auto-stop after 5s saved playback.json position 4.795 / 20.
+  Relaunch: HUD 12.0 / 20.0 after 3s, i.e. resumed from saved position, not 0.
+  Fixed mobile bug: fileURL stored as file:// URL string; now URL(string:) first.
+  26/26 swift tests; iOS/iPadOS, tvOS, visionOS and iOS device builds succeed.
+
+Not verified:
+  Audio output/listening on simulator; subtitles/audio tracks; tvOS/visionOS runtime.

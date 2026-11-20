@@ -10,6 +10,7 @@ struct MobileRootView: View {
     @State private var showImporter = false
     @State private var showAbout = false
     @State private var showSources = false
+    @State private var autoplayItem: MobilePlaybackItem?
 
     var body: some View {
         Group {
@@ -34,6 +35,16 @@ struct MobileRootView: View {
         }
         .sheet(isPresented: $showSources) {
             MobileSourcesView()
+                .environmentObject(model)
+        }
+        .onAppear {
+            guard model.autoplaySample, autoplayItem == nil,
+                  let work = model.groups.first?.primary,
+                  let item = model.playbackItem(for: work) else { return }
+            autoplayItem = item
+        }
+        .fullScreenCover(item: $autoplayItem) { item in
+            MobilePlayerView(item: item)
                 .environmentObject(model)
         }
     }

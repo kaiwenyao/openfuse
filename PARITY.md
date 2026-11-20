@@ -159,6 +159,16 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | MKV→HLS 播放 | MacBook Pro M2 Pro／macOS 27.2.1 | 同源 MKV 60s（HEVC/E-AC-3）→ H.264/AAC TS | Infuse 未安装 | Jellyfin HLS URL；AVPlayer 6s 到 5.954s，duration 60 | `reports/m4f-hls.json`、`m4f-hls.txt` | 通过（夹具转码） |
 | 真实 Jellyfin 转码 | 同上 | 本地 Jellyfin 尚未配置 | 待采样 | 构造 URL 未在真实服务器验证 | — | 待验证 |
+
+### M4g iOS 实际运行执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iPhone 首屏 | iPhone 18 Pro Simulator／iOS 27.2 | 内置 H.264/AAC 20s | Infuse 未安装 | 1 作品/1 集，海报/标题正常 | Evidence 38 | 通过 |
+| iPad 分栏 | iPad Pro 13-inch M5 Simulator／iOS 27.2 | 同上 | 待采样 | NavigationSplitView 侧栏 + 详情占位 | Evidence 41 | 通过 |
+| 播放 | iPhone Simulator | 同上 | 待采样 | HUD 3.0/20.0s，画面时间码推进 | Evidence 39 | 通过 |
+| 退出/续播 | 同上 | 自动 5s 关闭后重启 | 待采样 | 保存 4.795s；重启 3s 后 HUD 12.0/20.0s | Evidence 40、`reports/m4g-ios-run.txt` | 通过（画面；音频未听测） |
+| 四平台构建 | Xcode 27.2 | 同上 | — | iOS/iPadOS/tvOS/visionOS/device 全部 BUILD SUCCEEDED | `reports/m4-ios-build.txt` | 构建通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 
