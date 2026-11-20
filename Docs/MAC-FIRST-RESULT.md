@@ -93,9 +93,9 @@ Jellyfin 测试库：`Movies=/media/Movies`、`TV=/media/TV`，用户 `test/test
 
 样片由 `Scripts/make_fixtures.sh` 生成：HEVC Main 10 1920×1080、E-AC-3 5.1 448k、内置简体 ASS + 同名 zh-Hans/zh-Hant 外挂 ASS，60 秒。
 
-## 凭据处理
+## 凭据处理（2026-11-20 已更新）
 
-本机为 ad-hoc 签名开发构建。macOS 对未稳定签名的应用读取 Keychain 会弹出登录密码框，实际会卡住首页海报加载。因此默认把来源凭据写入 `~/Library/Application Support/OpenFuse/credentials.json`（`0600`），Keychain 仅在 `OPENFUSE_KEYCHAIN=1` 时启用。正式签名分发时应改回 Keychain 默认并删除该文件。
+旧行为（本节原文）把来源凭据写入 `credentials.json` 明文文件，只在 `OPENFUSE_KEYCHAIN=1` 时才写 Keychain。该实现已在本轮移除：`CredentialStore` 现在默认且只写 Keychain，写后读回校验；添加来源面板提供「仅本次会话」开关（等价于 `OPENFUSE_CREDENTIAL_MODE=session`），只保存在进程内存。旧明文文件会在启动时逐条迁移（写 Keychain → 读回 → 删除旧条目），详见 `Docs/MAC-REAL-ACCEPTANCE.md` 第 1 节。
 
 ## 尚待验证
 
@@ -103,6 +103,10 @@ Jellyfin 测试库：`Movies=/media/Movies`、`TV=/media/TV`，用户 `test/test
 2. **Jellyfin HTTPS/反代**：本机为 HTTP 直连，未配置证书或反向代理。
 3. **真实超大库**：501/5001 用 URLProtocol 合成响应验证，未在 5001 条真实 Jellyfin 库上跑。
 4. **人耳听音**：只验证解码为 E-AC-3 5.1/6ch、默认输出设备与播放无报错；未做人工听感或声道定位。
-5. **Infuse 8.5.10 对照**：已安装，但本轮未逐项对照其选轨、返回与续播；以 OpenFuse 实际窗口结果为准。
+5. **Infuse 8.5.10 对照**：本轮核查时本机 `/Applications`、`~/Applications` 与 Spotlight 均未找到 Infuse，无法对照；真实媒体库上的 OpenFuse 结果见 `Docs/MAC-REAL-ACCEPTANCE.md`。
 6. **SMB 构建**：本机未安装 libsmb2，未回归 `OPENFUSE_SMB2=1` 的 SMB 路径；WebDAV/Jellyfin 构建已验证不依赖它。
 7. **Docker 代理**：为拉取 `jellyfin/jellyfin` 将 Docker Desktop 代理从失效的 `localhost:7897` 临时改为系统代理；Jellyfin 容器仍在运行。
+
+## 后续验收
+
+真实 WebDAV/Jellyfin 媒体库、Keychain 凭据、字幕切轨/拖动/续播与播放器控制修复见 `Docs/MAC-REAL-ACCEPTANCE.md`（2026-11-20）。

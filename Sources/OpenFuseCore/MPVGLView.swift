@@ -37,6 +37,13 @@ public final class MPVGLView: NSOpenGLView {
     public override var isOpaque: Bool { true }
     public override var acceptsFirstResponder: Bool { true }
 
+    /// The mpv surface sits under SwiftUI's control overlay. AppKit views are
+    /// routed mouse events before the SwiftUI layers drawn above them, so
+    /// without this the play/pause, subtitle and audio controls silently
+    /// swallowed every click. Returning nil lets clicks fall through to the
+    /// overlay while keyboard focus stays with the window.
+    public override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
     public override func prepareOpenGL() {
         super.prepareOpenGL()
         guard let context = openGLContext else { return }

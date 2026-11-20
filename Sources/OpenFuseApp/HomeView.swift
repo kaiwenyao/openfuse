@@ -22,6 +22,92 @@ struct OpenFuseApp: App {
                 }
                 .keyboardShortcut("o", modifiers: .command)
             }
+            CommandMenu("播放") {
+                Button(model.player?.isPaused == true ? "继续播放" : "暂停") {
+                    model.player?.togglePlayPause()
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(model.player == nil)
+                Button("快退 10 秒") { model.player?.skip(-10) }
+                    .keyboardShortcut("[", modifiers: [.command, .shift])
+                    .disabled(model.player == nil)
+                Button("快进 10 秒") { model.player?.skip(10) }
+                    .keyboardShortcut("]", modifiers: [.command, .shift])
+                    .disabled(model.player == nil)
+                Divider()
+                Menu("字幕") {
+                    Button {
+                        model.player?.selectSubtitle(nil)
+                    } label: {
+                        if model.player?.selectedSubtitleID == nil {
+                            Label("关闭字幕", systemImage: "checkmark")
+                        } else {
+                            Text("关闭字幕")
+                        }
+                    }
+                    Divider()
+                    ForEach(model.player?.subtitleTracks ?? []) { track in
+                        Button {
+                            model.player?.selectSubtitle(track)
+                        } label: {
+                            if model.player?.selectedSubtitleID == track.id {
+                                Label(track.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(track.displayName)
+                            }
+                        }
+                    }
+                }
+                .disabled(model.player == nil)
+                Menu("音轨") {
+                    ForEach(model.player?.audioTracks ?? []) { track in
+                        Button {
+                            model.player?.selectAudio(track)
+                        } label: {
+                            if model.player?.selectedAudioID == track.id {
+                                Label("\(track.displayName) · \(track.technicalLabel)", systemImage: "checkmark")
+                            } else {
+                                Text("\(track.displayName) · \(track.technicalLabel)")
+                            }
+                        }
+                    }
+                    Divider()
+                    Menu("音频输出") {
+                        ForEach(model.player?.audioDevices ?? []) { device in
+                            Button {
+                                model.player?.selectAudioDevice(device.id)
+                            } label: {
+                                if model.player?.selectedAudioDeviceID == device.id {
+                                    Label("\(device.name)（\(device.outputChannels)ch）", systemImage: "checkmark")
+                                } else {
+                                    Text("\(device.name)（\(device.outputChannels)ch）")
+                                }
+                            }
+                        }
+                    }
+                }
+                .disabled(model.player == nil)
+                Divider()
+                Button("跳转到时间…") {
+                    model.showSeekPrompt = true
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(model.player == nil)
+                Button("返回来源") { model.closePlayer() }
+                    .keyboardShortcut("b", modifiers: [.command, .shift])
+                    .disabled(model.player == nil)
+            }
+            CommandMenu("验收") {
+                Button("保存当前画面与播放报告") {
+                    _ = model.savePlayerEvidence()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
+                .disabled(model.player == nil)
+                Button("保存界面截图") {
+                    _ = model.saveUIEvidence()
+                }
+                .keyboardShortcut("u", modifiers: [.command, .option])
+            }
         }
     }
 }
@@ -511,6 +597,34 @@ struct RootView: View {
                 LibraryDetailView(work: work)
             }
         }
+        .background(Theme.background)
+        .sheet(isPresented: $model.showSeekPrompt) {
+            SeekPromptSheet()
+        }
+    }
+}
+
+struct SeekPromptSheet: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("跳转到时间")
+                .font(.system(size: 17, weight: .semibold))
+            Text("输入 mm:ss、h:mm:ss 或秒数，例如 05:00。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(.secondary)
+            TextField("时间", text: $model.seekPromptText, prompt: Text("05:00"))
+            HStack {
+                Spacer()
+                Button("取消") { dismiss() }
+                Button("跳转") { model.performSeekPrompt() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(22)
+        .frame(width: 360)
         .background(Theme.background)
     }
 }

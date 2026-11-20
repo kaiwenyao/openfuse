@@ -83,6 +83,9 @@ final class AppModel: ObservableObject {
     @Published var sources: [WebDAVSource] = []
     @Published var browsingSource: WebDAVSource?
     @Published var showAddSource = false
+    @Published var showSeekPrompt = false
+    @Published var seekPromptText = ""
+    @Published var credentialMigrationSummary: String?
     @Published var showAddJellyfin = false
     @Published var showSettings = false
     @Published var jellyfinSources: [JellyfinSource] = []
@@ -137,6 +140,8 @@ final class AppModel: ObservableObject {
     private var sessionPlexTokens: [String: String] = [:]
     private var sessionSMBPasswords: [String: String] = [:]
     private var traktPollTask: Task<Void, Never>?
+    private var playerMenuObservation: AnyCancellable?
+    private var keychainPromptedAccounts: Set<String> = []
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -164,6 +169,14 @@ final class AppModel: ObservableObject {
         self.smbSources = smbStore.sources
         self.localRoots = localRootStore.roots
         self.libraryOverrides = libraryOverrideStore.all
+        if CredentialStore.defaultMode == .keychain, CredentialStore.legacyStoreExists {
+            // Old builds kept passwords in Application Support/OpenFuse/credentials.json.
+            // Move them into the Keychain entry by entry and drop the plaintext
+            // only after each write has been read back successfully.
+            let report = CredentialStore.migrateLegacyStore()
+            credentialMigrationSummary = report.summary
+            statusMessage = report.summary
+        }
         loadTraktConfiguration()
         refreshRecent()
         reloadLibrary()
@@ -481,6 +494,15 @@ final class AppModel: ObservableObject {
             playerReturnRoute = route
         }
         let model = PlayerModel(item: item, startAt: startAt, store: store)
+        // Keep the menu bar's 播放/字幕/音轨 items in sync with the player without
+        // republishing every position tick.
+        playerMenuObservation = Publishers.Merge3(
+            model.$subtitleTracks.map { $0.count },
+            model.$audioTracks.map { $0.count },
+            model.$selectedSubtitleID.map { _ in 0 }
+        )
+        .receive(on: RunLoop.main)
+        .sink { [weak self] _ in self?.objectWillChange.send() }
         model.onClose = { [weak self] in
             self?.smbStreamServer?.stop()
             self?.smbStreamServer = nil
@@ -503,7 +525,26 @@ final class AppModel: ObservableObject {
         if let override = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"], !override.isEmpty {
             return override
         }
-        return CredentialStore.load(account: source.id)
+        return credential(account: source.id, service: CredentialStore.service)
+    }
+
+    /// Reads a source credential without ever freezing the UI behind a Keychain
+    /// dialog. The first denied lookup explains what to do; the next user action
+    /// retries with the system dialog enabled (where "Always Allow" is offered).
+    private func credential(account: String, service: String) -> String? {
+        switch CredentialStore.loadDetailed(account: account, service: service, interactive: false) {
+        case .found(let value):
+            return value
+        case .missing:
+            return nil
+        case .needsAuthorization:
+            if keychainPromptedAccounts.contains(account) {
+                return CredentialStore.loadInteractive(account: account, service: service)
+            }
+            keychainPromptedAccounts.insert(account)
+            statusMessage = "Keychain 需要授权访问此来源的凭据：请在系统弹窗中允许 OpenFuse，然后再次操作"
+            return nil
+        }
     }
 
     func webdavClient(for source: WebDAVSource) -> WebDAVClient? {
@@ -512,7 +553,13 @@ final class AppModel: ObservableObject {
     }
 
     @discardableResult
-    func addSource(name: String, urlText: String, username: String, password: String) async -> WebDAVSource? {
+    func addSource(
+        name: String,
+        urlText: String,
+        username: String,
+        password: String,
+        rememberInKeychain: Bool = true
+    ) async -> WebDAVSource? {
         guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
             statusMessage = "服务器地址需要是 http:// 或 https://"
@@ -524,9 +571,10 @@ final class AppModel: ObservableObject {
             let entries = try await client.list()
             var keychainError: Error?
             let usesEnvironmentPassword = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"] != nil
+            let mode: CredentialMode = rememberInKeychain ? .keychain : .session
             if !usesEnvironmentPassword {
                 do {
-                    try CredentialStore.save(password: password, account: source.id)
+                    try CredentialStore.save(password: password, account: source.id, mode: mode)
                 } catch {
                     keychainError = error
                 }
@@ -534,11 +582,15 @@ final class AppModel: ObservableObject {
             try sourceStore.upsert(source)
             sources = sourceStore.sources
             if let keychainError {
-                statusMessage = "来源已保存，但密码写入 Keychain 失败：\(keychainError.localizedDescription)"
+                // The source still works for this run through the in-memory copy;
+                // nothing was written to disk.
+                statusMessage = "来源已保存到本次会话，但 Keychain 写入失败：\(keychainError.localizedDescription)"
             } else if usesEnvironmentPassword {
                 statusMessage = "已添加 \(source.name)（密码来自环境变量，未写入 Keychain）"
+            } else if mode == .session {
+                statusMessage = "已添加 \(source.name)（仅本次会话，退出后需重新输入密码），根目录 \(entries.count) 项"
             } else {
-                statusMessage = "已添加 \(source.name)，根目录 \(entries.count) 项"
+                statusMessage = "已添加 \(source.name)，凭据已存入 Keychain，根目录 \(entries.count) 项"
             }
             return source
         } catch {
@@ -678,7 +730,7 @@ final class AppModel: ObservableObject {
             return override
         }
         if let cached = sessionJellyfinTokens[source.id] { return cached }
-        return CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
+        return credential(account: source.id, service: "com.openfuse.jellyfin")
     }
 
     func smbPassword(for source: SMBSource) -> String? {
@@ -686,7 +738,7 @@ final class AppModel: ObservableObject {
         if let password = ProcessInfo.processInfo.environment["OPENFUSE_SMB_PASSWORD"], !password.isEmpty {
             return password
         }
-        return CredentialStore.load(account: source.id, service: "com.openfuse.smb")
+        return credential(account: source.id, service: "com.openfuse.smb")
     }
 
     @discardableResult
@@ -828,7 +880,7 @@ final class AppModel: ObservableObject {
         if let token = ProcessInfo.processInfo.environment["OPENFUSE_PLEX_TOKEN"], !token.isEmpty {
             return token
         }
-        return CredentialStore.load(account: source.id, service: "com.openfuse.plex")
+        return credential(account: source.id, service: "com.openfuse.plex")
     }
 
     func plexPosterURL(sourceID: String, itemID: String) -> URL? {
@@ -979,7 +1031,8 @@ final class AppModel: ObservableObject {
         urlText: String,
         username: String,
         password: String,
-        serverKind: String = "jellyfin"
+        serverKind: String = "jellyfin",
+        rememberInKeychain: Bool = true
     ) async -> JellyfinSource? {
         guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https"
@@ -1008,11 +1061,17 @@ final class AppModel: ObservableObject {
                 || environment["OPENFUSE_JELLYFIN_PASSWORD"] != nil
                 || environment["OPENFUSE_JELLYFIN_TOKEN"] != nil
             if !usesEnvironment {
-                try? CredentialStore.save(password: session.accessToken, account: source.id, service: "com.openfuse.jellyfin")
+                try? CredentialStore.save(
+                    password: session.accessToken,
+                    account: source.id,
+                    service: "com.openfuse.jellyfin",
+                    mode: rememberInKeychain ? .keychain : .session
+                )
             }
             try jellyfinStore.upsert(source)
             jellyfinSources = jellyfinStore.sources
-            statusMessage = "已添加 \(source.name)（\(serverKind == "emby" ? "Emby" : "Jellyfin")），共 \(views.count) 个媒体库"
+            let storage = rememberInKeychain ? "登录令牌已存入 Keychain" : "登录令牌仅用于本次会话"
+            statusMessage = "已添加 \(source.name)（\(serverKind == "emby" ? "Emby" : "Jellyfin")），共 \(views.count) 个媒体库，\(storage)"
             return source
         } catch {
             statusMessage = error.localizedDescription
@@ -1023,7 +1082,8 @@ final class AppModel: ObservableObject {
     func switchJellyfinUser(
         _ source: JellyfinSource,
         username: String,
-        password: String
+        password: String,
+        rememberInKeychain: Bool = true
     ) async -> JellyfinSource? {
         var candidate = JellyfinSource(
             name: source.name,
@@ -1051,7 +1111,8 @@ final class AppModel: ObservableObject {
                 try? CredentialStore.save(
                     password: session.accessToken,
                     account: candidate.id,
-                    service: "com.openfuse.jellyfin"
+                    service: "com.openfuse.jellyfin",
+                    mode: rememberInKeychain ? .keychain : .session
                 )
             }
             statusMessage = "已切换 \(candidate.name) 用户：\(candidate.username)"
@@ -2024,9 +2085,69 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Manual acceptance helpers: write evidence into
+    /// `<support>/Acceptance/` so the screenshots and JSON never carry secrets
+    /// and never land in the repository.
+    private static func acceptanceStamp() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss-SSS"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: Date())
+    }
+
+    func acceptanceDirectory() -> URL {
+        let dir = supportDirectory.appendingPathComponent("Acceptance", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    @discardableResult
+    /// Jump to a user-typed time (`mm:ss`, `h:mm:ss` or plain seconds). The
+    /// player's in-window scrubber is hard to hit with an accessibility click,
+    /// so the menu bar offers the same action with a text field.
+    func performSeekPrompt() {
+        let raw = seekPromptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let seconds = Self.parseTimecode(raw), let player else { return }
+        player.seek(to: seconds)
+        seekPromptText = ""
+        showSeekPrompt = false
+    }
+
+    static func parseTimecode(_ text: String) -> Double? {
+        let parts = text.split(separator: ":").map(String.init)
+        guard !parts.isEmpty, parts.count <= 3 else { return nil }
+        var total: Double = 0
+        for part in parts {
+            guard let value = Double(part.replacingOccurrences(of: ",", with: ".")) else { return nil }
+            total = total * 60 + value
+        }
+        return total >= 0 ? total : nil
+    }
+
+    func savePlayerEvidence(label: String = "player") -> URL? {
+        guard let player else { return nil }
+        let dir = acceptanceDirectory()
+        let stamp = Self.acceptanceStamp()
+        let frame = dir.appendingPathComponent("\(label)-\(stamp)-frame.png")
+        player.captureScreenshot(to: frame)
+        let report = dir.appendingPathComponent("\(label)-\(stamp)-report.json")
+        writeTestReport(to: report)
+        player.statusMessage = "已保存画面与报告"
+        return frame
+    }
+
+    @discardableResult
+    func saveUIEvidence(label: String = "ui") -> URL? {
+        let url = acceptanceDirectory().appendingPathComponent("\(label)-\(Self.acceptanceStamp()).png")
+        captureUI(to: url)
+        statusMessage = "已保存界面截图"
+        return url
+    }
+
     func captureUI(to url: URL) {
-        let visible = NSApp.windows.filter { $0.isVisible }
-        let window = visible.last ?? NSApp.keyWindow ?? NSApp.windows.first
+        let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
+        let window = visible.max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
+            ?? NSApp.keyWindow ?? NSApp.windows.first
         guard let window, let view = window.contentView else { return }
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)

@@ -384,6 +384,7 @@ struct AddJellyfinSheet: View {
     @State private var serverKind = "jellyfin"
     @State private var isBusy = false
     @State private var errorMessage: String?
+    @State private var sessionOnly = CredentialStore.defaultMode == .session
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -391,7 +392,7 @@ struct AddJellyfinSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(serverKind == "emby" ? "添加 Emby" : "添加 Jellyfin")
                         .font(.system(size: 18, weight: .semibold))
-                    Text("使用独立测试账号。登录令牌保存在本机 Keychain。")
+                    Text("登录令牌默认存入本机 Keychain；密码本身不会写入任何文件。")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                 }
@@ -410,6 +411,7 @@ struct AddJellyfinSheet: View {
                     .textContentType(.URL)
                 TextField("用户名", text: $username)
                 SecureField("密码", text: $password)
+                Toggle("仅本次会话（令牌不写入 Keychain）", isOn: $sessionOnly)
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
@@ -446,7 +448,8 @@ struct AddJellyfinSheet: View {
             urlText: url,
             username: username,
             password: password,
-            serverKind: serverKind
+            serverKind: serverKind,
+            rememberInKeychain: !sessionOnly
         )
         isBusy = false
         if source != nil {

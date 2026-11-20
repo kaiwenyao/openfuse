@@ -239,6 +239,7 @@ struct AddSourceSheet: View {
     @State private var password = ""
     @State private var isBusy = false
     @State private var errorMessage: String?
+    @State private var sessionOnly = CredentialStore.defaultMode == .session
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -246,7 +247,7 @@ struct AddSourceSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("添加 WebDAV 来源")
                         .font(.system(size: 18, weight: .semibold))
-                    Text("OpenList、Nextcloud、群晖等提供 WebDAV 的服务均可。凭据只保存在本机 Keychain。")
+                    Text("OpenList、Nextcloud、群晖等提供 WebDAV 的服务均可。密码默认存入本机 Keychain，不会写入明文文件。")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                 }
@@ -260,6 +261,7 @@ struct AddSourceSheet: View {
                     .textContentType(.URL)
                 TextField("用户名", text: $username)
                 SecureField("密码", text: $password)
+                Toggle("仅本次会话（不写入 Keychain，退出后需重新输入）", isOn: $sessionOnly)
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
@@ -293,7 +295,13 @@ struct AddSourceSheet: View {
     private func submit() async {
         isBusy = true
         errorMessage = nil
-        let source = await model.addSource(name: name, urlText: url, username: username, password: password)
+        let source = await model.addSource(
+            name: name,
+            urlText: url,
+            username: username,
+            password: password,
+            rememberInKeychain: !sessionOnly
+        )
         isBusy = false
         if source != nil {
             dismiss()
