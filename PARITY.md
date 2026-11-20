@@ -721,3 +721,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 设置驱动同步 | Mac M2 Pro／macOS 27.2.1 | HTTPS sync + CA | Infuse 未安装 | URL/CA 持久化，GET/POST 成功 | Evidence 116、`reports/m6f-*` | 通过 |
 | UI点击/Keychain/公共CA/并发 | 同上 | 生产同步 | 待采样 | 未自动化 | — | 待验证 |
+
+### M5at SMB 长稳执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2分钟长稳 | Mac M2 Pro／macOS 27.2.1 | 2.4GB over Samba | Infuse 未安装 | 96/96 206；播放继续；RSS188→83 | Evidence 117、`reports/m5at-*` | 通过 |
+| 小时级/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |

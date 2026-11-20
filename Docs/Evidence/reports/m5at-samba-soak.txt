@@ -1,0 +1,15 @@
+OpenFuse M5at SMB soak evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 2.4GB file; playback from 600s.
+
+Results:
+  12 rounds x 8 concurrent Range = 96 requests over 120s.
+  96/96 HTTP 206, 524288 bytes each.
+  Playback continued; report position >=600.
+  RSS 188MB start -> 83MB end (no leak/growth).
+  Scripts/run-samba-soak.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Hours-long soak, >8 per burst, DFS/domain, real NAS; audio.

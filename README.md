@@ -108,7 +108,8 @@
 - **M5ar SMB 32并发：修复并验证。** listen backlog 16 导致 21/32；改为128后 32/32 Range 206、播放继续1200s、RSS 211MB稳定。>32/长稳/DFS未测。记录：[M5ar 验收](Docs/M5AR-SAMBA-CONCURRENCY-32.md)。
 - **M5as SMB 64并发：完成。** 64/64 Range 206、播放继续1202s、RSS 167→158MB；backlog128/4活跃槽可承受。>64/长稳/DFS未测。记录：[M5as 验收](Docs/M5AS-SAMBA-CONCURRENCY-64.md)。
 - **M6f 同步设置 UI：完成。** Settings 增加 URL/Bearer Token/CA 导入/保存并同步；URL/CA 存 UserDefaults、Token 存 Keychain，CA 复制到 Application Support；设置驱动 HTTPS 同步验收通过。UI 点击/公共 CA/并发未测。记录：[M6f 验收](Docs/M6F-SYNC-SETTINGS.md)。
-- **下一项：** M6g/M5at：物理5.1/HDMI；HDR测量；>64/长稳/DFS；CloudKit/visionOS。
+- **M5at SMB 长稳：完成。** 2.4GB 播放期间12轮×8 Range共96请求全部206，RSS188→83MB。小时级/DFS未测。记录：[M5at 验收](Docs/M5AT-SAMBA-SOAK.md)。
+- **下一项：** M5au/M6g：小时级/DFS；物理5.1/HDMI；HDR测量；CloudKit/visionOS。
 
 开发入口：
 
@@ -139,7 +140,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m6f-sync-settings`（基于 M5as 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5at-samba-soak`（基于 M6f 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

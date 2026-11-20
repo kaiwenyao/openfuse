@@ -14,11 +14,11 @@
 
 ## 当前分支
 
-`m6f-sync-settings`（基于 M5as 提交）。M6g/M5at 从该分支继续。
+`m5at-samba-soak`（基于 M6f 提交）。M5au/M6g 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M6g/M5at：物理5.1/HDMI；HDR测量；>64/长稳/DFS；CloudKit/visionOS。
+1. M5au/M6g：小时级/DFS；物理5.1/HDMI；HDR测量；CloudKit/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

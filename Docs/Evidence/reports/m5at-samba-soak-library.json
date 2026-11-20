@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T13:31:15Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse soak",
+      "primary" : "OpenFuse Soak",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-099e406df970ef52"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-099e406df970ef52-main",
+          "remotePath" : "\/OpenFuse.Soak.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Soak",
+          "versions" : [
+            {
+              "contentKey" : "85126a4acca336dae952425a2da87146",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-099e406df970ef52-main-v0",
+              "mediaSourceID" : "",
+              "name" : "720p · SMB",
+              "resolution" : "720p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-099e406df970ef52",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Soak",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Soak",
+          "versions" : [
+            "SMB · 720p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse soak",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Soak"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse Soak"
+  ],
+  "works" : 1
+}

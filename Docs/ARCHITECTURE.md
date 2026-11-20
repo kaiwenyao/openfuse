@@ -235,6 +235,11 @@ Docs/                   决策、素材、验收、证据
 - BlackHole/iFlyrec 2ch 录回放；有声 -24.5dB，扬声器对照 -91dB。
 - 证明 CoreAudio 路由/真实输出；物理5.1/人耳/HDMI 未验证。
 
+## SMB 周期并发长稳（M5at）
+
+- 2分钟、12×8 Range 全206，播放继续，RSS188→83MB。
+- 小时级/DFS 未验证。
+
 ## SMB 64 并发（M5as）
 
 - backlog128/4活跃槽下 64/64 Range 206，播放继续，RSS 167→158MB。
