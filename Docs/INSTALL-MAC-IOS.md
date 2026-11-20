@@ -10,7 +10,7 @@
 ```bash
 curl -fL --proto '=https' --proto-redir '=https' \
   -o install-openfuse-macos.sh \
-  https://github.com/kaiwenyao/openfuse-install/releases/latest/download/install-openfuse-macos.sh \
+  https://github.com/kaiwenyao/openfuse/releases/latest/download/install-openfuse-macos.sh \
   && bash install-openfuse-macos.sh
 
 # 或从私有仓库取（需 gh 已登录）：
