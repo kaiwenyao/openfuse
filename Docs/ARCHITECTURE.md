@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 观看状态、最近播放与防剧透（M3h）
+
+- `AppModel.watchState(for:)`：按季/集聚合组内来源，匹配本地路径、`webdav://source/path`、`jellyfin://source/item/mediaSource` 记录；全看完=已看、有进度=观看中。
+- `LibrarySort.recentlyPlayed`：组内最大 `lastPlayedAt` 降序。
+- `LibraryWatchFilter` / `LibraryResolutionFilter`：全部/未看/观看中/已看；4K/1080p/720p。分辨率来自版本 `resolution` 或名称；Jellyfin 电影写高度，其他来源暂缺。
+- `@AppStorage("openfuse.spoilerProtection")`：详情/单集简介隐藏，点「显示」临时展开。
+- 合并键规范化增加 `·` 后缀剥离，修复 WebDAV NFO 标题导致的重复组。
+
 ## 跨平台分层（M4a）
 
 - `OpenFuseData`（SwiftPM library）：媒体/库模型、SQLite、扫描、WebDAV、Jellyfin、TMDB/NFO、覆盖、播放记录、凭据、聚合；Foundation/Security/sqlite3，无 AppKit/mpv，可编 iOS/tvOS/visionOS。

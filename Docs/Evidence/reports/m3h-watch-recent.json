@@ -1,0 +1,407 @@
+{
+  "episodes": 4,
+  "generatedAt": "2026-11-20T00:40:32Z",
+  "groups": [
+    {
+      "key": "movie|openfuse fixture",
+      "primary": "OpenFuse Fixture (2026)",
+      "sources": [
+        "jellyfin",
+        "local",
+        "webdav"
+      ],
+      "workIDs": [
+        "jf:bb973e107452f145:movie-1",
+        "local-e23598dae9fa4342",
+        "webdav-728b41c530df40c2"
+      ]
+    },
+    {
+      "key": "series|另一部剧",
+      "primary": "另一部剧 · 本地 NFO",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-f58fbcc18ae2bebb"
+      ]
+    },
+    {
+      "key": "series|示例剧",
+      "primary": "示例剧",
+      "sources": [
+        "jellyfin",
+        "local",
+        "webdav"
+      ],
+      "workIDs": [
+        "jf:bb973e107452f145:series-1",
+        "local-d277af4a63fb6820",
+        "webdav-53ae7ff45d678c71"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file://build/library-fixture/Movies/OpenFuse%20Fixture%20(2026)/OpenFuse%20Fixture%20(2026).mkv",
+          "id": "local-e23598dae9fa4342-main",
+          "remotePath": "",
+          "season": 0,
+          "sourceKind": "local",
+          "title": "OpenFuse Fixture",
+          "versions": [
+            {
+              "fileURL": "file://build/library-fixture/Movies/OpenFuse%20Fixture%20(2026)/OpenFuse%20Fixture%20(2026).mkv",
+              "id": "local-e23598dae9fa4342-main-v0",
+              "mediaSourceID": "",
+              "name": "本地文件"
+            }
+          ]
+        }
+      ],
+      "id": "local-e23598dae9fa4342",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "file:build/library-fixture/Movies/OpenFuse Fixture (2026)/poster.jpg",
+      "seasons": [],
+      "sourceID": "local-65205c2a5c1367ad",
+      "sourceKind": "local",
+      "title": "OpenFuse Fixture",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "jf:bb973e107452f145:movie-1-main",
+          "remotePath": "movie-1",
+          "season": 0,
+          "sourceKind": "jellyfin",
+          "title": "OpenFuse Fixture (2026)",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:bb973e107452f145:movie-1-main-v0",
+              "mediaSourceID": "ms-movie-1080",
+              "name": "1080p HEVC 5.1"
+            },
+            {
+              "fileURL": "",
+              "id": "jf:bb973e107452f145:movie-1-main-v1",
+              "mediaSourceID": "ms-movie-compact",
+              "name": "720p 压缩版"
+            }
+          ]
+        }
+      ],
+      "id": "jf:bb973e107452f145:movie-1",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "OpenFuse 自制的 HEVC Main 10、E-AC-3 5.1 与中日双语 ASS 测试片。",
+      "poster": "jellyfin:movie-1|movie",
+      "seasons": [],
+      "sourceID": "bb973e107452f145",
+      "sourceKind": "jellyfin",
+      "title": "OpenFuse Fixture (2026)",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-728b41c530df40c2-main",
+          "remotePath": "Movies/OpenFuse Fixture (2026)/OpenFuse Fixture.mkv",
+          "season": 0,
+          "sourceKind": "webdav",
+          "title": "OpenFuse Fixture · WebDAV NFO",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-728b41c530df40c2-main-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-728b41c530df40c2",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "来自 WebDAV movie.nfo 的本地简介，验证远程 NFO 与海报缓存。",
+      "poster": "file:build/library-acceptance/support/PosterCache/e076445364be3c99.jpg",
+      "seasons": [],
+      "sourceID": "53b293ac81a7ef3b",
+      "sourceKind": "webdav",
+      "title": "OpenFuse Fixture · WebDAV NFO",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file://build/library-fixture/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
+          "id": "local-f58fbcc18ae2bebb-s1e1-a2256088",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "file://build/library-fixture/Shows/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7/Season%2001/%E5%8F%A6%E4%B8%80%E9%83%A8%E5%89%A7.S01E01.mkv",
+              "id": "local-f58fbcc18ae2bebb-s1e1-a2256088-v0",
+              "mediaSourceID": "",
+              "name": "本地文件"
+            }
+          ]
+        }
+      ],
+      "id": "local-f58fbcc18ae2bebb",
+      "kind": "series",
+      "overridden": false,
+      "overview": "来自 tvshow.nfo 的本地简介，优先于 TMDB。",
+      "poster": "file:build/library-fixture/Shows/另一部剧/poster.jpg",
+      "seasons": [
+        {
+          "id": "local-f58fbcc18ae2bebb-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "local-65205c2a5c1367ad",
+      "sourceKind": "local",
+      "title": "另一部剧 · 本地 NFO",
+      "year": 2025
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file://build/library-fixture/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E01.mkv",
+          "id": "local-d277af4a63fb6820-s1e1-9b44dc06",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "file://build/library-fixture/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E01.mkv",
+              "id": "local-d277af4a63fb6820-s1e1-9b44dc06-v0",
+              "mediaSourceID": "",
+              "name": "本地文件"
+            }
+          ]
+        },
+        {
+          "episode": 2,
+          "fileURL": "file://build/library-fixture/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E02.mkv",
+          "id": "local-d277af4a63fb6820-s1e2-f5538ac6",
+          "remotePath": "",
+          "season": 1,
+          "sourceKind": "local",
+          "title": "第 2 集",
+          "versions": [
+            {
+              "fileURL": "file://build/library-fixture/Shows/%E7%A4%BA%E4%BE%8B%E5%89%A7/Season%2001/%E7%A4%BA%E4%BE%8B%E5%89%A7.S01E02.mkv",
+              "id": "local-d277af4a63fb6820-s1e2-f5538ac6-v0",
+              "mediaSourceID": "",
+              "name": "本地文件"
+            }
+          ]
+        }
+      ],
+      "id": "local-d277af4a63fb6820",
+      "kind": "series",
+      "overridden": false,
+      "overview": "",
+      "poster": "file:build/library-fixture/Shows/示例剧/poster.jpg",
+      "seasons": [
+        {
+          "id": "local-d277af4a63fb6820-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "local-65205c2a5c1367ad",
+      "sourceKind": "local",
+      "title": "示例剧",
+      "year": 0
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "jf:bb973e107452f145:ep-1",
+          "remotePath": "ep-1",
+          "season": 1,
+          "sourceKind": "jellyfin",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:bb973e107452f145:ep-1-v0",
+              "mediaSourceID": "",
+              "name": "服务器版本"
+            }
+          ]
+        },
+        {
+          "episode": 2,
+          "fileURL": "",
+          "id": "jf:bb973e107452f145:ep-2",
+          "remotePath": "ep-2",
+          "season": 1,
+          "sourceKind": "jellyfin",
+          "title": "第 2 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:bb973e107452f145:ep-2-v0",
+              "mediaSourceID": "",
+              "name": "服务器版本"
+            }
+          ]
+        }
+      ],
+      "id": "jf:bb973e107452f145:series-1",
+      "kind": "series",
+      "overridden": false,
+      "overview": "用于验证季/集层级、字幕与续播的测试剧。",
+      "poster": "jellyfin:series-1|series",
+      "seasons": [
+        {
+          "id": "season-1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "bb973e107452f145",
+      "sourceKind": "jellyfin",
+      "title": "示例剧",
+      "year": 0
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-53ae7ff45d678c71-s1e1-9b44dc06",
+          "remotePath": "Shows/示例剧/Season 01/示例剧.S01E01.mkv",
+          "season": 1,
+          "sourceKind": "webdav",
+          "title": "第 1 集 · WebDAV NFO",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-53ae7ff45d678c71-s1e1-9b44dc06-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-53ae7ff45d678c71",
+      "kind": "series",
+      "overridden": false,
+      "overview": "来自 WebDAV tvshow.nfo 的剧集简介。",
+      "poster": "file:build/library-acceptance/support/PosterCache/896e294de5f25c8c.jpg",
+      "seasons": [
+        {
+          "id": "webdav-53ae7ff45d678c71-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "53b293ac81a7ef3b",
+      "sourceKind": "webdav",
+      "title": "示例剧 · WebDAV NFO",
+      "year": 2025
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Fixture (2026)",
+          "versions": [
+            "Jellyfin · 1080p HEVC 5.1",
+            "Jellyfin · 720p 压缩版",
+            "本地 · 本地文件",
+            "WebDAV · WebDAV"
+          ]
+        }
+      ],
+      "key": "movie|openfuse fixture",
+      "sources": [
+        "jellyfin",
+        "local",
+        "webdav"
+      ],
+      "title": "OpenFuse Fixture (2026)"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|另一部剧",
+      "sources": [
+        "local"
+      ],
+      "title": "另一部剧 · 本地 NFO"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "Jellyfin · 服务器版本",
+            "本地 · 本地文件",
+            "WebDAV · WebDAV"
+          ]
+        },
+        {
+          "episode": 2,
+          "season": 1,
+          "title": "第 2 集",
+          "versions": [
+            "Jellyfin · 服务器版本",
+            "本地 · 本地文件"
+          ]
+        }
+      ],
+      "key": "series|示例剧",
+      "sources": [
+        "jellyfin",
+        "local",
+        "webdav"
+      ],
+      "title": "示例剧"
+    }
+  ],
+  "rawEpisodes": 9,
+  "rawWorks": 7,
+  "status": "",
+  "visible": [
+    "示例剧",
+    "OpenFuse Fixture (2026)",
+    "另一部剧 · 本地 NFO"
+  ],
+  "works": 3
+}

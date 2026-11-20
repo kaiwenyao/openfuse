@@ -367,7 +367,7 @@ public enum LibraryScanner {
                             name: media.name,
                             mediaSourceID: media.id,
                             container: media.container,
-                            resolution: nil,
+                            resolution: media.mediaStreams?.first(where: { $0.type == "Video" })?.height.map { "\($0)p" },
                             remotePath: movie.id,
                             fileURL: nil
                         )

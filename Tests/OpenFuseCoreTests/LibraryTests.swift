@@ -55,6 +55,9 @@ final class LibraryTests: XCTestCase {
         var plain = other
         plain.title = "示例剧"
         XCTAssertEqual(localized.mergeKey, plain.mergeKey)
+        var webdav = other
+        webdav.title = "示例剧 · WebDAV NFO"
+        XCTAssertEqual(webdav.mergeKey, plain.mergeKey)
     }
 
     func testStoreRoundTripSearchAndReplace() throws {

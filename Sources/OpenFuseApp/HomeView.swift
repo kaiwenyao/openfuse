@@ -99,6 +99,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let filter = self.value(after: "--library-filter", in: arguments) {
                     model.libraryKindFilter = filter == "movie" ? .movie : (filter == "series" ? .series : nil)
                 }
+                if let watch = self.value(after: "--library-watch", in: arguments),
+                   let parsed = LibraryWatchFilter(rawValue: watch) {
+                    model.libraryWatchFilter = parsed
+                }
+                if let resolution = self.value(after: "--library-resolution", in: arguments),
+                   let parsed = LibraryResolutionFilter(rawValue: resolution) {
+                    model.libraryResolutionFilter = parsed
+                }
+                if arguments.contains("--library-spoiler") {
+                    UserDefaults.standard.set(true, forKey: "openfuse.spoilerProtection")
+                }
                 if let query = self.value(after: "--library-work", in: arguments),
                    let work = model.findWork(matching: query) {
                     if arguments.contains("--library-clear-override") {
@@ -245,6 +256,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let filter = value(after: "--library-filter", in: arguments) {
             model.libraryKindFilter = filter == "movie" ? .movie : (filter == "series" ? .series : nil)
         }
+        if let watch = value(after: "--library-watch", in: arguments),
+           let parsed = LibraryWatchFilter(rawValue: watch) {
+            model.libraryWatchFilter = parsed
+        }
+        if let resolution = value(after: "--library-resolution", in: arguments),
+           let parsed = LibraryResolutionFilter(rawValue: resolution) {
+            model.libraryResolutionFilter = parsed
+        }
+        if arguments.contains("--library-spoiler") {
+            UserDefaults.standard.set(true, forKey: "openfuse.spoilerProtection")
+        }
         if let query = value(after: "--library-work", in: arguments),
            let work = model.findWork(matching: query) {
             model.route = .library(work)
@@ -358,6 +380,7 @@ enum Theme {
 
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
     @State private var isDropTarget = false
     @State private var showAddJellyfin = false
 
@@ -606,11 +629,25 @@ struct HomeView: View {
                     .foregroundStyle(Theme.secondary)
                 Spacer()
                 Menu {
-                    Button("全部") { model.libraryKindFilter = nil }
-                    Button("电影") { model.libraryKindFilter = .movie }
-                    Button("剧集") { model.libraryKindFilter = .series }
+                    Section("类型") {
+                        Button("全部") { model.libraryKindFilter = nil }
+                        Button("电影") { model.libraryKindFilter = .movie }
+                        Button("剧集") { model.libraryKindFilter = .series }
+                    }
+                    Section("观看状态") {
+                        ForEach(LibraryWatchFilter.allCases) { filter in
+                            Button(filter.label) { model.libraryWatchFilter = filter }
+                        }
+                    }
+                    Section("画质") {
+                        ForEach(LibraryResolutionFilter.allCases) { filter in
+                            Button(filter.label) { model.libraryResolutionFilter = filter }
+                        }
+                    }
+                    Divider()
+                    Toggle("防剧透", isOn: $spoilerProtection)
                 } label: {
-                    Text(model.libraryKindFilter.map { $0 == .movie ? "电影" : "剧集" } ?? "全部")
+                    Label("筛选", systemImage: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 11.5, weight: .medium))
                 }
                 .menuStyle(.borderlessButton)

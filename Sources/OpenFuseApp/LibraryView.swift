@@ -146,6 +146,7 @@ struct LibraryCard: View {
 
 struct LibraryDetailView: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
     let work: LibraryWork
 
     @State private var mergedEpisodes: [MergedLibraryEpisode] = []
@@ -154,12 +155,19 @@ struct LibraryDetailView: View {
     @State private var isLoading = true
     @State private var showEdit = false
     @State private var showMerge = false
+    @State private var revealSpoiler = false
 
     private var group: LibraryGroup? { model.group(for: work) }
     private var primary: LibraryWork {
         model.currentWork(id: work.id) ?? group?.primary ?? work
     }
     private var isMovie: Bool { primary.kind == .movie }
+    private var activeGroup: LibraryGroup {
+        group ?? LibraryGroup(id: primary.id, key: primary.mergeKey, primary: primary, works: [primary])
+    }
+    private var hideSpoilers: Bool {
+        spoilerProtection && !revealSpoiler && model.watchState(for: activeGroup) != .watched
+    }
 
     private var seasonNumbers: [Int] {
         Array(Set(mergedEpisodes.filter { $0.seasonNumber > 0 }.map(\.seasonNumber))).sorted()
@@ -206,7 +214,17 @@ struct LibraryDetailView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Theme.secondary)
 
-                        if let overview = primary.overview, !overview.isEmpty {
+                        if hideSpoilers {
+                            HStack(spacing: 8) {
+                                Text("简介已隐藏（防剧透）")
+                                    .font(.system(size: 12.5))
+                                    .foregroundStyle(Theme.secondary)
+                                Button("显示") { revealSpoiler = true }
+                                    .buttonStyle(.plain)
+                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .foregroundStyle(Theme.accent)
+                            }
+                        } else if let overview = primary.overview, !overview.isEmpty {
                             Text(overview)
                                 .font(.system(size: 12.5))
                                 .foregroundStyle(Theme.secondary)
@@ -383,7 +401,11 @@ struct LibraryDetailView: View {
                                     .foregroundStyle(Theme.secondary)
                             }
                         }
-                        if let overview = episode.overview, !overview.isEmpty {
+                        if hideSpoilers {
+                            Text("防剧透已开启")
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(Theme.secondary)
+                        } else if let overview = episode.overview, !overview.isEmpty {
                             Text(overview)
                                 .font(.system(size: 10.5))
                                 .foregroundStyle(Theme.secondary)

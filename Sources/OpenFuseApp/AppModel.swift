@@ -17,6 +17,7 @@ enum LibrarySort: String, CaseIterable, Identifiable {
     case year
     case added
     case episodes
+    case recentlyPlayed
 
     var id: String { rawValue }
     var label: String {
@@ -25,8 +26,49 @@ enum LibrarySort: String, CaseIterable, Identifiable {
         case .year: return "年份"
         case .added: return "最近添加"
         case .episodes: return "集数"
+        case .recentlyPlayed: return "最近播放"
         }
     }
+}
+
+enum LibraryWatchFilter: String, CaseIterable, Identifiable {
+    case all
+    case unwatched
+    case inProgress
+    case watched
+
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: return "全部"
+        case .unwatched: return "未看"
+        case .inProgress: return "观看中"
+        case .watched: return "已看"
+        }
+    }
+}
+
+enum LibraryResolutionFilter: String, CaseIterable, Identifiable {
+    case all
+    case uhd
+    case hd1080
+    case hd720
+
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .all: return "全部"
+        case .uhd: return "4K"
+        case .hd1080: return "1080p"
+        case .hd720: return "720p"
+        }
+    }
+}
+
+enum LibraryWatchState: Sendable {
+    case unwatched
+    case inProgress
+    case watched
 }
 
 @MainActor
@@ -51,6 +93,8 @@ final class AppModel: ObservableObject {
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
     @Published var libraryKindFilter: LibraryKind?
+    @Published var libraryWatchFilter: LibraryWatchFilter = .all
+    @Published var libraryResolutionFilter: LibraryResolutionFilter = .all
     @Published var scanProgress = 0
     private var activeScanToken: ScanCancellationToken?
     private var activeScanTask: Task<Void, Never>?
@@ -650,6 +694,27 @@ final class AppModel: ObservableObject {
         if let libraryKindFilter {
             groups = groups.filter { $0.primary.kind == libraryKindFilter }
         }
+        if libraryWatchFilter != .all {
+            groups = groups.filter { group in
+                switch libraryWatchFilter {
+                case .all: return true
+                case .unwatched: return watchState(for: group) == .unwatched
+                case .inProgress: return watchState(for: group) == .inProgress
+                case .watched: return watchState(for: group) == .watched
+                }
+            }
+        }
+        if libraryResolutionFilter != .all {
+            groups = groups.filter { group in
+                guard let resolution = resolutionHeight(for: group) else { return false }
+                switch libraryResolutionFilter {
+                case .all: return true
+                case .uhd: return resolution >= 2000
+                case .hd1080: return resolution >= 1000 && resolution < 2000
+                case .hd720: return resolution >= 700 && resolution < 1000
+                }
+            }
+        }
         let query = librarySearch.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
             groups = groups.filter { group in
@@ -668,8 +733,107 @@ final class AppModel: ObservableObject {
             groups.sort { $0.primary.addedAt > $1.primary.addedAt }
         case .episodes:
             groups.sort { $0.primary.episodeCount > $1.primary.episodeCount }
+        case .recentlyPlayed:
+            groups.sort {
+                let left = lastPlayedAt(for: $0) ?? .distantPast
+                let right = lastPlayedAt(for: $1) ?? .distantPast
+                if left == right {
+                    return $0.primary.sortTitle.localizedStandardCompare($1.primary.sortTitle) == .orderedAscending
+                }
+                return left > right
+            }
         }
         return groups
+    }
+
+    func watchState(for group: LibraryGroup) -> LibraryWatchState {
+        let records = Dictionary(uniqueKeysWithValues: store.allRecords().map { ($0.mediaPath, $0) })
+        var episodes: [String: [LibraryEpisode]] = [:]
+        for work in group.works {
+            for episode in libraryEpisodes(workID: work.id) {
+                let key = "\(episode.seasonNumber)|\(episode.episodeNumber)"
+                episodes[key, default: []].append(episode)
+            }
+        }
+        guard !episodes.isEmpty else { return .unwatched }
+        var watched = 0
+        var inProgress = 0
+        for variants in episodes.values {
+            var best: PlaybackRecord?
+            for episode in variants {
+                if let record = playbackRecord(for: episode, records: records) {
+                    if best == nil || record.lastPlayedAt > best!.lastPlayedAt { best = record }
+                }
+            }
+            if let best {
+                if best.isFinished { watched += 1 }
+                else if best.position > 0 { inProgress += 1 }
+            }
+        }
+        if inProgress > 0 { return .inProgress }
+        if watched == episodes.count { return .watched }
+        if watched > 0 { return .inProgress }
+        return .unwatched
+    }
+
+    func lastPlayedAt(for group: LibraryGroup) -> Date? {
+        let records = store.allRecords()
+        var latest: Date?
+        for work in group.works {
+            for episode in libraryEpisodes(workID: work.id) {
+                if let record = playbackRecord(for: episode, records: Dictionary(uniqueKeysWithValues: records.map { ($0.mediaPath, $0) })),
+                   latest == nil || record.lastPlayedAt > latest! {
+                    latest = record.lastPlayedAt
+                }
+            }
+        }
+        return latest
+    }
+
+    func resolutionHeight(for group: LibraryGroup) -> Int? {
+        var heights: [Int] = []
+        for work in group.works {
+            for episode in libraryEpisodes(workID: work.id) {
+                for version in libraryVersions(itemID: episode.id) {
+                    if let height = resolutionHeight(version) { heights.append(height) }
+                }
+            }
+        }
+        return heights.max()
+    }
+
+    private func resolutionHeight(_ version: LibraryVersion) -> Int? {
+        let text = [version.resolution, version.name, version.container].compactMap { $0 }.joined(separator: " ")
+        let upper = text.uppercased()
+        if upper.contains("4K") || upper.contains("2160") { return 2160 }
+        if upper.contains("1080") { return 1080 }
+        if upper.contains("720") { return 720 }
+        if upper.contains("480") || upper.contains("SD") { return 480 }
+        if let match = text.range(of: #"(\d{3,4})[pP]"#, options: .regularExpression) {
+            return Int(text[match].dropLast())
+        }
+        return nil
+    }
+
+    private func playbackRecord(for episode: LibraryEpisode, records: [String: PlaybackRecord]) -> PlaybackRecord? {
+        if let fileURL = episode.fileURL {
+            let path = URL(string: fileURL)?.path ?? fileURL
+            if let record = records[path] { return record }
+        }
+        for version in libraryVersions(itemID: episode.id) {
+            if version.sourceKind == "webdav", let path = version.remotePath ?? episode.remotePath {
+                let key = "webdav://\(version.sourceID)/\(path)"
+                if let record = records[key] { return record }
+            }
+            if version.sourceKind == "jellyfin" {
+                let itemID = episode.serverID ?? version.remotePath ?? episode.remotePath ?? ""
+                let prefix = "jellyfin://\(version.sourceID)/\(itemID)/"
+                if let record = records.first(where: { $0.key.hasPrefix(prefix) })?.value {
+                    return record
+                }
+            }
+        }
+        return nil
     }
 
     func group(for work: LibraryWork) -> LibraryGroup? {

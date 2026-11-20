@@ -58,4 +58,4 @@ build/mobile-device/Build/Products/Release-iphoneos/OpenFuse.app
 
 ## 下一项
 
-M4b：完成模拟器 runtime 安装并实际启动/截图；接入移动端 Jellyfin/WebDAV 来源与 MKV/libmpv；iPad 分栏；tvOS/visionOS 目标；CloudKit/Trakt 同步。
+M4b：完成模拟器 runtime 安装并实际启动/截图；接入移动端 Jellyfin/WebDAV 来源与 MKV/libmpv；iPad 分栏；tvOS/visionOS 目标；CloudKit/Trakt 同步。Mac M3 的观看状态/防剧透/最近播放已在 [M3h 验收](M3H-WATCH.md) 补齐。

@@ -85,6 +85,23 @@ OPENFUSE_SUPPORT_DIR="$SUPPORT" "$APP" --library-play "$PLAY_EPISODE" \
   --report "$OUT/library-play.json" --quit-after 16 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
 
+# 6. Watch state / recently played / resolution filters.
+OPENFUSE_SUPPORT_DIR="$SUPPORT" "$APP" --library-filter series --library-watch inProgress \
+  --library-report "$OUT/watch-in-progress.json" --quit-after 3 >"$OUT/app.log" 2>&1 || true
+sleep 0.5
+OPENFUSE_SUPPORT_DIR="$SUPPORT" "$APP" --library-sort recentlyPlayed \
+  --library-report "$OUT/watch-recent.json" --quit-after 3 >"$OUT/app.log" 2>&1 || true
+sleep 0.5
+OPENFUSE_SUPPORT_DIR="$SUPPORT" "$APP" --library-resolution hd1080 \
+  --library-report "$OUT/watch-resolution.json" --quit-after 3 >"$OUT/app.log" 2>&1 || true
+sleep 0.5
+
+# 7. Spoiler protection detail.
+OPENFUSE_SUPPORT_DIR="$SUPPORT" "$APP" --library-work "示例剧" --library-spoiler \
+  --capture-ui "$OUT/library-spoiler.png" --ui-after 3 --quit-after 5 \
+  >"$OUT/app.log" 2>&1 || true
+sleep 0.5
+
 python3 - "$OUT" <<'PY'
 import json, os, sys
 out = sys.argv[1]
@@ -136,7 +153,14 @@ if play.get("sourceKind") != "local" or not 9.8 <= play.get("position", 0) <= 10
 if not play.get("selectedSubtitle", "").endswith(".zh-Hans.ass"):
     errors.append(f"library play: subtitle {play.get('selectedSubtitle')}")
 
-for name in ["library-local.png", "library-all.png", "series-detail.png", "library-search.png", "library-play.png"]:
+if load("watch-in-progress.json")["visible"] != ["示例剧"]:
+    errors.append(f"watch filter: {load('watch-in-progress.json')['visible']}")
+if load("watch-recent.json")["visible"][:1] != ["示例剧"]:
+    errors.append(f"recent sort: {load('watch-recent.json')['visible']}")
+if "OpenFuse Fixture (2026)" not in load("watch-resolution.json")["visible"]:
+    errors.append(f"resolution filter: {load('watch-resolution.json')['visible']}")
+
+for name in ["library-local.png", "library-all.png", "series-detail.png", "library-search.png", "library-play.png", "library-spoiler.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing capture {name}")
 
@@ -145,6 +169,6 @@ if errors:
     for error in errors:
         print(" -", error)
     sys.exit(1)
-print("PASS: local/Jellyfin/WebDAV scan, 7 works/9 episodes, search, details, library playback")
+print("PASS: local/Jellyfin/WebDAV scan, 7 works/9 episodes, search, details, library playback, watch/recent/resolution filters, spoiler UI")
 print(f"captures: {out}")
 PY

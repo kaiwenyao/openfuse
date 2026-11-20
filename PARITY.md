@@ -111,6 +111,15 @@
 | iOS device 构建 | 同上 | 同上 | 待采样 | `generic/platform=iOS` Release → BUILD SUCCEEDED | 同上 | 构建通过；真机待验证 |
 | 移动 UI/播放/续播 | 同上 | 20s H.264/AAC 示例 | 待采样 | 无模拟器 runtime；启动、布局、触控、后台恢复、音频均未执行 | — | 待验证 |
 
+### M3h 观看状态/防剧透执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 观看状态筛选 | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地+Jellyfin+WebDAV，示例剧 S01E01 9.917s | Infuse 未安装，待采样 | 「观看中」只剩《示例剧》 | `reports/m3h-watch-in-progress.json` | 本地通过 |
+| 最近播放排序 | 同上 | 同上 | 待采样 | 《示例剧》排第一 | `reports/m3h-watch-recent.json` | 本地通过 |
+| 画质筛选 | 同上 | Jellyfin 电影 1080p/720p 版本 | 待采样 | 1080p 只剩电影；单集/本地无分辨率元数据 | `reports/m3h-watch-resolution.json` | 部分通过 |
+| 防剧透 | 同上 | 《示例剧》观看中 | 待采样 | 详情/单集简介隐藏，点「显示」展开 | Evidence 37 | 本地通过 |
+
 
 
 
