@@ -607,3 +607,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 大文件 seek | MacBook Pro M2 Pro／macOS 27.2.1 | 120s/90MB over Samba | Infuse 未安装 | seek 62.04/120；RSS≈100MB；无整文件缓存 | Evidence 102、`reports/m5am-samba-large-*` | 通过 |
 | 多GB/并发/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |
+
+### M2h Jellyfin 多用户执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 多用户隔离 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin 12，test/test2 | Infuse 未安装 | test2 11.064s；test 仍 0 | `reports/m2h-jellyfin-user*.json` | 通过 |
+| UI 用户切换/权限/并发 | 同上 | 同上 | 待采样 | 未做 | — | 待验证 |

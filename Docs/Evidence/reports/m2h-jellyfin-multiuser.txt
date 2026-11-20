@@ -1,0 +1,20 @@
+OpenFuse M2h Jellyfin multi-user evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Jellyfin 12.4 Docker, users test/test and test2/test2.
+
+Flow:
+  Create test2 via /Users/New; enable local password via /Users/{id}/Configuration.
+  Clear test's progress on OpenFuse Jellyfin; scan/play as test2 in separate
+  support dir; query both users' UserData with their own tokens.
+
+Results:
+  test2 play: position 11.064s.
+  test2 UserData: PlaybackPositionTicks≈110.6M, Played=false/PlayCount1.
+  test  UserData: PlaybackPositionTicks=0 (untouched).
+  Scripts/run-jellyfin-multiuser.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  UI user switching, per-user library permissions, concurrent sessions, HTTPS,
+  real device, audio.

@@ -1,0 +1,95 @@
+{
+  "app" : "OpenFuse",
+  "arguments" : [
+    "build\/OpenFuse.app\/Contents\/MacOS\/OpenFuse",
+    "--library-play",
+    "jf:3290c4fb555d3041:c9a8049da54e0f1e4ffbf6cce67cee71-main",
+    "--seek",
+    "10",
+    "--freeze-at",
+    "11",
+    "--report",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/jellyfin-multiuser\/play.json",
+    "--capture-after",
+    "8",
+    "--quit-after",
+    "12"
+  ],
+  "audio" : [
+    {
+      "channels" : 6,
+      "codec" : "eac3",
+      "engineID" : 1,
+      "id" : "mpv-audio:1",
+      "label" : "E-AC-3 5.1",
+      "name" : "Chinese - Dolby Digital+ - 5.1 - Default"
+    },
+    {
+      "channels" : 2,
+      "codec" : "aac",
+      "engineID" : 2,
+      "id" : "mpv-audio:2",
+      "label" : "AAC 立体声",
+      "name" : "E-AC-3 5.1 测试音轨 - Chinese - AAC - Stereo"
+    }
+  ],
+  "audioChannels" : "6",
+  "audioCodec" : "eac3",
+  "audioDevice" : "auto",
+  "audioDeviceActive" : "auto",
+  "audioOutParams" : "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams" : "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "currentAO" : "coreaudio",
+  "currentVO" : "libmpv",
+  "duration" : 20.041,
+  "engine" : "libmpv",
+  "file" : "http:\/\/127.0.0.1:8096\/Videos\/c9a8049da54e0f1e4ffbf6cce67cee71\/stream?Static=true&MediaSourceId=c9a8049da54e0f1e4ffbf6cce67cee71",
+  "generatedAt" : "2026-11-20T10:12:01Z",
+  "hdrComputePeak" : "yes",
+  "hwdecCurrent" : "videotoolbox",
+  "isFullScreen" : false,
+  "libraryStatus" : "",
+  "logs" : [
+    "[warn] libmpv_render: Disabling HDR peak computation (one or more of the following is not supported: compute shaders=0, SSBO=0).",
+    "[warn] ffmpeg\/demuxer: mov,mp4,m4a,3gp,3g2,mj2: UDTA parsing failed retrying raw",
+    "[warn] libmpv_render: Tone mapping curve unsupported by vo_gpu, falling back."
+  ],
+  "mpv" : "mpv v0.42.0",
+  "paused" : true,
+  "position" : 10,
+  "remotePath" : "c9a8049da54e0f1e4ffbf6cce67cee71|c9a8049da54e0f1e4ffbf6cce67cee71",
+  "screenEDR" : 16,
+  "selectedAudio" : "mpv-audio:1",
+  "selectedSubtitle" : "mpv:1",
+  "sourceID" : "3290c4fb555d3041",
+  "sourceKind" : "jellyfin",
+  "sourceName" : "Jellyfin2",
+  "subtitles" : [
+    {
+      "engineID" : 1,
+      "format" : "unknown",
+      "id" : "mpv:1",
+      "language" : "zh",
+      "name" : "简体中文 - Chinese - Default - MOV_TEXT",
+      "source" : "embedded"
+    },
+    {
+      "engineID" : 2,
+      "format" : "unknown",
+      "id" : "mpv:2",
+      "language" : "zh",
+      "name" : "繁體中文 - Chinese - MOV_TEXT",
+      "source" : "embedded"
+    }
+  ],
+  "targetColorspaceHint" : "yes",
+  "title" : "OpenFuse Jellyfin",
+  "toneMapping" : "spline",
+  "videoCodec" : "hevc \/ Main 10",
+  "videoDescription" : "H.265 \/ HEVC (High Efficiency Video Coding)",
+  "videoGamma" : "bt.1886",
+  "videoOutParams" : "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1920,\"h\":1080,\"dw\":1920,\"dh\":1080,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1920,\"crop-h\":1080,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2\/4\/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "videoPrimaries" : "bt.709",
+  "videoSigPeak" : "0.000000",
+  "windowFrame" : "{{0, 0}, {0, 0}}"
+}

@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## Jellyfin 多用户（M2h）
+
+- 第二用户 test2 创建/启用本地密码；独立 support 扫描/播放。
+- test2 位置11.064s，test 保持0；UserData 用各自 token 验证。
+- UI 切换/权限/并发会话/HTTPS 未验证。
+
 ## Jellyfin HLS 1080p/元数据（M2g）
 
 - hlsURL 加 8Mbps/1080p 限制；服务器 maxrate8M/1920x1080。
