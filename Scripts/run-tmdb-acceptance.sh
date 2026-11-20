@@ -29,6 +29,12 @@ for _ in {1..40}; do
   sleep 0.25
 done
 
+# NFO has priority over TMDB (tested by run-webdav-metadata.sh). For this
+# TMDB-only WebDAV check, remove NFO/posters so the server behaves like a plain
+# OpenList directory without local metadata.
+find build/webdav-root -name '*.nfo' -delete
+find build/webdav-root -name 'poster.jpg' -delete
+
 TMDB_ENV=(
   OPENFUSE_TMDB_API_KEY=test-key
   "OPENFUSE_TMDB_BASE_URL=http://127.0.0.1:$TMDB_PORT/3"

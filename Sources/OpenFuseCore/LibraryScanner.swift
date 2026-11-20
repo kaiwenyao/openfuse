@@ -510,13 +510,40 @@ public enum LibraryScanner {
         rootPath: String = "",
         maxDepth: Int = 6,
         maxFiles: Int = 3000,
+        posterCacheDirectory: URL? = nil,
         token: ScanCancellationToken? = nil,
         progress: ((Int) -> Void)? = nil
     ) async throws -> ScannedLibrary {
         var queue: [(path: String, depth: Int)] = [(rootPath, 0)]
         var candidates: [FileCandidate] = []
-        var postersByDirectory: [String: String] = [:]
+        var postersByDirectory: [String: String] = [:]  // value: remote path
+        var nfoByKey: [String: NFOMetadata] = [:]
+        var movieNFOByDirectory: [String: NFOMetadata] = [:]
+        var showNFOByDirectory: [String: NFOMetadata] = [:]
         var visited = 0
+        var downloadedPosters = 0
+        if let posterCacheDirectory {
+            try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
+        }
+
+        func cachePoster(remotePath: String) async -> String? {
+            guard let posterCacheDirectory, downloadedPosters < 300, !remotePath.isEmpty else { return nil }
+            let ext = (remotePath as NSString).pathExtension.lowercased()
+            let suffix = ["jpg", "jpeg", "png", "webp"].contains(ext) ? ext : "jpg"
+            let name = LibraryID.hash(remotePath) + "." + suffix
+            let destination = posterCacheDirectory.appendingPathComponent(name)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                downloadedPosters += 1
+                return destination.path
+            }
+            guard let (data, _) = try? await client.fetch(path: remotePath), !data.isEmpty else {
+                return nil
+            }
+            try? data.write(to: destination, options: .atomic)
+            downloadedPosters += 1
+            return destination.path
+        }
+
         while !queue.isEmpty {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let current = queue.removeFirst()
@@ -531,27 +558,79 @@ public enum LibraryScanner {
                 let directory = (entry.path as NSString).deletingLastPathComponent
                 let base = (entry.name as NSString).deletingPathExtension.lowercased()
                 if ["poster", "folder", "cover"].contains(base) || entry.name.lowercased().contains("poster") {
-                    postersByDirectory[directory + "|dir"] = entry.url.absoluteString
+                    postersByDirectory[directory + "|dir"] = entry.path
                 }
-                postersByDirectory[directory + "|" + base] = entry.url.absoluteString
+                postersByDirectory[directory + "|" + base] = entry.path
             }
+            // NFO files are fetched with the same auth as media. Parsing keeps
+            // the raw poster reference so relative names can be resolved later.
+            for entry in entries where !entry.isDirectory && entry.fileExtension == "nfo" {
+                guard let (data, _) = try? await client.fetch(path: entry.path),
+                      let metadata = NFOReader.parse(
+                        data: data,
+                        baseURL: URL(fileURLWithPath: "/remote/" + entry.path)
+                      )
+                else { continue }
+                let directory = (entry.path as NSString).deletingLastPathComponent
+                let base = (entry.name as NSString).deletingPathExtension.lowercased()
+                if base == "tvshow" {
+                    showNFOByDirectory[directory] = metadata
+                } else if base == "movie" {
+                    movieNFOByDirectory[directory] = metadata
+                } else {
+                    nfoByKey[directory + "|" + base] = metadata
+                }
+            }
+
             for entry in entries where !entry.isDirectory && videoExtensions.contains(entry.fileExtension) {
                 visited += 1
                 if visited > maxFiles { break }
                 let directory = (entry.path as NSString).deletingLastPathComponent
+                let parent = (directory as NSString).deletingLastPathComponent
                 let base = (entry.name as NSString).deletingPathExtension.lowercased()
-                let poster = postersByDirectory[directory + "|" + base]
-                    ?? postersByDirectory[directory + "|dir"]
+                let nfo = nfoByKey[directory + "|" + base] ?? movieNFOByDirectory[directory]
+                let showDirectory = showNFOByDirectory[directory] != nil ? directory : parent
+                let showNFO = showNFOByDirectory[directory] ?? showNFOByDirectory[parent]
+                var posterPath: String?
+                var posterURL: String?
+
+                var nfoPoster: (reference: String, directory: String)?
+                if let reference = nfo?.posterReference, !reference.isEmpty {
+                    nfoPoster = (reference, directory)
+                } else if let reference = showNFO?.posterReference, !reference.isEmpty {
+                    nfoPoster = (reference, showDirectory)
+                }
+                if let nfoPoster {
+                    if nfoPoster.reference.hasPrefix("http://") || nfoPoster.reference.hasPrefix("https://") {
+                        posterURL = nfoPoster.reference
+                    } else {
+                        let remote = nfoPoster.directory + "/" + nfoPoster.reference
+                        if let cached = await cachePoster(remotePath: remote) {
+                            posterPath = cached
+                        } else {
+                            posterURL = client.url(for: remote).absoluteString
+                        }
+                    }
+                } else if let remote = postersByDirectory[directory + "|" + base]
+                            ?? postersByDirectory[directory + "|dir"]
+                            ?? postersByDirectory[parent + "|dir"] {
+                    if let cached = await cachePoster(remotePath: remote) {
+                        posterPath = cached
+                    } else {
+                        posterURL = client.url(for: remote).absoluteString
+                    }
+                }
+
                 candidates.append(
                     FileCandidate(
                         relativePath: entry.path,
                         name: entry.name,
                         fileURL: nil,
                         remotePath: entry.path,
-                        posterPath: nil,
-                        posterURL: poster,
-                        nfo: nil,
-                        showNFO: nil
+                        posterPath: posterPath,
+                        posterURL: posterURL,
+                        nfo: nfo,
+                        showNFO: showNFO
                     )
                 )
             }

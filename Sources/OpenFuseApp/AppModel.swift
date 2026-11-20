@@ -463,7 +463,9 @@ final class AppModel: ObservableObject {
             try libraryStore.replace(source: enriched.library)
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
-            let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
+            let tmdbMatched = tmdbAvailable
+                ? ((try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0)
+                : 0
             libraryStatus = "已扫描 \(scanned.sourceName)：\(counts.works) 个作品" +
                 (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
         } catch LibraryScanError.cancelled {
@@ -560,6 +562,7 @@ final class AppModel: ObservableObject {
             let scanned = try await LibraryScanner.scanWebDAV(
                 source: source,
                 client: client,
+                posterCacheDirectory: supportDirectory.appendingPathComponent("PosterCache", isDirectory: true),
                 token: token,
                 progress: { value in
                     Task { @MainActor in self.scanProgress = value }
@@ -570,7 +573,9 @@ final class AppModel: ObservableObject {
             try libraryStore.replace(source: enriched.library)
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
-            let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
+            let tmdbMatched = tmdbAvailable
+                ? ((try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0)
+                : 0
             libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品" +
                 (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
         } catch LibraryScanError.cancelled {

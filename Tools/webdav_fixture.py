@@ -56,9 +56,28 @@ def link_or_copy(source: str, destination: str) -> None:
         shutil.copy2(source, destination)
 
 
+def ensure_poster(name: str, seconds: float) -> str:
+    source_dir = os.path.abspath("build/jellyfin-fixture")
+    os.makedirs(source_dir, exist_ok=True)
+    path = os.path.join(source_dir, name)
+    if not os.path.exists(path):
+        subprocess.run(
+            [
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                "-ss", str(seconds), "-i", FIXTURE, "-frames:v", "1",
+                "-vf", "scale=400:600:force_original_aspect_ratio=increase,crop=400:600",
+                path,
+            ],
+            check=True,
+        )
+    return path
+
+
 def setup_tree() -> None:
     if not os.path.exists(FIXTURE):
         raise SystemExit(f"missing fixture: {FIXTURE}; run Scripts/make_fixtures.sh")
+    movie_poster = ensure_poster("movie.jpg", 5.5)
+    show_poster = ensure_poster("series.jpg", 35.5)
     movie_dir = os.path.join(ROOT, "Movies", "OpenFuse Fixture (2026)")
     link_or_copy(FIXTURE, os.path.join(movie_dir, "OpenFuse Fixture.mkv"))
     subtitle_targets = {
@@ -68,12 +87,46 @@ def setup_tree() -> None:
     }
     for source_name, target_name in subtitle_targets.items():
         link_or_copy(os.path.join("Fixtures/generated", source_name), os.path.join(movie_dir, target_name))
+    link_or_copy(movie_poster, os.path.join(movie_dir, "poster.jpg"))
+    with open(os.path.join(movie_dir, "movie.nfo"), "w", encoding="utf-8") as handle:
+        handle.write(
+            """<?xml version="1.0" encoding="UTF-8"?>
+<movie>
+  <title>OpenFuse Fixture · WebDAV NFO</title>
+  <year>2026</year>
+  <plot>来自 WebDAV movie.nfo 的本地简介，验证远程 NFO 与海报缓存。</plot>
+  <poster>poster.jpg</poster>
+</movie>
+"""
+        )
     episode_dir = os.path.join(ROOT, "Shows", "示例剧", "Season 01")
     link_or_copy(FIXTURE, os.path.join(episode_dir, "示例剧.S01E01.mkv"))
     link_or_copy(
         os.path.join("Fixtures/generated", "openfuse-fixture.zh-Hans.ass"),
         os.path.join(episode_dir, "示例剧.S01E01.zh-Hans.ass"),
     )
+    show_dir = os.path.join(ROOT, "Shows", "示例剧")
+    link_or_copy(show_poster, os.path.join(show_dir, "poster.jpg"))
+    with open(os.path.join(show_dir, "tvshow.nfo"), "w", encoding="utf-8") as handle:
+        handle.write(
+            """<?xml version="1.0" encoding="UTF-8"?>
+<tvshow>
+  <title>示例剧 · WebDAV NFO</title>
+  <year>2025</year>
+  <plot>来自 WebDAV tvshow.nfo 的剧集简介。</plot>
+  <poster>poster.jpg</poster>
+</tvshow>
+"""
+        )
+    with open(os.path.join(episode_dir, "示例剧.S01E01.nfo"), "w", encoding="utf-8") as handle:
+        handle.write(
+            """<?xml version="1.0" encoding="UTF-8"?>
+<episodedetails>
+  <title>第 1 集 · WebDAV NFO</title>
+  <plot>单集 NFO 简介。</plot>
+</episodedetails>
+"""
+        )
     odd_dir = os.path.join(ROOT, "Movies", "100% 测试")
     os.makedirs(odd_dir, exist_ok=True)
     with open(os.path.join(odd_dir, "说明.txt"), "w", encoding="utf-8") as handle:

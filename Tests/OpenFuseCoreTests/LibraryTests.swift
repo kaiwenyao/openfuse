@@ -190,6 +190,20 @@ final class LibraryTests: XCTestCase {
                        ["Jellyfin ", "本地 "])
     }
 
+    func testNFODataParsingKeepsRemotePosterReference() throws {
+        let xml = """
+        <movie><title>远程电影</title><year>2026</year><plot>简介</plot><poster>poster.jpg</poster></movie>
+        """
+        let metadata = try XCTUnwrap(NFOReader.parse(
+            data: xml.data(using: .utf8)!,
+            baseURL: URL(fileURLWithPath: "/remote/Movies/Movie")
+        ))
+        XCTAssertEqual(metadata.title, "远程电影")
+        XCTAssertEqual(metadata.overview, "简介")
+        XCTAssertEqual(metadata.posterReference, "poster.jpg")
+        XCTAssertNil(metadata.posterPath)
+    }
+
     func testLocalScannerGroupsSeriesAndMovies() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-scan-\(UUID().uuidString)", isDirectory: true)

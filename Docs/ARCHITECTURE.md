@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## WebDAV NFO 与海报缓存（M3f）
+
+- 扫描时对远程 `.nfo` 发带凭据 GET，`NFOReader.parse(data:baseURL:)` 保留 `posterReference`；movie/tvshow/episode 三种作用域。
+- 海报优先级：NFO poster > 同目录/剧集目录 poster/folder/cover；通过 `WebDAVClient.fetch` 下载到 `PosterCache/`（路径哈希命名），库中保存 `file:`；失败回退 `remote:`。
+- NFO 完整作品跳过 TMDB；单集 NFO 的标题/简介覆盖文件名解析。
+- 缓存未按 ETag 失效，删除来源不清缓存；真实 OpenList 待验证。
+
 ## 手动合并/拆分与 TMDB 候选（M3e）
 
 - `LibraryOverride.mergeGroupID`：作品加入指定分组键，或 `split:<id>` 强制独立；`library-overrides.json` 持久化，扫描替换来源后仍生效。

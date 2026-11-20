@@ -55,4 +55,4 @@ PASS: invalid API key returns no match
 
 ## 下一项
 
-M3f：WebDAV NFO/认证海报缓存、最近添加/继续观看排序、筛选与防剧透、T07 扫描中播放/超时恢复；完成 M3 后再进入 M4 家庭设备与状态同步。
+WebDAV NFO/认证海报已在 [M3f WebDAV NFO 验收](M3F-WEBDAV-NFO.md) 完成。剩余 M3g：最近添加/继续观看排序、筛选/防剧透、T07 扫描中播放/超时；完成后再进入 M4。

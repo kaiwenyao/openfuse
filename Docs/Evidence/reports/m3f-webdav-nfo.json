@@ -1,0 +1,136 @@
+{
+  "episodes": 2,
+  "generatedAt": "2026-11-20T00:17:01Z",
+  "groups": [
+    {
+      "key": "movie|openfuse fixture · webdav nfo",
+      "primary": "OpenFuse Fixture · WebDAV NFO",
+      "sources": [
+        "webdav"
+      ],
+      "workIDs": [
+        "webdav-1cfcef5caa00a29a"
+      ]
+    },
+    {
+      "key": "series|示例剧 · webdav nfo",
+      "primary": "示例剧 · WebDAV NFO",
+      "sources": [
+        "webdav"
+      ],
+      "workIDs": [
+        "webdav-c5ab640fb966efd7"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-1cfcef5caa00a29a-main",
+          "remotePath": "Movies/OpenFuse Fixture (2026)/OpenFuse Fixture.mkv",
+          "season": 0,
+          "sourceKind": "webdav",
+          "title": "OpenFuse Fixture · WebDAV NFO",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-1cfcef5caa00a29a-main-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-1cfcef5caa00a29a",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "来自 WebDAV movie.nfo 的本地简介，验证远程 NFO 与海报缓存。",
+      "poster": "file:build/webdav-metadata/support/PosterCache/e076445364be3c99.jpg",
+      "seasons": [],
+      "sourceID": "a5b9cb302b23e0ab",
+      "sourceKind": "webdav",
+      "title": "OpenFuse Fixture · WebDAV NFO",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "webdav-c5ab640fb966efd7-s1e1-9b44dc06",
+          "remotePath": "Shows/示例剧/Season 01/示例剧.S01E01.mkv",
+          "season": 1,
+          "sourceKind": "webdav",
+          "title": "第 1 集 · WebDAV NFO",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "webdav-c5ab640fb966efd7-s1e1-9b44dc06-v0",
+              "mediaSourceID": "",
+              "name": "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id": "webdav-c5ab640fb966efd7",
+      "kind": "series",
+      "overridden": false,
+      "overview": "来自 WebDAV tvshow.nfo 的剧集简介。",
+      "poster": "file:build/webdav-metadata/support/PosterCache/896e294de5f25c8c.jpg",
+      "seasons": [
+        {
+          "id": "webdav-c5ab640fb966efd7-s1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "a5b9cb302b23e0ab",
+      "sourceKind": "webdav",
+      "title": "示例剧 · WebDAV NFO",
+      "year": 2025
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Fixture · WebDAV NFO",
+          "versions": [
+            "WebDAV · WebDAV"
+          ]
+        }
+      ],
+      "key": "movie|openfuse fixture · webdav nfo",
+      "sources": [
+        "webdav"
+      ],
+      "title": "OpenFuse Fixture · WebDAV NFO"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集 · WebDAV NFO",
+          "versions": [
+            "WebDAV · WebDAV"
+          ]
+        }
+      ],
+      "key": "series|示例剧 · webdav nfo",
+      "sources": [
+        "webdav"
+      ],
+      "title": "示例剧 · WebDAV NFO"
+    }
+  ],
+  "rawEpisodes": 2,
+  "rawWorks": 2,
+  "status": "WebDAV fixture：2 个作品",
+  "works": 2
+}

@@ -6,6 +6,9 @@ public struct NFOMetadata: Sendable {
     public var overview: String?
     public var posterURL: URL?
     public var posterPath: String?
+    /// Raw <poster>/<thumb> value. For remote NFOs this can be a relative
+    /// filename that the caller resolves against the remote directory.
+    public var posterReference: String?
 }
 
 /// Minimal Kodi/Jellyfin-compatible NFO reader. Supports movie.nfo,
@@ -34,7 +37,11 @@ public enum NFOReader {
 
     public static func parse(_ url: URL) -> NFOMetadata? {
         guard let data = try? Data(contentsOf: url) else { return nil }
-        let parser = NFOParser(baseURL: url.deletingLastPathComponent())
+        return parse(data: data, baseURL: url.deletingLastPathComponent())
+    }
+
+    public static func parse(data: Data, baseURL: URL) -> NFOMetadata? {
+        let parser = NFOParser(baseURL: baseURL)
         guard parser.parse(data) else { return nil }
         return parser.metadata
     }
@@ -96,9 +103,9 @@ private final class NFOParser: NSObject, XMLParserDelegate {
     }
 
     private func setPoster(_ value: String) {
+        metadata.posterReference = value
         if let url = URL(string: value), url.scheme != nil {
             metadata.posterURL = url
-            metadata.posterPath = value
             return
         }
         let candidate = baseURL.appendingPathComponent(value)

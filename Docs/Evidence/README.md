@@ -43,6 +43,9 @@
 | `reports/m3d-scan-stress.json` | 10k 完整扫描、取消、旧库保留摘要 | `run-scan-stress.sh` |
 | `33-manual-merged.jpg` | 手动把两部剧合并后的详情（S01E01 2 个版本） | 应用内窗口快照 |
 | `reports/m3e-merge-*.json` | 合并前/合并后/拆分后的分组报告 | 应用 `--library-report` |
+| `34-webdav-nfo-library.jpg` | WebDAV NFO 标题与缓存海报的媒体库 | 应用内窗口快照 |
+| `35-webdav-nfo-detail.jpg` | WebDAV NFO 剧集详情与单集标题/简介 | 同上 |
+| `reports/m3f-webdav-nfo.json` | WebDAV NFO/海报扫描报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |
