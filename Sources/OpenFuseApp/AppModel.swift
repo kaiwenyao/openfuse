@@ -32,12 +32,17 @@ final class AppModel: ObservableObject {
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
     @Published var librarySearch = ""
+    @Published var scanProgress = 0
+    private var activeScanToken: ScanCancellationToken?
+    private var activeScanTask: Task<Void, Never>?
 
     let supportDirectory: URL
     let store: PlaybackStore
     let sourceStore: SourceStore
     let jellyfinStore: JellyfinSourceStore
     let libraryStore: LibraryStore
+    let libraryOverrideStore: LibraryOverrideStore
+    @Published var libraryOverrides: [String: LibraryOverride] = [:]
     private var sessionJellyfinTokens: [String: String] = [:]
 
     init(supportDirectory: URL? = nil) {
@@ -48,11 +53,13 @@ final class AppModel: ObservableObject {
             self.sourceStore = try SourceStore(directory: directory)
             self.jellyfinStore = try JellyfinSourceStore(directory: directory)
             self.libraryStore = try LibraryStore(directory: directory)
+            self.libraryOverrideStore = try LibraryOverrideStore(directory: directory)
         } catch {
             fatalError("cannot open OpenFuse store: \(error)")
         }
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
+        self.libraryOverrides = libraryOverrideStore.all
         refreshRecent()
         reloadLibrary()
     }
@@ -397,7 +404,13 @@ final class AppModel: ObservableObject {
 
     func reloadLibrary() {
         do {
-            libraryWorks = try libraryStore.works()
+            let stored = try libraryStore.works()
+            libraryWorks = stored.map { work in
+                if let override = libraryOverrides[work.id] {
+                    return override.apply(to: work)
+                }
+                return work
+            }
             rebuildLibraryGroups()
             let counts = try libraryStore.counts()
             libraryWorkCount = libraryGroups.count
@@ -408,27 +421,57 @@ final class AppModel: ObservableObject {
     }
 
     func scanLocalFolder(_ url: URL) async {
-        await performLocalScan(url)
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        await performLocalScan(url, token: token)
     }
 
-    private func performLocalScan(_ url: URL) async {
+    func startLocalScan(_ url: URL) {
+        cancelScan()
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        activeScanTask = Task { await performLocalScan(url, token: token) }
+    }
+
+    func cancelScan() {
+        guard isScanningLibrary else { return }
+        activeScanToken?.cancel()
+        activeScanTask?.cancel()
+        activeScanToken = nil
+        activeScanTask = nil
+        isScanningLibrary = false
+        libraryStatus = "扫描已取消，媒体库保持原样"
+    }
+
+    private func performLocalScan(_ url: URL, token: ScanCancellationToken) async {
         isScanningLibrary = true
+        scanProgress = 0
         libraryStatus = "正在扫描 \(url.lastPathComponent)…"
         do {
             let scanned = try await Task.detached(priority: .userInitiated) {
-                try LibraryScanner.scanLocal(directory: url)
+                try LibraryScanner.scanLocal(
+                    directory: url,
+                    token: token,
+                    progress: { value in
+                        Task { @MainActor in self.scanProgress = value }
+                    }
+                )
             }.value
+            guard !token.isCancelled else { throw LibraryScanError.cancelled }
             let enriched = await enrichWithTMDB(scanned)
+            guard !token.isCancelled else { throw LibraryScanError.cancelled }
             try libraryStore.replace(source: enriched.library)
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
             let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
             libraryStatus = "已扫描 \(scanned.sourceName)：\(counts.works) 个作品" +
                 (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
+        } catch LibraryScanError.cancelled {
+            libraryStatus = "扫描已取消，媒体库保持原样"
         } catch {
             libraryStatus = "扫描失败：\(error.localizedDescription)"
         }
-        isScanningLibrary = false
+        if activeScanToken === token { isScanningLibrary = false }
     }
 
     private func tmdbClient() -> TMDBClient? {
@@ -447,7 +490,20 @@ final class AppModel: ObservableObject {
         return await LibraryMetadata.enrich(library, client: client)
     }
 
+    func startJellyfinScan(_ source: JellyfinSource) {
+        cancelScan()
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        activeScanTask = Task { await performJellyfinScan(source, token: token) }
+    }
+
     func scanJellyfinSource(_ source: JellyfinSource) async {
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        await performJellyfinScan(source, token: token)
+    }
+
+    private func performJellyfinScan(_ source: JellyfinSource, token: ScanCancellationToken) async {
         guard let client = jellyfinClient(for: source) else {
             libraryStatus = "缺少 \(source.name) 的登录令牌"
             return
@@ -466,15 +522,37 @@ final class AppModel: ObservableObject {
         isScanningLibrary = false
     }
 
+    func startWebDAVScan(_ source: WebDAVSource) {
+        cancelScan()
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        activeScanTask = Task { await performWebDAVScan(source, token: token) }
+    }
+
     func scanWebDAVSource(_ source: WebDAVSource) async {
+        let token = ScanCancellationToken()
+        activeScanToken = token
+        await performWebDAVScan(source, token: token)
+    }
+
+    private func performWebDAVScan(_ source: WebDAVSource, token: ScanCancellationToken) async {
         guard let client = webdavClient(for: source) else {
             libraryStatus = "缺少 \(source.name) 的密码"
             return
         }
         isScanningLibrary = true
+        scanProgress = 0
         libraryStatus = "正在扫描 WebDAV：\(source.name)…"
         do {
-            let scanned = try await LibraryScanner.scanWebDAV(source: source, client: client)
+            let scanned = try await LibraryScanner.scanWebDAV(
+                source: source,
+                client: client,
+                token: token,
+                progress: { value in
+                    Task { @MainActor in self.scanProgress = value }
+                }
+            )
+            guard !token.isCancelled else { throw LibraryScanError.cancelled }
             let enriched = await enrichWithTMDB(scanned)
             try libraryStore.replace(source: enriched.library)
             reloadLibrary()
@@ -482,10 +560,12 @@ final class AppModel: ObservableObject {
             let tmdbMatched = (try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0
             libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品" +
                 (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
+        } catch LibraryScanError.cancelled {
+            libraryStatus = "扫描已取消，媒体库保持原样"
         } catch {
             libraryStatus = "WebDAV 扫描失败：\(error.localizedDescription)"
         }
-        isScanningLibrary = false
+        if activeScanToken === token { isScanningLibrary = false }
     }
 
     func librarySeasons(workID: String) -> [LibrarySeason] {
@@ -527,7 +607,75 @@ final class AppModel: ObservableObject {
     }
 
     func group(for work: LibraryWork) -> LibraryGroup? {
-        libraryGroups.first { $0.key == work.mergeKey }
+        if let direct = libraryGroups.first(where: { $0.works.contains { $0.id == work.id } }) {
+            return direct
+        }
+        return libraryGroups.first { $0.key == work.mergeKey }
+    }
+
+    func currentWork(id: String) -> LibraryWork? {
+        libraryWorks.first { $0.id == id }
+    }
+
+    func override(for workID: String) -> LibraryOverride? {
+        libraryOverrides[workID]
+    }
+
+    func setOverride(
+        workID: String,
+        title: String?,
+        year: Int?,
+        overview: String?,
+        poster: String?
+    ) {
+        let override = LibraryOverride(
+            workID: workID,
+            title: title?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            year: year,
+            overview: overview?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            poster: normalizePoster(poster)
+        )
+        if override.title == nil, override.year == nil, override.overview == nil, override.poster == nil {
+            clearOverride(workID: workID)
+            return
+        }
+        do {
+            try libraryOverrideStore.upsert(override)
+            libraryOverrides[workID] = override
+            reloadLibrary()
+            if let updated = currentWork(id: workID) {
+                route = .library(updated)
+            }
+        } catch {
+            libraryStatus = "保存纠错失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func normalizePoster(_ input: String?) -> String? {
+        guard let value = input?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+        if value.hasPrefix("jellyfin:") || value.hasPrefix("file:") || value.hasPrefix("remote:") {
+            return value
+        }
+        if value.hasPrefix("http://") || value.hasPrefix("https://") {
+            return PosterRef.remote(value)
+        }
+        if FileManager.default.fileExists(atPath: value) {
+            return PosterRef.file(value)
+        }
+        return nil
+    }
+
+    func clearOverride(workID: String) {
+        do {
+            try libraryOverrideStore.remove(workID: workID)
+            libraryOverrides.removeValue(forKey: workID)
+            reloadLibrary()
+            if let updated = currentWork(id: workID) {
+                route = .library(updated)
+            }
+        } catch {
+            libraryStatus = "清除纠错失败：\(error.localizedDescription)"
+        }
     }
 
     func findWork(matching query: String) -> LibraryWork? {
@@ -567,6 +715,7 @@ final class AppModel: ObservableObject {
             "rawWorks": raw.works,
             "rawEpisodes": raw.episodes,
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
+            "status": libraryStatus ?? "",
         ]
         payload["groups"] = libraryGroups.map { group -> [String: Any] in
             [
@@ -604,6 +753,7 @@ final class AppModel: ObservableObject {
                 "sourceKind": work.sourceKind,
                 "sourceID": work.sourceID,
                 "poster": work.poster ?? "",
+                "overridden": libraryOverrides[work.id] != nil,
                 "seasons": seasons.map { ["id": $0.id, "number": $0.number, "title": $0.title] },
                 "episodes": episodes.map { episode -> [String: Any] in
                     [
@@ -1342,4 +1492,8 @@ final class PlayerModel: ObservableObject {
     func toggleFullScreen() {
         NSApp.keyWindow?.toggleFullScreen(nil)
     }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

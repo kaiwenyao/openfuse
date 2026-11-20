@@ -37,6 +37,10 @@
 | `reports/m3b-tmdb-*.json` | TMDB/NFO 本地与 WebDAV 报告、TMDB 请求日志 | 应用 `--library-report`、夹具日志 |
 | `29-merged-movie-versions.jpg` | 电影详情合并 Jellyfin/本地/WebDAV 共 4 个版本 | 应用内窗口快照 |
 | `30-merged-series-versions.jpg` | 剧集每集多来源版本菜单 | 同上 |
+| `31-edited-detail.jpg` | 手动修改标题/年份/简介/海报后的详情 | 应用内窗口快照 |
+| `32-scan-progress.jpg` | 10,000 项扫描进度与取消按钮 | 同上 |
+| `reports/m3d-edit-*.json` | 纠错前/应用/持久化/清除报告 | 应用 `--library-report` |
+| `reports/m3d-scan-stress.json` | 10k 完整扫描、取消、旧库保留摘要 | `run-scan-stress.sh` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
 | `reports/m2-webdav-range-log.jsonl` | 服务端 GET/Range 记录，证明初始请求取消与中段读取 | `Tools/webdav_fixture.py` |
 | `reports/*.json` | M1 运行报告、续播存储、24 项声道检测 | 应用 `--report` 与 `analyze_audio.py` |

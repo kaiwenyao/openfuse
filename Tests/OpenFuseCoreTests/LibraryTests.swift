@@ -117,6 +117,34 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(metadata.posterPath, poster.path)
     }
 
+    func testLibraryOverrideStoreAndApply() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-override-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try LibraryOverrideStore(directory: directory)
+        let override = LibraryOverride(
+            workID: "w1", title: "人工标题", year: 2024, overview: "人工简介",
+            poster: PosterRef.remote("https://example.com/p.jpg")
+        )
+        try store.upsert(override)
+        let reopened = try LibraryOverrideStore(directory: directory)
+        XCTAssertEqual(reopened.all["w1"]?.title, "人工标题")
+
+        let work = LibraryWork(
+            id: "w1", kind: .movie, title: "Original", sortTitle: "Original", year: 2026,
+            overview: nil, poster: nil, sourceKind: "local", sourceID: "s",
+            serverID: nil, seasonCount: 0, episodeCount: 1, addedAt: Date()
+        )
+        let applied = override.apply(to: work)
+        XCTAssertEqual(applied.title, "人工标题")
+        XCTAssertEqual(applied.year, 2024)
+        XCTAssertEqual(applied.overview, "人工简介")
+        XCTAssertEqual(applied.poster, "remote:https://example.com/p.jpg")
+        try reopened.remove(workID: "w1")
+        XCTAssertNil(try LibraryOverrideStore(directory: directory).all["w1"])
+    }
+
     func testMergedEpisodesCombineSourcesAndVersions() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-merge-\(UUID().uuidString)", isDirectory: true)

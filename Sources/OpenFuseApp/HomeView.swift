@@ -61,6 +61,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let scanLocal = value(after: "--scan-local", in: arguments) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let cancelAfter = self.value(after: "--cancel-scan-after", in: arguments).flatMap(Double.init) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + cancelAfter) {
+                        model.cancelScan()
+                    }
+                }
                 Task { @MainActor in
                     await model.scanLocalFolder(URL(fileURLWithPath: scanLocal))
                     self.finishLibraryLaunch(model: model, arguments: arguments)
@@ -89,7 +94,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 if let query = self.value(after: "--library-work", in: arguments),
                    let work = model.findWork(matching: query) {
-                    model.route = .library(work)
+                    if arguments.contains("--library-clear-override") {
+                        model.clearOverride(workID: work.id)
+                    } else if arguments.contains("--library-edit-title")
+                                || arguments.contains("--library-edit-year")
+                                || arguments.contains("--library-edit-overview")
+                                || arguments.contains("--library-edit-poster") {
+                        model.setOverride(
+                            workID: work.id,
+                            title: self.value(after: "--library-edit-title", in: arguments),
+                            year: self.value(after: "--library-edit-year", in: arguments).flatMap(Int.init),
+                            overview: self.value(after: "--library-edit-overview", in: arguments),
+                            poster: self.value(after: "--library-edit-poster", in: arguments)
+                        )
+                    } else {
+                        model.route = .library(work)
+                    }
                 }
                 if let report = self.value(after: "--library-report", in: arguments) {
                     model.writeLibraryReport(to: URL(fileURLWithPath: report))
@@ -408,7 +428,7 @@ struct HomeView: View {
                     Divider()
                     ForEach(model.jellyfinSources) { source in
                         Button("扫描 Jellyfin：\(source.name)") {
-                            Task { await model.scanJellyfinSource(source) }
+                            model.startJellyfinScan(source)
                         }
                     }
                 }
@@ -416,7 +436,7 @@ struct HomeView: View {
                     Divider()
                     ForEach(model.sources) { source in
                         Button("扫描 WebDAV：\(source.name)") {
-                            Task { await model.scanWebDAVSource(source) }
+                            model.startWebDAVScan(source)
                         }
                     }
                 }
@@ -571,6 +591,13 @@ struct HomeView: View {
                     .frame(width: 180)
                 if model.isScanningLibrary {
                     ProgressView().controlSize(.small)
+                    Text("\(model.scanProgress) 项")
+                        .font(.system(size: 10.5, design: .monospaced))
+                        .foregroundStyle(Theme.secondary)
+                    Button("取消") { model.cancelScan() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.red.opacity(0.85))
                 }
             }
 
@@ -632,7 +659,7 @@ struct HomeView: View {
         panel.prompt = "扫描"
         panel.message = "选择包含电影或剧集文件夹的目录"
         if panel.runModal() == .OK, let url = panel.url {
-            Task { await model.scanLocalFolder(url) }
+            model.startLocalScan(url)
         }
     }
 
@@ -670,7 +697,7 @@ struct HomeView: View {
                     }
                     Spacer()
                     Button("扫描") {
-                        Task { await model.scanJellyfinSource(source) }
+                        model.startJellyfinScan(source)
                     }
                     .buttonStyle(.bordered)
                     Button("浏览") { model.browseJellyfin(source) }
@@ -725,7 +752,7 @@ struct HomeView: View {
                     }
                     Spacer()
                     Button("扫描") {
-                        Task { await model.scanWebDAVSource(source) }
+                        model.startWebDAVScan(source)
                     }
                     .buttonStyle(.bordered)
                     Button("浏览") {

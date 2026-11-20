@@ -4,13 +4,29 @@ public enum LibraryScanError: LocalizedError {
     case noMedia
     case tooManyFiles
     case invalidFolder
+    case cancelled
 
     public var errorDescription: String? {
         switch self {
         case .noMedia: return "没有找到可识别的视频文件"
         case .tooManyFiles: return "目录过大，已停止扫描（上限 5000 个文件）"
         case .invalidFolder: return "无法读取该文件夹"
+        case .cancelled: return "扫描已取消"
         }
+    }
+}
+
+public final class ScanCancellationToken: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    public init() {}
+    public func cancel() {
+        lock.lock(); cancelled = true; lock.unlock()
+    }
+    public var isCancelled: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return cancelled
     }
 }
 
@@ -33,7 +49,11 @@ public enum LibraryScanner {
 
     // MARK: - Local
 
-    public static func scanLocal(directory: URL) throws -> ScannedLibrary {
+    public static func scanLocal(
+        directory: URL,
+        token: ScanCancellationToken? = nil,
+        progress: ((Int) -> Void)? = nil
+    ) throws -> ScannedLibrary {
         let directory = directory.standardizedFileURL
         guard let enumerator = FileManager.default.enumerator(
             at: directory,
@@ -47,10 +67,12 @@ public enum LibraryScanner {
         var posterMap: [String: String] = [:]
         var fileCount = 0
         while let file = enumerator.nextObject() as? URL {
-            fileCount += 1
-            if fileCount > 5000 { throw LibraryScanError.tooManyFiles }
+            if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let ext = file.pathExtension.lowercased()
             guard videoExtensions.contains(ext) || imageExtensions.contains(ext) else { continue }
+            fileCount += 1
+            if fileCount % 50 == 0 { progress?(fileCount) }
+            if fileCount > 20000 { throw LibraryScanError.tooManyFiles }
             let relative = file.path.replacingOccurrences(of: directory.path + "/", with: "")
             if imageExtensions.contains(ext) {
                 let dir = (relative as NSString).deletingLastPathComponent
@@ -283,17 +305,25 @@ public enum LibraryScanner {
 
     // MARK: - Jellyfin
 
-    public static func scanJellyfin(source: JellyfinSource, client: JellyfinClient) async throws -> ScannedLibrary {
+    public static func scanJellyfin(
+        source: JellyfinSource,
+        client: JellyfinClient,
+        token: ScanCancellationToken? = nil,
+        progress: ((Int) -> Void)? = nil
+    ) async throws -> ScannedLibrary {
         let views = try await client.views()
         var items: [JellyfinItem] = []
-        for view in views {
+        for (index, view) in views.enumerated() {
+            if token?.isCancelled == true { throw LibraryScanError.cancelled }
             items.append(contentsOf: (try? await client.libraryItems(parentID: view.id)) ?? [])
+            progress?(items.count + index)
         }
         var movies: [JellyfinItem] = []
         var seriesItems: [String: JellyfinItem] = [:]
         var seasonItems: [String: [JellyfinItem]] = [:]
         var episodeItems: [JellyfinItem] = []
         for item in items {
+            if token?.isCancelled == true { throw LibraryScanError.cancelled }
             switch item.itemType {
             case "Movie": movies.append(item)
             case "Series": seriesItems[item.id] = item
@@ -479,15 +509,19 @@ public enum LibraryScanner {
         client: WebDAVClient,
         rootPath: String = "",
         maxDepth: Int = 6,
-        maxFiles: Int = 3000
+        maxFiles: Int = 3000,
+        token: ScanCancellationToken? = nil,
+        progress: ((Int) -> Void)? = nil
     ) async throws -> ScannedLibrary {
         var queue: [(path: String, depth: Int)] = [(rootPath, 0)]
         var candidates: [FileCandidate] = []
         var postersByDirectory: [String: String] = [:]
         var visited = 0
         while !queue.isEmpty {
+            if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let current = queue.removeFirst()
             let entries = try await client.list(path: current.path)
+            progress?(visited)
             for entry in entries where entry.isDirectory {
                 if current.depth < maxDepth { queue.append((entry.path, current.depth + 1)) }
             }

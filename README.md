@@ -14,8 +14,9 @@
 - **M3a 聚合媒体库：完成本地验证。** SQLite 媒体库、本地/WebDAV/Jellyfin 扫描、电影/剧/季/集、跨来源合并展示、Jellyfin 服务器封面、电影多版本、详情、搜索、从媒体库播放与来源切换。记录：[M3a 媒体库验收](Docs/M3-LIBRARY.md)。
 - **M3b 元数据：完成本地验证。** TMDB 搜索（env key）补片名/年份/简介/海报，本地 NFO（movie/tvshow/episode）优先且可跳过 TMDB，WebDAV 作品扫描后可用 TMDB 海报进入海报库。真实 TMDB key 未提供，夹具验证。记录：[M3b 元数据验收](Docs/M3B-METADATA.md)。
 - **M3c 集级版本合并：完成本地验证。** 电影合并 Jellyfin 多版本 + 本地 + WebDAV 为 4 个版本；剧集按季/集合并，S01E01 3 个版本、S01E02 2 个；详情用版本菜单选择来源播放。记录：[M3c 版本合并验收](Docs/M3C-VERSIONS.md)。
-- **尚未完成：** TMDB 候选/手动匹配、WebDAV NFO/认证海报缓存、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
-- **下一项：** M3d：手动匹配/拆分合并、增量扫描与取消、WebDAV NFO/海报缓存、最近添加/继续观看排序、T06/T07 压测；完成后进入 M4 家庭设备与状态同步。
+- **M3d 手动纠错与扫描：完成本地验证。** 详情可改标题/年份/简介/海报并持久化/清除；扫描可取消并显示进度，取消保留旧库；10,000 条目完整扫描 6.52 s，取消后旧库 10,000 条不变。记录：[M3d 编辑/扫描验收](Docs/M3D-EDIT-SCAN.md)。
+- **尚未完成：** 手动合并/拆分、TMDB 候选选择、WebDAV NFO/认证海报缓存、最近添加/继续观看排序、扫描中播放/超时恢复、真实 OpenList/Jellyfin 验证、Infuse 同机对照与人工听测、其他 Apple 平台。
+- **下一项：** M3e：手动合并/拆分、TMDB 候选、WebDAV NFO/认证海报、最近添加/继续观看排序、T07 扫描中播放与超时；完成后进入 M4 家庭设备与状态同步。
 
 开发入口：
 
@@ -31,10 +32,12 @@ Scripts/run-jellyfin-acceptance.sh  # Jellyfin 播放/版本/进度/续播端到
 Scripts/run-library-acceptance.sh   # 本地/WebDAV/Jellyfin 扫描、合并、详情、搜索、播放
 Scripts/test-tmdb.sh                # TMDB 搜索/海报协议检查
 Scripts/run-tmdb-acceptance.sh      # TMDB + NFO 元数据与 WebDAV 海报库
+Scripts/run-editing-acceptance.sh   # 手动纠错持久化/清除
+Scripts/run-scan-stress.sh          # 10,000 条目扫描、取消与旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m3c-aggregation`（从 `m3b-metadata` 拉出）。每个里程碑使用独立分支；M3d 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
+当前分支 `m3d-edit`（从 `m3c-aggregation` 拉出）。每个里程碑使用独立分支；M3e 从该分支继续。构建依赖 Homebrew 的 libmpv，自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

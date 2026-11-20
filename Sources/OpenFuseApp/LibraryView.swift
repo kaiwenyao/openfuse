@@ -152,9 +152,12 @@ struct LibraryDetailView: View {
     @State private var selectedSeasonNumber: Int?
     @State private var selectedVersionID: String?
     @State private var isLoading = true
+    @State private var showEdit = false
 
     private var group: LibraryGroup? { model.group(for: work) }
-    private var primary: LibraryWork { group?.primary ?? work }
+    private var primary: LibraryWork {
+        model.currentWork(id: work.id) ?? group?.primary ?? work
+    }
     private var isMovie: Bool { primary.kind == .movie }
 
     private var seasonNumbers: [Int] {
@@ -232,6 +235,10 @@ struct LibraryDetailView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .task { await load() }
+        .sheet(isPresented: $showEdit) {
+            LibraryEditView(work: primary)
+                .environmentObject(model)
+        }
     }
 
     private var header: some View {
@@ -249,6 +256,14 @@ struct LibraryDetailView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Theme.secondary)
             Spacer()
+            Button {
+                showEdit = true
+            } label: {
+                Label("编辑信息", systemImage: "pencil")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.secondary)
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 14)
@@ -372,5 +387,78 @@ struct LibraryDetailView: View {
         }
         selectedVersionID = mergedEpisodes.first?.versions.first?.id
         isLoading = false
+    }
+}
+
+
+struct LibraryEditView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+
+    let work: LibraryWork
+
+    @State private var title: String
+    @State private var year: String
+    @State private var overview: String
+    @State private var poster: String
+
+    init(work: LibraryWork) {
+        self.work = work
+        _title = State(initialValue: work.title)
+        _year = State(initialValue: work.year.map(String.init) ?? "")
+        _overview = State(initialValue: work.overview ?? "")
+        var posterValue = ""
+        if let parsed = PosterRef.parse(work.poster), parsed.kind != "jellyfin" {
+            posterValue = parsed.value
+        }
+        _poster = State(initialValue: posterValue)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("编辑媒体信息")
+                        .font(.system(size: 17, weight: .semibold))
+                    Text("仅修改本地媒体库，不改服务器或文件名。")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("取消") { dismiss() }
+            }
+
+            Form {
+                TextField("标题", text: $title)
+                TextField("年份", text: $year, prompt: Text("2026"))
+                TextField("海报 URL 或本地路径", text: $poster, prompt: Text("https://… 或 /Users/…/poster.jpg"))
+                TextField("简介", text: $overview, axis: .vertical)
+                    .lineLimit(4...8)
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+
+            HStack {
+                Button("清除本地覆盖", role: .destructive) {
+                    model.clearOverride(workID: work.id)
+                    dismiss()
+                }
+                Spacer()
+                Button("保存") {
+                    model.setOverride(
+                        workID: work.id,
+                        title: title,
+                        year: Int(year),
+                        overview: overview,
+                        poster: poster.isEmpty ? nil : poster
+                    )
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(22)
+        .frame(width: 600)
+        .background(Theme.background)
     }
 }

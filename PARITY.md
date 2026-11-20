@@ -56,7 +56,7 @@
 | T05（Library 聚合部分） | 同上 | Jellyfin 媒体库/剧/季/集 | 待采样 | Recursive 扫描保留服务器 Id/名称/封面/季集；电影 2 个版本；详情与播放 | Evidence 20–23；`m3-library-aggregate.json` | 部分通过（真实服务器、TMDB 待做） |
 | 媒体库详情/搜索 | 同上 | 电影、剧集 | 待采样 | 剧集季选择、S01E01/02、简介；搜索「示例」只剩示例剧 | Evidence 21–22 | 部分通过 |
 | 媒体库播放 | 同上 | 本地/WebDAV/Jellyfin 各一集 | 待采样 | 本地 9.958 s 冻结帧、外挂简体；WebDAV/Jellyfin 从库播放 sourceKind 正确 | `reports/m3-library-play.json`、Evidence 24 | 本地通过；真实服务待验证 |
-| T07（扫描压力） | — | 10,000 条目 | 待采样 | 未执行 | — | 未开始 |
+| T07（首轮） | MacBook Pro M2 Pro／macOS 27.2.1 | 10,000 个空 MKV/嵌套目录 | 待采样 | 完整扫描 10,000 作品/集 6.52 s；取消空库保持 0；取消已有库保持 10,000；未测扫描中播放/超时/新增字幕 | `reports/m3d-scan-stress.json`、Evidence 32 | 部分通过 |
 
 ### M3b 元数据执行记录（2026-11-19）
 
@@ -72,6 +72,13 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | T06（多版本，部分） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 + Jellyfin + WebDAV 同一电影/剧 | Infuse 未安装，待采样 | 电影 1 集 4 版本（Jellyfin 2 / 本地 / WebDAV）；剧集 S01E01 3 版本、S01E02 2 版本 | `reports/m3-library-aggregate-webdav.json` 的 `merged`、Evidence 29–30 | 部分通过（手动拆分/合并未做） |
 | 版本选择/播放 | 同上 | 合并后的电影与剧集 | 待采样 | 电影版本 Picker；剧集每集版本菜单；选择后走对应来源播放 | Evidence 29–30 | 本地通过；像素对照待做 |
+
+### M3d 手动纠错与扫描执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 手动元数据 | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 本地 3 作品 | Infuse 未安装，待采样 | 改标题/2024/简介/海报，重启后仍生效；清除恢复原值 | Evidence 31、`reports/m3d-edit-*.json` | 本地通过；合并/拆分未做 |
+| 扫描取消/进度 | 同上 | 10,000 条目 | 待采样 | 扫描中显示 10,000 项与取消；取消空库 0、已有库保留 10,000 | Evidence 32、`reports/m3d-scan-stress.json` | 本地通过 |
 
 
 

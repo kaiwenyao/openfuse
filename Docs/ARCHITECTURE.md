@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 手动纠错与可取消扫描（M3d）
+
+- `LibraryOverrideStore`（`library-overrides.json`）：按 work id 保存 title/year/overview/poster；读取库后 `apply(to:)` 合并，扫描替换来源不影响覆盖；详情「编辑信息」sheet 保存/清除。
+- 海报输入归一化：URL → `remote:`，本地路径 → `file:`，前缀保留。
+- `ScanCancellationToken`：本地/WebDAV/Jellyfin 扫描检查取消；取消后不替换 SQLite，旧库保持；`scanProgress` 显示已处理条目，UI 提供取消按钮。
+- 压力脚本生成 10,000 空文件；扫描上限提高到 20,000 个媒体文件（目录不计数）。
+- 未做：手动合并/拆分、TMDB 候选、WebDAV NFO/认证海报、最近添加排序、扫描中播放/超时恢复。
+
 ## 集级版本合并（M3c）
 
 - `LibraryAggregation.mergedEpisodes(group:store:)`：按 `(season, episode)` 合并组内各来源；同一集收集 `versions`，生成 `MergedLibraryEpisode`/`MergedLibraryVersion`。

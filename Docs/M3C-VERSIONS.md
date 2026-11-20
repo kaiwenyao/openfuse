@@ -57,4 +57,4 @@ PASS: local/Jellyfin/WebDAV scan, 7 works/9 episodes, search, details, library p
 
 ## 下一项
 
-M3d：手动匹配/拆分合并、增量扫描与取消、WebDAV NFO/海报缓存、最近添加/继续观看排序、T06/T07 压力与中断恢复；完成 M3 后再进入 M4 家庭设备与状态同步。
+M3d 已完成手动元数据覆盖、可取消扫描与 10k 首轮压力，见 [M3d 编辑/扫描验收](M3D-EDIT-SCAN.md)。剩余 M3e：手动合并/拆分、TMDB 候选、WebDAV NFO/认证海报、最近添加/继续观看排序、T07 扫描中播放与超时；完成后再进入 M4。
