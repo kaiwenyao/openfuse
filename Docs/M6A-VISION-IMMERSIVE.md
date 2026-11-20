@@ -37,4 +37,4 @@ M6 此前只有 window/sheet。本轮新增 ImmersiveSpace：RealityKit VideoMat
 
 ## 下一项
 
-M6b：真机 VideoMaterial/手势/空间音频；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+visionOS 手势与退出进度回写已在 [M6b 验收](Docs/M6B-VISION-CONTROLS.md) 完成。剩余 M6c：真机 VideoMaterial/手势/空间音频、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

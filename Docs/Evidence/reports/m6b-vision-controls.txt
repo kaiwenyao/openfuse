@@ -1,0 +1,20 @@
+OpenFuse M6b visionOS immersive controls/progress evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; Apple Vision Pro simulator visionOS 27.2.
+
+Implementation:
+  Immersive screen DragGesture (0.004 m/px) + MagnificationGesture (0.6..2.0).
+  OPENFUSE_IMMERSIVE_AUTOCLOSE=s auto-finishes and dismisses; finish is
+  idempotent so onDisappear does not double-write.
+  Acceptance now launches once for immersive screenshot, then reinstalls and
+  launches with autoclose=6, reads app-container playback.json.
+
+Results:
+  Playback record: position 7.517s, duration 20.105s, sourceKind local.
+  Window button becomes "从 7 秒继续"; autoclose screenshot captured.
+  Scripts/run-vision-immersive.sh PASS.
+  swift test 34/34; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real Vision Pro VideoMaterial (simulator Metal black), hand/eye gesture
+  behavior, spatial audio; audio listening.

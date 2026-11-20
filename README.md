@@ -81,7 +81,8 @@
 - **M5ag 尾部/HDR MP4：完成本地验证。** 20s HDR10 MP4（moov 在尾、colr 9/16）经 SMB 头 4MB→尾 8MB 回退解析为 `1080p · SMB`/HDR10；修复 MP4Probe stsd/sample entry 头与 SMB 短读循环。单测 33/33。记录：[M5ag 验收](Docs/M5AG-TAIL-MP4.md)。
 - **M5ah 大 MP4 moov 扫描：完成本地验证。** 12.6MB tail-moov HDR MP4 经 SMB 头4MB→尾8MB（中段开始）扫描 moov，得到 `1080p · SMB`/HDR10；单测 34/34。碎片 MP4/moov>8MB 未测。记录：[M5ah 验收](Docs/M5AH-MOOV-SCAN.md)。
 - **M6a visionOS 沉浸：完成模拟器验证。** 新增 ImmersiveSpace + RealityKit VideoMaterial 空间屏幕、播放/拖动/关闭控件；显式多场景 Info.plist 修复系统拒绝。模拟器 Metal 不可用导致 VideoMaterial 黑屏，真机待验证。记录：[M6a 验收](Docs/M6A-VISION-IMMERSIVE.md)。
-- **下一项：** M6b：真机 VideoMaterial/手势/空间音频；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+- **M6b visionOS 控制：完成进度回写验证。** 沉浸屏幕支持拖动/缩放；autoclose=6 后 PlaybackStore 写入 7.517s，窗口显示「从 7 秒继续」。模拟器 Metal 仍黑屏，真机手势/空间音频待验证。记录：[M6b 验收](Docs/M6B-VISION-CONTROLS.md)。
+- **下一项：** M6c：真机 VideoMaterial/手势/空间音频；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
 
 开发入口：
 
@@ -112,7 +113,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m6-immersive`（基于 M5ah 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m6b-immersive-controls`（基于 M6a 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

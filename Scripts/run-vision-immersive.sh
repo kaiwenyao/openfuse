@@ -29,8 +29,18 @@ sleep 14
 xcrun simctl io "$SIM" screenshot "$OUT/immersive.png" >/dev/null 2>&1 || true
 xcrun simctl spawn "$SIM" log show --start "$START" --style compact \
   --predicate 'process == "OpenFuse"' 2>/dev/null >"$OUT/log.txt" || true
+xcrun simctl terminate "$SIM" "$BUNDLE" 2>/dev/null || true
+xcrun simctl uninstall "$SIM" "$BUNDLE" 2>/dev/null || true
+xcrun simctl install "$SIM" "$APP"
+SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 SIMCTL_CHILD_OPENFUSE_IMMERSIVE=1 \
+SIMCTL_CHILD_OPENFUSE_IMMERSIVE_AUTOCLOSE=6 \
+  xcrun simctl launch --console "$SIM" "$BUNDLE" >"$OUT/autoclose.log" 2>&1 &
+sleep 16
+DATA=$(xcrun simctl get_app_container "$SIM" "$BUNDLE" data)
+cp "$DATA/Library/Application Support/OpenFuse/playback.json" "$OUT/playback.json" 2>/dev/null || true
+xcrun simctl io "$SIM" screenshot "$OUT/autoclose.png" >/dev/null 2>&1 || true
 python3 - "$OUT" <<'PY'
-import os, sys
+import json, os, sys
 out = sys.argv[1]
 errors = []
 if not os.path.exists(os.path.join(out, "immersive.png")):
@@ -38,9 +48,15 @@ if not os.path.exists(os.path.join(out, "immersive.png")):
 log = open(os.path.join(out, "log.txt"), encoding="utf-8", errors="replace").read()
 if "Unable to open an immersive space" in log:
     errors.append("immersive space rejected")
+playback = json.load(open(os.path.join(out, "playback.json")))
+records = playback.get("records", {})
+if not records:
+    errors.append("immersive progress not written")
+elif not any(record.get("position", 0) > 0 for record in records.values()):
+    errors.append(f"position not advanced: {records}")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)
     sys.exit(1)
-print("PASS: visionOS immersive space opened (simulator Metal limitation recorded)")
+print("PASS: immersive opened and auto-close wrote resume progress")
 PY

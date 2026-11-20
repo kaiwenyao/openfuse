@@ -15,10 +15,12 @@ final class VisionImmersiveModel: ObservableObject {
 
     private var loader: AuthenticatedAssetLoader?
     private var observer: Any?
+    private var hasFinished = false
 
     func prepare(item: MobilePlaybackItem, model: MobileLibraryModel) async {
         stopObserver()
         self.item = item
+        hasFinished = false
         let (player, loader) = model.makePlayer(for: item)
         self.player = player
         self.loader = loader
@@ -68,7 +70,8 @@ final class VisionImmersiveModel: ObservableObject {
     }
 
     func finish(model: MobileLibraryModel) {
-        guard let player, let item else { return }
+        guard !hasFinished, let player, let item else { return }
+        hasFinished = true
         let total = duration > 0 ? duration : (player.currentItem?.duration.seconds ?? 0)
         let current = player.currentTime().seconds
         if current.isFinite, total.isFinite, total > 0 {

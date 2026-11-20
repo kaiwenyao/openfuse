@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## visionOS 手势/进度（M6b）
+
+- DragGesture/MagnificationGesture 平移缩放空间屏幕；finish 幂等。
+- OPENFUSE_IMMERSIVE_AUTOCLOSE 自动退出；模拟器写回 7.517s。
+- 真机 VideoMaterial/手势/空间音频未验证。
+
 ## visionOS 沉浸空间（M6a）
 
 - ImmersiveSpace + RealityKit VideoMaterial plane；VisionImmersiveModel 管 AVPlayer/进度。

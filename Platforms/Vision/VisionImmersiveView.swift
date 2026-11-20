@@ -6,6 +6,9 @@ struct VisionImmersiveView: View {
     @EnvironmentObject private var playback: VisionImmersiveModel
     @EnvironmentObject private var model: MobileLibraryModel
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+    @State private var screenOffset = CGSize.zero
+    @State private var screenScale: CGFloat = 1
+    @State private var didAutoClose = false
 
     var body: some View {
         RealityView { content in
@@ -13,11 +16,35 @@ struct VisionImmersiveView: View {
         } update: { content in
             addScreen(to: &content)
         }
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    screenOffset = CGSize(
+                        width: value.translation.width * 0.004,
+                        height: -value.translation.height * 0.004
+                    )
+                }
+        )
+        .simultaneousGesture(
+            MagnificationGesture()
+                .onChanged { value in
+                    screenScale = min(max(value, 0.6), 2.0)
+                }
+        )
         .overlay(alignment: .bottom) {
             controls
                 .padding(22)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
                 .padding(.bottom, 30)
+        }
+        .task {
+            guard !didAutoClose,
+                  let seconds = ProcessInfo.processInfo.environment["OPENFUSE_IMMERSIVE_AUTOCLOSE"].flatMap(Double.init),
+                  seconds > 0 else { return }
+            didAutoClose = true
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            playback.finish(model: model)
+            await dismissImmersiveSpace()
         }
         .onDisappear {
             playback.finish(model: model)
@@ -29,6 +56,10 @@ struct VisionImmersiveView: View {
         let material = VideoMaterial(avPlayer: player)
         if let existing = content.entities.first(where: { $0.name == "openfuse.screen" }) as? ModelEntity {
             existing.model?.materials = [material]
+            existing.position = SIMD3<Float>(
+                Float(screenOffset.width), 1.45 + Float(screenOffset.height), -3.0
+            )
+            existing.scale = SIMD3<Float>(repeating: Float(screenScale))
             return
         }
         let screen = ModelEntity(
@@ -36,7 +67,10 @@ struct VisionImmersiveView: View {
             materials: [material]
         )
         screen.name = "openfuse.screen"
-        screen.position = SIMD3<Float>(0, 1.45, -3.0)
+        screen.position = SIMD3<Float>(
+            Float(screenOffset.width), 1.45 + Float(screenOffset.height), -3.0
+        )
+        screen.scale = SIMD3<Float>(repeating: Float(screenScale))
         content.add(screen)
     }
 

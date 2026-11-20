@@ -524,3 +524,11 @@
 | 沉浸空间 | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | ImmersiveSpace 打开无拒绝；截图大 plane | Evidence 92、`reports/m6a-vision-immersive.txt` | 部分通过 |
 | VideoMaterial | 同上 | 同上 | 待真机 | 模拟器 Metal 不可用黑屏 | 同上 | 待验证 |
 | 手势/进度 | 同上 | 同上 | 待真机 | 未验证 | — | 待验证 |
+
+### M6b visionOS 控制执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 沉浸退出进度 | Apple Vision Pro 模拟器／visionOS 27.2 | 本地 MP4 | Infuse 未安装 | autoclose 6s → position 7.517s；续播按钮 | Evidence 93、`reports/m6b-vision-playback.json` | 通过 |
+| 手势 | 同上 | 同上 | 待真机 | 代码编译，未自动化 | — | 待验证 |
+| VideoMaterial/空间音频 | 同上 | 同上 | 待真机 | 模拟器 Metal 黑屏 | — | 待验证 |
