@@ -134,6 +134,10 @@
 | `73-plex-detail-play.jpg` | Plex 详情播放 9.9s | 播放器抓帧 |
 | `reports/m5k-plex-detail-play.json` | Plex 详情播放报告 | 应用报告 |
 | `reports/m5k-plex-detail.txt` | 详情/播放摘要 | 运行记录 |
+| `74-smb-library.jpg` | SMB 媒体库/来源卡 | 应用内窗口快照 |
+| `75-smb-playback.jpg` | SMB 缓存播放 9.9s | 播放器抓帧 |
+| `reports/m5l-smb-*.json` | SMB 库/播放报告 | 应用报告 |
+| `reports/m5l-smb.txt` | SMB 验收/打包摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

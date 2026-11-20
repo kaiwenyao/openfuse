@@ -94,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let hasRemoteOrLocalLaunch = arguments.contains("--jellyfin-url")
             || arguments.contains("--webdav-url") || arguments.contains("--plex-url")
-            || arguments.contains("--emby-url")
+            || arguments.contains("--emby-url") || arguments.contains("--smb-server")
             || arguments.contains("--open")
         if !hasRemoteOrLocalLaunch,
            arguments.contains("--library-work") || arguments.contains("--library-report")
@@ -167,6 +167,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     model.resume(record)
                 }
                 self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            }
+            return
+        }
+        if let smbServer = value(after: "--smb-server", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                let port = self.value(after: "--smb-port", in: arguments).flatMap(Int.init) ?? 445
+                let share = self.value(after: "--smb-share", in: arguments) ?? ""
+                let user = self.value(after: "--smb-user", in: arguments)
+                    ?? ProcessInfo.processInfo.environment["OPENFUSE_SMB_USER"] ?? ""
+                let password = self.value(after: "--smb-pass", in: arguments)
+                    ?? ProcessInfo.processInfo.environment["OPENFUSE_SMB_PASSWORD"] ?? ""
+                let name = self.value(after: "--smb-name", in: arguments) ?? "SMB"
+                let base = self.value(after: "--smb-path", in: arguments) ?? ""
+                Task { @MainActor in
+                    let source = await model.addSMBSource(
+                        name: name, server: smbServer, port: port, share: share,
+                        username: user, password: password, basePath: base
+                    )
+                    if source != nil {
+                        self.finishLibraryLaunch(model: model, arguments: arguments)
+                    } else {
+                        self.scheduleQuitOnly(arguments: arguments)
+                    }
+                }
             }
             return
         }
@@ -444,6 +468,7 @@ struct HomeView: View {
     @State private var isDropTarget = false
     @State private var showAddJellyfin = false
     @State private var showAddPlex = false
+    @State private var showAddSMB = false
 
     private let columns = [GridItem(.adaptive(minimum: 250, maximum: 340), spacing: 22)]
 
@@ -475,6 +500,9 @@ struct HomeView: View {
                         if !model.plexSources.isEmpty {
                             plexSourcesSection
                         }
+                        if !model.smbSources.isEmpty {
+                            smbSourcesSection
+                        }
                         engineCard
                     }
                     .padding(.horizontal, 36)
@@ -505,6 +533,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAddPlex) {
             AddPlexSheet()
+                .environmentObject(model)
+        }
+        .sheet(isPresented: $showAddSMB) {
+            AddSMBSheet()
                 .environmentObject(model)
         }
     }
@@ -546,6 +578,13 @@ struct HomeView: View {
                     ForEach(model.plexSources) { source in
                         Button("扫描 Plex：\(source.name)") {
                             Task { await model.scanPlexSource(source) }
+                        }
+                    }
+                }
+                if !model.smbSources.isEmpty {
+                    ForEach(model.smbSources) { source in
+                        Button("扫描 SMB：\(source.name)") {
+                            Task { await model.scanSMBSource(source) }
                         }
                     }
                 }
@@ -595,6 +634,17 @@ struct HomeView: View {
                 showAddPlex = true
             } label: {
                 Label("Plex", systemImage: "play.rectangle.on.rectangle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Theme.elevated, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button {
+                showAddSMB = true
+            } label: {
+                Label("SMB", systemImage: "externaldrive.connected.to.line.below")
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -934,6 +984,52 @@ struct HomeView: View {
         }
     }
 
+    private var smbSourcesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("SMB")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Spacer()
+                Button {
+                    showAddSMB = true
+                } label: {
+                    Label("添加", systemImage: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.accent)
+            }
+            ForEach(model.smbSources) { source in
+                HStack(spacing: 14) {
+                    Image(systemName: "externaldrive.connected.to.line.below")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Theme.warm)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(source.name).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.text)
+                        Text("smb://\(source.server):\(source.port)/\(source.share)")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(Theme.secondary)
+                    }
+                    Spacer()
+                    Button("扫描") { Task { await model.scanSMBSource(source) } }
+                        .buttonStyle(.bordered)
+                    Button {
+                        model.removeSMBSource(source)
+                    } label: {
+                        Image(systemName: "trash").foregroundStyle(Theme.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(14)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
+            }
+        }
+    }
+
     private var networkSources: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -1179,6 +1275,66 @@ struct AddPlexSheet: View {
         }
         .padding(22)
         .frame(width: 520)
+        .background(Theme.background)
+    }
+}
+
+
+struct AddSMBSheet: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name = "SMB"
+    @State private var server = "127.0.0.1"
+    @State private var port = "445"
+    @State private var share = ""
+    @State private var username = ""
+    @State private var password = ""
+    @State private var basePath = ""
+    @State private var saving = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("添加 SMB")
+                .font(.system(size: 18, weight: .semibold))
+            Text("SMB2/3 来源；密码只保存在 Keychain。首次播放会把文件缓存到本地。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(Theme.secondary)
+            Form {
+                TextField("名称", text: $name)
+                TextField("服务器", text: $server)
+                TextField("端口", text: $port)
+                TextField("共享名", text: $share)
+                TextField("用户名", text: $username)
+                SecureField("密码", text: $password)
+                TextField("子目录（可选）", text: $basePath)
+            }
+            .formStyle(.grouped)
+            HStack {
+                Button("取消") { dismiss() }
+                Spacer()
+                Button(saving ? "连接中…" : "连接并扫描") {
+                    saving = true
+                    Task {
+                        let source = await model.addSMBSource(
+                            name: name,
+                            server: server,
+                            port: Int(port) ?? 445,
+                            share: share,
+                            username: username,
+                            password: password,
+                            basePath: basePath
+                        )
+                        saving = false
+                        if source != nil { dismiss() }
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(saving || share.isEmpty)
+            }
+        }
+        .padding(22)
+        .frame(width: 540)
         .background(Theme.background)
     }
 }

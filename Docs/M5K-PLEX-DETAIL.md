@@ -40,4 +40,4 @@ Plex Direct 详情页现在展示每个 Media 版本（1080p/720p）和每个版
 
 ## 下一项
 
-M5l：真实 Plex 验证、版本级去重；SMB；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+SMB 来源已在 [M5l 验收](Docs/M5L-SMB.md) 完成（全文件缓存）。剩余 M5m：SMB 边下边播/真实服务器、版本级去重、HDR/AirPlay 实机、CloudKit/Trakt、音频、M3 多根/损坏过滤。

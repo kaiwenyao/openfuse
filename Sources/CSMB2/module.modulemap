@@ -1,0 +1,5 @@
+module CSMB2 [system] {
+    header "shim.h"
+    link "smb2"
+    export *
+}

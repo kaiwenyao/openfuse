@@ -8,11 +8,12 @@ public struct MediaItem: Sendable {
         case webdav(sourceID: String, path: String, url: URL)
         case jellyfin(sourceID: String, itemID: String, mediaSourceID: String)
         case plex(sourceID: String, partKey: String, url: URL)
+        case smb(sourceID: String, path: String, cachedURL: URL)
 
         public var isRemote: Bool {
             switch self {
             case .local: return false
-            case .webdav, .jellyfin, .plex: return true
+            case .webdav, .jellyfin, .plex, .smb: return true
             }
         }
     }
@@ -36,6 +37,7 @@ public struct MediaItem: Sendable {
         case .jellyfin:
             return jellyfinContext?.serverKind ?? "jellyfin"
         case .plex: return "plex"
+        case .smb: return "smb"
         }
     }
 
@@ -44,6 +46,7 @@ public struct MediaItem: Sendable {
         case .webdav(let sourceID, _, _): return sourceID
         case .jellyfin(let sourceID, _, _): return sourceID
         case .plex(let sourceID, _, _): return sourceID
+        case .smb(let sourceID, _, _): return sourceID
         case .local: return nil
         }
     }
@@ -54,6 +57,7 @@ public struct MediaItem: Sendable {
             return "\(itemID)|\(mediaSourceID)"
         }
         if case .plex(_, let partKey, _) = origin { return partKey }
+        if case .smb(_, let path, _) = origin { return path }
         return nil
     }
 
@@ -89,6 +93,30 @@ public struct MediaItem: Sendable {
             origin: .local(url)
         )
     }
+
+    #if os(macOS)
+    public static func smb(
+        source: SMBSource,
+        path: String,
+        title: String,
+        size: Int64,
+        cachedURL: URL
+    ) -> MediaItem {
+        MediaItem(
+            title: title,
+            playbackURL: cachedURL,
+            fingerprint: MediaFingerprint(
+                path: "smb://\(source.id)/\(path)",
+                fileSize: size,
+                modifiedAt: nil
+            ),
+            subtitles: SubtitleCatalog.discover(for: cachedURL),
+            httpHeaders: [],
+            origin: .smb(sourceID: source.id, path: path, cachedURL: cachedURL),
+            sourceName: source.name
+        )
+    }
+    #endif
 
     public static func plex(
         source: PlexSource,

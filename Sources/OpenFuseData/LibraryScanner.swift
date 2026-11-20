@@ -262,7 +262,7 @@ public enum LibraryScanner {
 
         for (parsed, candidate) in movies {
             let title = candidate.nfo?.title ?? parsed.showTitle
-            let workID = LibraryID.hash("\(sourceID)|movie|\(candidate.relativePath)", prefix: sourceKind == "local" ? "local-" : "webdav-")
+            let workID = LibraryID.hash("\(sourceID)|movie|\(candidate.relativePath)", prefix: sourceKind == "local" ? "local-" : "\(sourceKind)-")
             let episodeID = workID + "-main"
             let versionID = episodeID + "-v0"
             let poster = candidate.nfo?.posterPath.map { PosterRef.file($0) }
@@ -272,8 +272,8 @@ public enum LibraryScanner {
             let version = ScannedVersion(
                 id: versionID,
                 name: candidate.resolution.map {
-                    "\($0) · \(sourceKind == "local" ? "本地" : "WebDAV")"
-                } ?? (sourceKind == "local" ? "本地文件" : "WebDAV"),
+                    "\($0) · \(LibraryAggregation.sourceLabel(sourceKind))"
+                } ?? (sourceKind == "local" ? "本地文件" : LibraryAggregation.sourceLabel(sourceKind)),
                 mediaSourceID: nil,
                 container: (candidate.name as NSString).pathExtension.uppercased(),
                 resolution: candidate.resolution,
@@ -315,7 +315,7 @@ public enum LibraryScanner {
 
         for (_, bucket) in series {
             let title = bucket.title.isEmpty ? "未命名剧集" : bucket.title
-            let workID = LibraryID.hash("\(sourceID)|series|\(title.lowercased())", prefix: sourceKind == "local" ? "local-" : "webdav-")
+            let workID = LibraryID.hash("\(sourceID)|series|\(title.lowercased())", prefix: sourceKind == "local" ? "local-" : "\(sourceKind)-")
             let poster = bucket.posterPath.map { PosterRef.file($0) } ?? bucket.posterURL.map { PosterRef.remote($0) }
             var seasonMap: [Int: [ScannedEpisode]] = [:]
             for (parsed, candidate) in bucket.episodes {
@@ -326,8 +326,8 @@ public enum LibraryScanner {
                 let version = ScannedVersion(
                     id: versionID,
                     name: candidate.resolution.map {
-                    "\($0) · \(sourceKind == "local" ? "本地" : "WebDAV")"
-                } ?? (sourceKind == "local" ? "本地文件" : "WebDAV"),
+                    "\($0) · \(LibraryAggregation.sourceLabel(sourceKind))"
+                } ?? (sourceKind == "local" ? "本地文件" : LibraryAggregation.sourceLabel(sourceKind)),
                     mediaSourceID: nil,
                     container: (candidate.name as NSString).pathExtension.uppercased(),
                     resolution: candidate.resolution,

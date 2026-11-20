@@ -52,12 +52,14 @@
 - **M3m WebDAV MKV 分辨率：完成。** 远程 MKV 用带 Basic Auth 的 ffprobe Range 探测，版本 `1080p · WebDAV`，1080p 筛选覆盖；terminationHandler 避免等待死锁。iOS 扫描端仍无 ffprobe。记录：[M3m 验收](Docs/M3M-WEBDAV-MKV.md)。
 - **M5j AirPlay 入口：完成。** Mac 播放器控制栏加入 `AVRoutePickerView` AirPlay 图标；构建/UI 截图通过。无接收设备，实际投屏标待验证。记录：[M5j 验收](Docs/M5J-AIRPLAY.md)。
 - **M5k Plex 详情/版本/音轨：完成。** 详情显示 1080p/720p 与 E-AC-3 5.1/AAC，可按版本播放；`--plex-play 401` 实际播放 9.917s 并选中 Plex 外挂简体；修复电影 children 404。记录：[M5k 验收](Docs/M5K-PLEX-DETAIL.md)。
-- **下一项：** M5l：真实 Plex 验证、版本级去重；SMB；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+- **M5l SMB 来源：完成本地验证。** 源码 libsmb2 7.0 + impacket SMB2 夹具：1 作品/1 集，sourceKind=smb，下载缓存 SHA-256 一致，mpv 播放 9.958s；自包含包已带 libsmb2。当前是全文件缓存、非边下边播。记录：[M5l 验收](Docs/M5L-SMB.md)。
+- **下一项：** M5m：SMB Range 代理/边下边播、真实服务器/NFO/字幕；版本级去重；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
 
 开发入口：
 
 ```bash
 brew install mpv
+Scripts/install-libsmb2.sh   # SMB 来源（无 Homebrew formula）
 Scripts/make_fixtures.sh    # 生成 60 s 测试片到 Fixtures/generated/
 Scripts/build-app.sh        # 产出 build/OpenFuse.app
 swift test                  # 核心单元测试
@@ -82,7 +84,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5k-plex-detail`（基于 M5j 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5l-smb`（基于 M5k 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

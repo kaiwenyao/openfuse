@@ -350,6 +350,41 @@ case "jellyfin-hls":
     }
     RunLoop.main.run(until: Date().addingTimeInterval(12))
     exit(1)
+case "smb-list":
+    guard arguments.count >= 7,
+          let port = Int(arguments[3]) else {
+        print("usage: openfuse-probe smb-list SERVER PORT SHARE USER PASSWORD [PATH]")
+        exit(2)
+    }
+    do {
+        let source = SMBSource(name: "probe", server: arguments[2], port: port, share: arguments[4], username: arguments[5])
+        let client = SMBClient(source: source, password: arguments[6])
+        let entries = try client.list(path: arguments.count > 7 ? arguments[7] : nil)
+        let rows = entries.map { entry -> [String: Any] in
+            ["name": entry.name, "path": entry.path, "dir": entry.isDirectory, "size": entry.size]
+        }
+        let data = try JSONSerialization.data(withJSONObject: rows, options: [.prettyPrinted, .sortedKeys])
+        print(String(decoding: data, as: UTF8.self))
+    } catch {
+        print("error: \(error.localizedDescription)")
+        exit(1)
+    }
+case "smb-fetch":
+    guard arguments.count >= 8,
+          let port = Int(arguments[3]) else {
+        print("usage: openfuse-probe smb-fetch SERVER PORT SHARE USER PASSWORD PATH OUT")
+        exit(2)
+    }
+    do {
+        let source = SMBSource(name: "probe", server: arguments[2], port: port, share: arguments[4], username: arguments[5])
+        let client = SMBClient(source: source, password: arguments[6])
+        let data = try client.fetch(path: arguments[7])
+        try data.write(to: URL(fileURLWithPath: arguments[8]))
+        print("bytes=\(data.count)")
+    } catch {
+        print("error: \(error.localizedDescription)")
+        exit(1)
+    }
 case "track-list":
     let raw = arguments[2]
     let url = raw.hasPrefix("http") ? URL(string: raw)! : URL(fileURLWithPath: raw)

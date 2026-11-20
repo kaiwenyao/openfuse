@@ -86,6 +86,7 @@ final class AppModel: ObservableObject {
     @Published var showAddJellyfin = false
     @Published var jellyfinSources: [JellyfinSource] = []
     @Published var plexSources: [PlexSource] = []
+    @Published var smbSources: [SMBSource] = []
     @Published var libraryWorks: [LibraryWork] = []
     @Published var libraryGroups: [LibraryGroup] = []
     @Published var libraryWorkCount = 0
@@ -107,11 +108,13 @@ final class AppModel: ObservableObject {
     let sourceStore: SourceStore
     let jellyfinStore: JellyfinSourceStore
     let plexStore: PlexSourceStore
+    let smbStore: SMBSourceStore
     let libraryStore: LibraryStore
     let libraryOverrideStore: LibraryOverrideStore
     @Published var libraryOverrides: [String: LibraryOverride] = [:]
     private var sessionJellyfinTokens: [String: String] = [:]
     private var sessionPlexTokens: [String: String] = [:]
+    private var sessionSMBPasswords: [String: String] = [:]
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -121,6 +124,7 @@ final class AppModel: ObservableObject {
             self.sourceStore = try SourceStore(directory: directory)
             self.jellyfinStore = try JellyfinSourceStore(directory: directory)
             self.plexStore = try PlexSourceStore(directory: directory)
+            self.smbStore = try SMBSourceStore(directory: directory)
             self.libraryStore = try LibraryStore(directory: directory)
             self.libraryOverrideStore = try LibraryOverrideStore(directory: directory)
         } catch {
@@ -129,6 +133,7 @@ final class AppModel: ObservableObject {
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
         self.plexSources = plexStore.sources
+        self.smbSources = smbStore.sources
         self.libraryOverrides = libraryOverrideStore.all
         refreshRecent()
         reloadLibrary()
@@ -344,6 +349,13 @@ final class AppModel: ObservableObject {
             Task { await openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID) }
             return
         }
+        if record.sourceKind == "smb",
+           let sourceID = record.sourceID,
+           let path = record.remotePath,
+           let source = smbSources.first(where: { $0.id == sourceID }) {
+            Task { await openSMBItem(source: source, path: path, title: record.displayTitle ?? "SMB") }
+            return
+        }
         if record.sourceKind == "webdav",
            let sourceID = record.sourceID,
            let path = record.remotePath,
@@ -376,6 +388,109 @@ final class AppModel: ObservableObject {
         }
         if let cached = sessionJellyfinTokens[source.id] { return cached }
         return CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
+    }
+
+    func smbPassword(for source: SMBSource) -> String? {
+        if let password = sessionSMBPasswords[source.id] { return password }
+        if let password = ProcessInfo.processInfo.environment["OPENFUSE_SMB_PASSWORD"], !password.isEmpty {
+            return password
+        }
+        return CredentialStore.load(account: source.id, service: "com.openfuse.smb")
+    }
+
+    @discardableResult
+    func addSMBSource(
+        name: String,
+        server: String,
+        port: Int,
+        share: String,
+        username: String,
+        password: String,
+        basePath: String = ""
+    ) async -> SMBSource? {
+        let source = SMBSource(
+            name: name.isEmpty ? "\(server)/\(share)" : name,
+            server: server,
+            port: port,
+            share: share,
+            username: username,
+            basePath: basePath
+        )
+        let client = SMBClient(source: source, password: password)
+        do {
+            _ = try client.list(path: source.rootPath)
+            try smbStore.upsert(source)
+            sessionSMBPasswords[source.id] = password
+            try? CredentialStore.save(password: password, account: source.id, service: "com.openfuse.smb")
+            smbSources = smbStore.sources
+            statusMessage = "已添加 \(source.name)"
+            await scanSMBSource(source)
+            return source
+        } catch {
+            statusMessage = "SMB 添加失败：\(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    func scanSMBSource(_ source: SMBSource) async {
+        guard let password = smbPassword(for: source) else {
+            libraryStatus = "缺少 \(source.name) 的 SMB 密码"
+            return
+        }
+        isScanningLibrary = true
+        libraryStatus = "正在扫描 SMB：\(source.name)…"
+        let client = SMBClient(source: source, password: password)
+        do {
+            let scanned = try await Task.detached(priority: .userInitiated) {
+                try SMBLibraryScanner.scan(source: source, client: client)
+            }.value
+            try libraryStore.replace(source: scanned)
+            reloadLibrary()
+            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+            libraryStatus = "SMB \(source.name)：\(counts.works) 个作品"
+        } catch {
+            libraryStatus = "SMB 扫描失败：\(error.localizedDescription)"
+        }
+        isScanningLibrary = false
+    }
+
+    func removeSMBSource(_ source: SMBSource) {
+        try? smbStore.remove(id: source.id)
+        sessionSMBPasswords.removeValue(forKey: source.id)
+        CredentialStore.delete(account: source.id, service: "com.openfuse.smb")
+        try? libraryStore.removeSource(kind: "smb", sourceID: source.id)
+        smbSources = smbStore.sources
+        reloadLibrary()
+    }
+
+    private func openSMBItem(source: SMBSource, path: String, title: String) async {
+        guard let password = smbPassword(for: source) else {
+            statusMessage = "缺少 SMB 密码"
+            return
+        }
+        let client = SMBClient(source: source, password: password)
+        do {
+            let data = try await Task.detached(priority: .userInitiated) {
+                try client.fetch(path: path)
+            }.value
+            let cache = supportDirectory.appendingPathComponent("SMBCache", isDirectory: true)
+            try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+            let ext = (path as NSString).pathExtension.lowercased()
+            let target = cache.appendingPathComponent(
+                LibraryID.hash("\(source.id)|\(path)") + "." + (ext.isEmpty ? "mkv" : ext)
+            )
+            try data.write(to: target, options: .atomic)
+            let media = MediaItem.smb(
+                source: source,
+                path: path,
+                title: title,
+                size: Int64(data.count),
+                cachedURL: target
+            )
+            startPlayer(with: media)
+        } catch {
+            statusMessage = "SMB 读取失败：\(error.localizedDescription)"
+        }
     }
 
     func plexToken(for source: PlexSource) -> String? {
@@ -850,6 +965,7 @@ final class AppModel: ObservableObject {
         case "jellyfin", "emby": return 3
         case "local": return 2
         case "webdav": return 1
+        case "smb": return 2
         default: return 0
         }
     }
@@ -1304,6 +1420,13 @@ final class AppModel: ObservableObject {
                     preferredMediaSourceID: version?.mediaSourceID
                 )
             }
+        case "smb":
+            guard let source = smbSources.first(where: { $0.id == work.sourceID }),
+                  let path = version?.remotePath ?? episode.remotePath else {
+                libraryStatus = "SMB 来源已被移除"
+                return
+            }
+            Task { await openSMBItem(source: source, path: path, title: episode.title) }
         case "plex":
             guard let source = plexSources.first(where: { $0.id == work.sourceID }),
                   let token = plexToken(for: source),

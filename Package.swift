@@ -22,13 +22,22 @@ let package = Package(
             path: "Sources/CMpv",
             providers: [.brew(["mpv"])]
         ),
+        .systemLibrary(
+            name: "CSMB2",
+            path: "Sources/CSMB2",
+            pkgConfig: "libsmb2",
+            providers: []
+        ),
         .target(
             name: "OpenFuseData",
+            dependencies: [.target(name: "CSMB2", condition: .when(platforms: [.macOS]))],
             swiftSettings: [
                 .swiftLanguageMode(.v5),
+                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
             ],
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
+                .unsafeFlags(["-L/opt/homebrew/lib", "-Xlinker", "-rpath", "-Xlinker", "/opt/homebrew/lib"]),
                 .linkedFramework("Security"),
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("CloudKit"),
@@ -42,7 +51,7 @@ let package = Package(
                 .swiftLanguageMode(.v5),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L/opt/homebrew/lib", "-Xlinker", "-rpath", "-Xlinker", "/opt/homebrew/lib"]),
                 .linkedLibrary("mpv"),
                 .linkedLibrary("sqlite3"),
                 .linkedFramework("OpenGL"),
@@ -56,7 +65,7 @@ let package = Package(
                 .swiftLanguageMode(.v5),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L/opt/homebrew/lib", "-Xlinker", "-rpath", "-Xlinker", "/opt/homebrew/lib"]),
                 .linkedLibrary("mpv"),
                 .linkedFramework("OpenGL"),
             ]
@@ -69,7 +78,7 @@ let package = Package(
                 .swiftLanguageMode(.v5),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L/opt/homebrew/lib", "-Xlinker", "-rpath", "-Xlinker", "/opt/homebrew/lib"]),
                 .linkedLibrary("mpv"),
                 .linkedFramework("OpenGL"),
             ]
@@ -82,7 +91,7 @@ let package = Package(
                 .swiftLanguageMode(.v5),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L/opt/homebrew/lib", "-Xlinker", "-rpath", "-Xlinker", "/opt/homebrew/lib"]),
                 .linkedLibrary("mpv"),
                 .linkedFramework("OpenGL"),
             ]

@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## SMB 来源（M5l）
+
+- 源码 libsmb2 7.0 + CSMB2 C shim，macOS-only 条件依赖；Package -L/rpath /opt/homebrew。
+- SMBClient：parse_url（端口）、connect、list/stat/open/pread；SMBSourceStore/Keychain；递归扫描。
+- 播放先全文件下载到 SMBCache，再交给 libmpv；MediaItem.Origin.smb + smb:// 续播键。
+- 实测 9.958s；自包含包含 libsmb2；未做 Range 代理/真实服务器/NFO/字幕。
+
 ## Plex 详情/版本/音轨（M5k）
 
 - PlexMetadataView 展示 media 版本（分辨率/容器）、音频流（codec/display/channels）；按版本播放。

@@ -153,7 +153,7 @@ struct LibraryCard: View {
         if group.works.count > 1 {
             parts.append(group.sourceLabel)
         } else if parts.isEmpty {
-            parts.append(work.sourceKind == "jellyfin" ? "Jellyfin" : (work.sourceKind == "webdav" ? "WebDAV" : "本地"))
+            parts.append(LibraryAggregation.sourceLabel(work.sourceKind))
         }
         return parts.joined(separator: " · ")
     }
@@ -223,7 +223,7 @@ struct LibraryDetailView: View {
                             if let group, group.works.count > 1 {
                                 Text(group.sourceLabel)
                             } else {
-                                Text(primary.sourceKind == "jellyfin" ? "Jellyfin" : (primary.sourceKind == "webdav" ? "WebDAV" : "本地"))
+                                Text(LibraryAggregation.sourceLabel(primary.sourceKind))
                             }
                         }
                         .font(.system(size: 12, weight: .medium))

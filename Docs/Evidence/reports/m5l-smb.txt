@@ -1,0 +1,23 @@
+OpenFuse M5l SMB source evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Client: libsmb2 7.0.0 built from source, installed /opt/homebrew
+Server: impacket smbserver 0.13.0, SMB2, port 1445, user test/test
+
+Scan:
+  sourceKind=smb, 1 work / 1 episode ("OpenFuse SMB" / "OpenFuse SMB").
+  Library card label "SMB"; source card smb://127.0.0.1:1445/SHARE.
+Playback:
+  Fetched 17,654,819 bytes from /Movie/OpenFuse.SMB.mkv into SMBCache;
+  SHA-256 matches fixture 37875d...;
+  mpv reports sourceKind=smb, position 9.958s, remotePath /Movie/OpenFuse.SMB.mkv.
+Acceptance:
+  Scripts/run-smb-acceptance.sh PASS.
+  swift test 28/28; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+Packaging:
+  Scripts/package-app.sh includes libsmb2.7.0.0.dylib in Frameworks;
+  lsof shows libsmb2 from app, /opt/homebrew load count 0; app 68MB/zip 28MB.
+
+Not verified:
+  Real SMB server/SMB3 signing/DFS; large files/streaming (currently full-file cache);
+  NFO/posters on SMB; audio/subtitle sidecars; iOS SMB (macOS-only).

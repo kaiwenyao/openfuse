@@ -121,6 +121,7 @@ public enum LibraryAggregation {
         case "emby": return "Emby"
         case "webdav": return "WebDAV"
         case "plex": return "Plex"
+        case "smb": return "SMB"
         default: return "本地"
         }
     }
