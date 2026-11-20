@@ -12,7 +12,8 @@
 - **播放**：AVPlayer + AVKit `VideoPlayer`；本地 MP4/MOV；启动时按 `PlaybackStore` 续播；每秒记录位置，退出/后台写入 `playback.json`；完成后清位置并标记已看。
 - **示例素材**：`Fixtures/mobile/openfuse-mobile.mp4`（H.264 High / AAC 立体声，20 秒，1.1 MB）与海报；首次启动复制到 Documents 并扫描入库。
 - **导入**：Files 选择 MP4/MOV，复制到 Documents/Imports，重扫该来源；不支持 MKV 时给出明确提示。
-- **设置**：引擎/容器/音频/来源/版本说明；移动端首版无服务器来源。
+- **服务器来源（M4b）**：设置入口「媒体来源」可添加/扫描/删除 WebDAV（OpenList）与 Jellyfin；密码/token 存 Keychain；扫描复用 `OpenFuseData` 的 WebDAV/Jellyfin scanner；Jellyfin 海报按 item id + token 生成远程 URL。
+- **设置**：引擎/容器/音频/来源/版本说明。
 
 ## 构建
 
@@ -34,7 +35,9 @@ swift test                                            # 25/25
 | Mac 构建/扫描 | 3 作品 / 4 集 / 3 组，正常 |
 | iOS Simulator generic 构建 | **BUILD SUCCEEDED**（exit 0） |
 | iOS device generic 构建 | **BUILD SUCCEEDED**（exit 0） |
-| 模拟器启动/截图 | **待验证**：本轮无 runtime；已开始下载 iOS 27.2 Simulator 8.32 GB |
+| M4b 来源管理构建 | **BUILD SUCCEEDED**（Simulator + device，25/25 测试） |
+| 来源添加/扫描 | 数据层复用；无模拟器/真机，UI 流程与 Keychain 交互待验证 |
+| 模拟器启动/截图 | **待验证**：runtime 下载中（iOS 27.2 Simulator 8.32 GB） |
 | 触控布局、横竖屏、后台续播 | **待验证**（无 runtime/真机） |
 | iPad 分屏/键盘 | 未做（当前 NavigationStack 自适应，无三栏） |
 | tvOS/visionOS | 未开始 |
@@ -50,7 +53,7 @@ build/mobile-device/Build/Products/Release-iphoneos/OpenFuse.app
 
 1. **AVPlayer 打不开 MKV**；移动端首版只支持 MP4/MOV，MKV 需后续集成 libmpv/FFmpeg。字幕（ASS/PGS）、音轨切换、E-AC-3 5.1 未在移动端验证。
 2. **无模拟器运行证据**：runtime 下载未完成；UI 布局、触控、旋转、后台恢复、音频输出均为待验证。
-3. **移动端没有 Jellyfin/WebDAV/OpenList 来源**；数据层已具备，UI 与凭据流未接。
+3. **移动端 Jellyfin/WebDAV 已接添加/扫描**，但远程播放未接：Jellyfin 直连 MKV/HEVC 依赖转码 HLS 或 libmpv，WebDAV Basic Auth 需要本机代理；当前 remote 条目显示「待接入」。
 4. **无 CloudKit/Trakt/iCloud 续播**；播放记录只在本机。
 5. **无 iPad 三栏、键盘快捷键、Apple Pencil/拖放；tvOS/visionOS 目标未建。**
 6. **示例是 H.264/AAC 转码**，不是 HEVC Main 10/E-AC-3 原片；移动端音频验收未做。
@@ -58,4 +61,4 @@ build/mobile-device/Build/Products/Release-iphoneos/OpenFuse.app
 
 ## 下一项
 
-M4b：完成模拟器 runtime 安装并实际启动/截图；接入移动端 Jellyfin/WebDAV 来源与 MKV/libmpv；iPad 分栏；tvOS/visionOS 目标；CloudKit/Trakt 同步。Mac M3 的观看状态/防剧透/最近播放已在 [M3h 验收](M3H-WATCH.md) 补齐。
+M4c：完成模拟器 runtime 安装并实际启动/截图；远程播放（Jellyfin 转码/HLS 或 libmpv、WebDAV 鉴权代理）；MKV/字幕/音轨；iPad 分栏；tvOS/visionOS；CloudKit/Trakt。

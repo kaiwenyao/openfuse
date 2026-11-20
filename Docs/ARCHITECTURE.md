@@ -78,7 +78,8 @@ Docs/                   决策、素材、验收、证据
 - `OpenFuseCore`：macOS 播放层（libmpv/OpenGL），`@_exported import OpenFuseData` 保持旧 import。
 - `Platforms/Mobile` + `project.yml`：iPhone/iPad SwiftUI；AVPlayer 本地 MP4/MOV、Files 导入、PlaybackStore 续播；示例 MP4 首次启动入库。
 - 生成 `OpenFuseMobile.xcodeproj`（不入库），`Scripts/build-ios.sh` 重建。
-- 未做：移动端服务器来源/字幕/音轨/MKV、iPad 分栏、tvOS/visionOS、CloudKit/Trakt。
+- M4b：移动端 `MobileSourcesView` 添加/扫描/删除 WebDAV/Jellyfin；`SourceStore`/`JellyfinSourceStore` + Keychain；Jellyfin 海报按 token 生成；扫描复用 LibraryScanner。
+- 未做：移动端远程播放（转码/HLS/鉴权代理）、字幕/音轨/MKV、iPad 分栏、tvOS/visionOS、CloudKit/Trakt。
 
 ## 排序、筛选与最近添加（M3g）
 

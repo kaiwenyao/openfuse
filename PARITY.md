@@ -120,6 +120,14 @@
 | 画质筛选 | 同上 | Jellyfin 电影 1080p/720p 版本 | 待采样 | 1080p 只剩电影；单集/本地无分辨率元数据 | `reports/m3h-watch-resolution.json` | 部分通过 |
 | 防剧透 | 同上 | 《示例剧》观看中 | 待采样 | 详情/单集简介隐藏，点「显示」展开 | Evidence 37 | 本地通过 |
 
+### M4b 移动端来源执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 移动端来源管理 | MacBook Pro M2 Pro／Xcode 27.2 | WebDAV/Jellyfin 夹具 | Infuse 未安装 | 添加/扫描/删除 UI；Keychain 存密码/token；扫描复用数据层 | `reports/m4-ios-build.txt` | 构建通过；UI/Keychain 待运行验证 |
+| 移动端构建 | 同上 | 同上 | 待采样 | Simulator + device generic 均 BUILD SUCCEEDED；25/25 测试 | 同上 | 构建通过 |
+| 移动端远程播放 | 同上 | Jellyfin/WebDAV 媒体 | 待采样 | 未接转码/HLS/鉴权代理，remote 条目提示待接入 | — | 待验证/未完成 |
+
 
 
 

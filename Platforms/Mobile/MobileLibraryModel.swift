@@ -22,10 +22,14 @@ final class MobileLibraryModel: ObservableObject {
     @Published var recent: [PlaybackRecord] = []
     @Published var status: String?
     @Published var isWorking = false
+    @Published var webdavSources: [WebDAVSource] = []
+    @Published var jellyfinSources: [JellyfinSource] = []
 
     let supportDirectory: URL
     private let libraryStore: LibraryStore
     private let playbackStore: PlaybackStore
+    private let sourceStore: SourceStore
+    private let jellyfinStore: JellyfinSourceStore
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -34,9 +38,13 @@ final class MobileLibraryModel: ObservableObject {
             try FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
             libraryStore = try LibraryStore(directory: supportDirectory)
             playbackStore = try PlaybackStore(directory: supportDirectory)
+            sourceStore = try SourceStore(directory: supportDirectory)
+            jellyfinStore = try JellyfinSourceStore(directory: supportDirectory)
         } catch {
             fatalError("OpenFuse mobile store init failed: \(error)")
         }
+        webdavSources = sourceStore.sources
+        jellyfinSources = jellyfinStore.sources
         seedBundledSampleIfNeeded()
         reload()
     }
@@ -128,6 +136,113 @@ final class MobileLibraryModel: ObservableObject {
             remoteURL: item.remoteURL
         )
         recent = playbackStore.recentlyPlayed(limit: 12)
+    }
+
+    func posterURL(for work: LibraryWork) -> URL? {
+        guard let parsed = PosterRef.parse(work.poster), parsed.kind == "jellyfin" else { return nil }
+        let parts = parsed.value.split(separator: "|", maxSplits: 1).map(String.init)
+        guard let itemID = parts.first else { return nil }
+        for source in jellyfinSources {
+            if let token = jellyfinToken(for: source),
+               let url = JellyfinClient(source: source, token: token).imageURL(
+                    itemID: itemID,
+                    tag: parts.count > 1 ? parts[1] : nil
+               ) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    func addWebDAV(name: String, urlText: String, username: String, password: String) async {
+        guard let url = URL(string: urlText) else {
+            status = "WebDAV 地址无效"
+            return
+        }
+        isWorking = true
+        defer { isWorking = false }
+        let source = WebDAVSource(name: name.isEmpty ? url.host ?? "WebDAV" : name, baseURL: url, username: username)
+        do {
+            try sourceStore.upsert(source)
+            try CredentialStore.save(password: password, account: source.id)
+            webdavSources = sourceStore.sources
+            try await scanWebDAV(source)
+        } catch {
+            status = "添加 WebDAV 失败：\(error.localizedDescription)"
+        }
+    }
+
+    func scanWebDAV(_ source: WebDAVSource) async throws {
+        guard let password = CredentialStore.load(account: source.id) else {
+            status = "WebDAV 缺少 Keychain 密码"
+            return
+        }
+        isWorking = true
+        defer { isWorking = false }
+        let client = WebDAVClient(source: source, password: password)
+        let scanned = try await LibraryScanner.scanWebDAV(
+            source: source,
+            client: client,
+            posterCacheDirectory: supportDirectory.appendingPathComponent("PosterCache", isDirectory: true)
+        )
+        try libraryStore.replace(source: scanned)
+        reload()
+        status = "WebDAV \(source.name)：\(scanned.works.count) 个作品"
+    }
+
+    func addJellyfin(name: String, urlText: String, username: String, password: String) async {
+        guard let url = URL(string: urlText) else {
+            status = "Jellyfin 地址无效"
+            return
+        }
+        isWorking = true
+        defer { isWorking = false }
+        var source = JellyfinSource(name: name.isEmpty ? url.host ?? "Jellyfin" : name, baseURL: url, username: username)
+        do {
+            let session = try await JellyfinClient.authenticate(source: source, password: password)
+            source.userID = session.userID
+            source.serverID = session.serverID
+            try jellyfinStore.upsert(source)
+            try CredentialStore.save(password: session.accessToken, account: source.id, service: "com.openfuse.jellyfin")
+            jellyfinSources = jellyfinStore.sources
+            try await scanJellyfin(source)
+        } catch {
+            status = "添加 Jellyfin 失败：\(error.localizedDescription)"
+        }
+    }
+
+    func scanJellyfin(_ source: JellyfinSource) async throws {
+        guard let token = jellyfinToken(for: source) else {
+            status = "Jellyfin 缺少 Keychain token"
+            return
+        }
+        isWorking = true
+        defer { isWorking = false }
+        let client = JellyfinClient(source: source, token: token)
+        let scanned = try await LibraryScanner.scanJellyfin(source: source, client: client)
+        try libraryStore.replace(source: scanned)
+        reload()
+        status = "Jellyfin \(source.name)：\(scanned.works.count) 个作品"
+    }
+
+    func removeWebDAV(_ source: WebDAVSource) {
+        try? sourceStore.remove(id: source.id)
+        CredentialStore.delete(account: source.id)
+        try? libraryStore.removeSource(kind: "webdav", sourceID: source.id)
+        webdavSources = sourceStore.sources
+        reload()
+    }
+
+    func removeJellyfin(_ source: JellyfinSource) {
+        try? jellyfinStore.remove(id: source.id)
+        CredentialStore.delete(account: source.id, service: "com.openfuse.jellyfin")
+        try? libraryStore.removeSource(kind: "jellyfin", sourceID: source.id)
+        jellyfinSources = jellyfinStore.sources
+        reload()
+    }
+
+    func jellyfinToken(for source: JellyfinSource) -> String? {
+        CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
     }
 
     func importVideo(from url: URL) {

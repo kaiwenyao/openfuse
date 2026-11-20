@@ -7,6 +7,7 @@ struct MobileRootView: View {
     @EnvironmentObject private var model: MobileLibraryModel
     @State private var showImporter = false
     @State private var showAbout = false
+    @State private var showSources = false
 
     var body: some View {
         NavigationStack {
@@ -28,6 +29,13 @@ struct MobileRootView: View {
             }
             .background(Color.black.ignoresSafeArea())
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSources = true
+                    } label: {
+                        Label("媒体来源", systemImage: "server.rack")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showImporter = true
@@ -54,6 +62,10 @@ struct MobileRootView: View {
             }
             .sheet(isPresented: $showAbout) {
                 MobileAboutView()
+            }
+            .sheet(isPresented: $showSources) {
+                MobileSourcesView()
+                    .environmentObject(model)
             }
             .navigationDestination(for: LibraryWork.self) { work in
                 MobileDetailView(work: work)
@@ -145,7 +157,7 @@ struct MobileRootView: View {
             Text("移动端首版")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Text("AVPlayer · 本地 MP4/MOV · 进度写入 playback.json · MKV/字幕/服务器来源待接入")
+            Text("AVPlayer · 本地 MP4/MOV · Jellyfin/WebDAV 可扫描 · 远程播放/MKV/字幕待接入")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -189,6 +201,7 @@ private struct MobileLibraryCard: View {
 }
 
 private struct MobilePoster: View {
+    @EnvironmentObject private var model: MobileLibraryModel
     let work: LibraryWork
 
     var body: some View {
@@ -196,6 +209,14 @@ private struct MobilePoster: View {
             if let parsed = PosterRef.parse(work.poster), parsed.kind == "file",
                let image = UIImage(contentsOfFile: parsed.value) {
                 Image(uiImage: image).resizable().scaledToFill()
+            } else if let url = model.posterURL(for: work) {
+                AsyncImage(url: url) { phase in
+                    if case .success(let image) = phase {
+                        image.resizable().scaledToFill()
+                    } else {
+                        placeholder
+                    }
+                }
             } else if let parsed = PosterRef.parse(work.poster), parsed.kind == "remote",
                       let url = URL(string: parsed.value) {
                 AsyncImage(url: url) { phase in
@@ -250,7 +271,7 @@ struct MobileDetailView: View {
                         HStack(spacing: 8) {
                             if let year = currentWork.year { Text(String(year)) }
                             Text(currentWork.kind == .movie ? "电影" : "剧集")
-                            Text("本地")
+                            Text(currentWork.sourceKind == "jellyfin" ? "Jellyfin" : (currentWork.sourceKind == "webdav" ? "WebDAV" : "本地"))
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -272,6 +293,10 @@ struct MobileDetailView: View {
                                     .foregroundStyle(.black)
                             }
                             .buttonStyle(.plain)
+                        } else if currentWork.sourceKind != "local" {
+                            Text("服务器来源已入库；移动端远程播放需要转码/鉴权代理，待接入。")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
                         } else {
                             Text("该条目没有 AVPlayer 可播放的本地文件")
                                 .font(.caption)

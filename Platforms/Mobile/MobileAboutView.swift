@@ -14,8 +14,8 @@ struct MobileAboutView: View {
                     LabeledContent("音频", value: "AAC / 立体声")
                 }
                 Section("媒体库") {
-                    LabeledContent("来源", value: "本地导入 + 内置示例")
-                    LabeledContent("Jellyfin/WebDAV", value: "下一阶段")
+                    LabeledContent("来源", value: "本地导入 + 内置示例 + 服务器扫描")
+                    LabeledContent("Jellyfin/WebDAV", value: "可添加/扫描；远程播放待接入")
                 }
                 Section("关于") {
                     LabeledContent("版本", value: "0.4.0-mobile")

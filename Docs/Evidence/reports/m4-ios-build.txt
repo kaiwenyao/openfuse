@@ -23,3 +23,12 @@ Not verified:
   No installed simulator runtime at build time. `xcodebuild -downloadPlatform iOS`
   started downloading iOS 27.2 Simulator (8.32 GB); launch, layout, touch,
   background/resume, and screenshots remain 待验证.
+
+M4b source-management build (2026-11-20):
+  xcodebuild ... -destination 'generic/platform=iOS Simulator' ... build
+    -> BUILD SUCCEEDED
+  xcodebuild ... -destination 'generic/platform=iOS' -configuration Release ... build
+    -> BUILD SUCCEEDED
+  swift test: 25/25 passed
+  Mobile source manager: WebDAV/Jellyfin add, Keychain credentials, scan, delete.
+  Simulator runtime: still downloading (~8.32 GB) at build time; launch not run.
