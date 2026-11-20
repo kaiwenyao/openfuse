@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | M0 参照与选型 | 完成（Infuse 实机采样除外） | AVPlayer 打不开 MKV；libmpv 胜出。夹具与声道校验完成。 |
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
-| M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
+| M2 远程播放 | 部分完成：WebDAV(OpenList) + Jellyfin Direct | WebDAV：真实 OpenList Docker `/dav` 扫描/直放/seek/Range/远程字幕通过；百度网盘账号/云跳转未验证。Jellyfin Direct 夹具全链路；真实服务/Library Mode 未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3s | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07；本地/WebDAV/SMB 损坏签名过滤；多根；跨来源指纹去重；MKV/MP4 分辨率/HDR（尾部 moov）；iOS 运行期验证。碎片 MP4/性能、真实 OpenList、全文件哈希仍待。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M5ac | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；Trakt 自动轮询/历史；E-AC-3 5.1 PCM+stereo 验证；CoreAudio 设备选择。真实账号/自动同步、扬声器听测/热插拔未做。 |
 | M5 其余来源与高级播放 | 部分完成：M5a–M5ab | Plex 全链路；自包含 app；Emby；Jellyfin+Emby 去重/progress；AirPlay 入口；SMB 边下边播/元数据/并发；本地+远程 HDR10；SDR tone mapping；EDR HDR 直通参数。未公证/仅 arm64；Metal/EDR 渲染与测量、真实 SMB3/大文件、AirPlay 实机、CloudKit 未做。 |
@@ -14,11 +14,11 @@
 
 ## 当前分支
 
-`m3s-remote-corrupt`（基于 M6c 提交）。M6d/M5ai 从该分支继续。
+`m3s-remote-corrupt`（基于 M6c 提交）。M2d/M6d 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M6d/M5ai：真机 3D 控件/空间音频/HDR；碎片 MP4/SMB 性能；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+1. M2d/M6d：百度网盘账号/OpenList 云跳转；移动 OpenList；真机 visionOS；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

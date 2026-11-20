@@ -1,0 +1,19 @@
+OpenFuse M2c real OpenList WebDAV evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: docker openlistteam/openlist:latest, port 5244, Local storage.
+
+Flow:
+  OPENLIST_ADMIN_PASSWORD=test seeds admin; login token; API creates /local
+  Local storage pointing at /opt/openlist/data/files.
+  OpenFuse source: http://127.0.0.1:5244/dav/ admin/test.
+  Scan: 1 work, version "1080p · WebDAV", contentKey.
+  Play/seek: seek 10 → report 11.022s / 20.041s; remote SRT selected.
+  curl Range 0-1023 → HTTP 206, Content-Range 0-1023/3533564.
+  Screenshot at t=15s with bilingual subtitle.
+  Scripts/run-openlist-acceptance.sh PASS.
+  swift test 36/36; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real Baidu pan storage/account, OpenList cloud redirects/limits, real HTTPS,
+  mobile OpenList, audio.

@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T08:39:20Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse openlist",
+      "primary" : "OpenFuse OpenList",
+      "sources" : [
+        "webdav"
+      ],
+      "workIDs" : [
+        "webdav-0e4de9f6bf78e86c"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "webdav-0e4de9f6bf78e86c-main",
+          "remotePath" : "local\/Movies\/OpenFuse OpenList.mp4",
+          "season" : 0,
+          "sourceKind" : "webdav",
+          "title" : "OpenFuse OpenList",
+          "versions" : [
+            {
+              "contentKey" : "9f999c7471948cc928d58046c3e688d0",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "webdav-0e4de9f6bf78e86c-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · WebDAV",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "webdav-0e4de9f6bf78e86c",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "7bfe8b6b9a242836",
+      "sourceKind" : "webdav",
+      "title" : "OpenFuse OpenList",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse OpenList",
+          "versions" : [
+            "WebDAV · 1080p · WebDAV"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse openlist",
+      "sources" : [
+        "webdav"
+      ],
+      "title" : "OpenFuse OpenList"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "WebDAV OpenList：1 个作品",
+  "visible" : [
+    "OpenFuse OpenList"
+  ],
+  "works" : 1
+}

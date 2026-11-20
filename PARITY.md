@@ -548,3 +548,11 @@
 | WebDAV 坏文件 | MacBook Pro M2 Pro／macOS 27.2.1 | Good MP4 + text MKV | Infuse 未安装 | 仅 Good Movie 入库 | `reports/m3s-webdav-corrupt.json` | 通过 |
 | SMB 坏文件 | 同上 | 同上 | 待采样 | 仅 Good Movie 入库 | `reports/m3s-smb-corrupt.json` | 通过 |
 | 真实服务器/截断文件 | 同上 | 真实文件 | 待采样 | 未测 | — | 待验证 |
+
+### M2c 真实 OpenList 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| OpenList WebDAV | MacBook Pro M2 Pro／macOS 27.2.1 | OpenList Docker + Local | Infuse 未安装 | 1 作品/1080p；seek 11.022s；Range 206；远程 SRT | Evidence 95、`reports/m2c-openlist-*` | 通过（Docker） |
+| 百度网盘/云跳转 | 同上 | 真实账号 | 待账号 | 未测 | — | 待验证 |
+| 移动 OpenList | 同上 | iPhone/iPad | 待采样 | 未跑 | — | 待验证 |

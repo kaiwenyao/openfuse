@@ -84,7 +84,8 @@
 - **M6b visionOS 控制：完成进度回写验证。** 沉浸屏幕支持拖动/缩放；autoclose=6 后 PlaybackStore 写入 7.517s，窗口显示「从 7 秒继续」。模拟器 Metal 仍黑屏，真机手势/空间音频待验证。记录：[M6b 验收](Docs/M6B-VISION-CONTROLS.md)。
 - **M6c visionOS full immersion：完成模拟器验证。** `.full` 沉浸实际渲染测试图（00:00:11:22，HEVC/E-AC-3 标识），星点环境 + 3D 播放/关闭球 + 进度条；打开沉浸关闭主窗口，退出重开。真机空间音频/手势待验证。记录：[M6c 验收](Docs/M6C-VISION-IMMERSION.md)。
 - **M3s 远程损坏过滤：完成本地验证。** WebDAV/SMB 读 64B 容器签名，Broken.Movie 不再入库；SMB read 重连重试修复 NFO 后读失败。单测 36/36。记录：[M3s 验收](Docs/M3S-REMOTE-CORRUPT.md)。
-- **下一项：** M6d/M5ai：真机 3D 控件/空间音频/HDR；碎片 MP4/SMB 性能；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+- **M2c 真实 OpenList：完成本地 Docker 验证。** 官方 OpenList 镜像 + Local 存储，`/dav` 扫描 1 作品/1080p，seek 11.0s、远程简中字幕、Range 206；截图 t=15s 双语字幕同步。百度网盘账号/云跳转未验证。记录：[M2c 验收](Docs/M2C-OPENLIST-REAL.md)。
+- **下一项：** M2d/M6d：百度网盘账号/OpenList 云跳转；移动 OpenList；真机 visionOS；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit。
 
 开发入口：
 

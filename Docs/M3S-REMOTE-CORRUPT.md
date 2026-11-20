@@ -33,4 +33,4 @@ M3n 只过滤本地损坏文件。本轮为 WebDAV/SMB 增加容器签名校验�
 
 ## 下一项
 
-M5ai/M6d：碎片 MP4/SMB 性能；真机 visionOS；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+真实 OpenList Docker WebDAV 已在 [M2c 验收](Docs/M2C-OPENLIST-REAL.md) 完成。剩余 M2d/M6d：百度网盘账号/云跳转、移动 OpenList、真机 visionOS、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit。
