@@ -40,8 +40,9 @@
 - **M4o Vision Pro 实际运行：完成。** visionOS 27.2 runtime 安装，Apple Vision Pro 模拟器启动 OpenFuse 空间窗口；autoplay 播放 HEVC/EAC3 样本到 24s。至此 Mac/iPhone/iPad/Apple TV/Vision Pro 五端均有实际启动证据。音频与沉浸式空间交互未验证。记录：[M4o 验收](Docs/M4O-VISIONOS.md)。
 - **M4p 跨设备续播：完成本地两设备验证。** PlaybackStore 合并（新时间戳优先）、本地共享 JSON transport、CloudKit transport（代码）；A 播放 9.917s → 同步 → B 从 9.9s 继续到 14.417s。真实 iCloud entitlements/账号未验证，Trakt/自动同步/离线队列未做。记录：[M4p 验收](Docs/M4P-PROGRESS-SYNC.md)。
 - **M5a Plex 来源：完成本地验证。** Mac 添加 Plex（地址/token）、扫描 2 作品/3 集、海报 token-free 引用、从媒体库播放 Plex 第 1 集并冻结 9.917s；UI/夹具/验收脚本齐全。真实 Plex、直连浏览、进度回写、字幕未做。记录：[M5 Plex 验收](Docs/M5-PLEX.md)。
-- **M5b Plex 进度回写：时间线完成。** PlayerModel 向 Plex 上报 `/:/timeline` playing/paused/stopped 与 `/:/scrobble`；夹具实测 playing 0s 与 paused 59.967s，scrobble 因未真正到结尾未触发。记录：[M5b 验收](Docs/M5B-PLEX-PROGRESS.md)。
-- **下一项：** M5c：真实 Plex/结束 scrobble、直连浏览/字幕；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 T07/WebDAV MKV 分辨率。
+- **M5b Plex 进度回写：timeline 完成。** playing/paused/stopped 已上报；M5c 补上 finished-save scrobble。
+- **M5c Plex scrobble：完成。** saveProgress 判定 95% 看完时幂等上报 stopped + `/:/scrobble`，夹具实测收到 scrobble。真实 Plex 未验证。记录：[M5c 验收](Docs/M5C-PLEX-SCROBBLE.md)。
+- **下一项：** M5d：Plex 直连浏览/字幕；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 T07/WebDAV MKV 分辨率。
 
 开发入口：
 
@@ -71,7 +72,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5-plex-progress`（基于 M5a 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m5c-plex-scrobble`（基于 M5b 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

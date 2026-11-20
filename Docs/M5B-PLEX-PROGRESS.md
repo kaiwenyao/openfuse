@@ -38,4 +38,4 @@ Plex 播放现在会向服务器上报 timeline：文件加载时 `state=playing
 
 ## 下一项
 
-M5c：真实 Plex/结束 scrobble、直连浏览/字幕；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 尾项。
+Plex scrobble 已在 [M5c 验收](Docs/M5C-PLEX-SCROBBLE.md) 完成（finished-save 路径）。剩余 M5d：Plex 直连浏览/字幕；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 尾项。

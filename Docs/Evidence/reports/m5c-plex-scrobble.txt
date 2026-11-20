@@ -1,0 +1,21 @@
+OpenFuse M5c Plex scrobble evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, 60s episode, port 32400
+
+Fix:
+  saveProgress() now calls reportPlexStop() when ResumePolicy marks the
+  position finished (>=95%, near end), with hasReportedPlexStop idempotence.
+
+Observed acceptance:
+  /:/timeline state=playing time=0 duration=60000
+  /:/timeline state=paused time=59967 duration=60000
+  /:/timeline state=stopped time=59967 duration=60000
+  /:/scrobble key=401 identifier=com.plexapp.plugins.library
+  Plex 第 1 集 playback 9.917s; near-end run pauses at 59.967s.
+  swift test 28/28; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Plex; natural EOF scrobble (this run uses near-end finished save);
+  Plex direct browse/subtitles; Emby/SMB/HDR/AirPlay/packaging; CloudKit/Trakt;
+  audio.

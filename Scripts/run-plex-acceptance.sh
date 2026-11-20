@@ -34,6 +34,10 @@ OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
   --library-play "$EPISODE" --freeze-at 9.9 --capture "$OUT/play.png" \
   --capture-after 14 --report "$OUT/play.json" --quit-after 16 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
+  --library-play "$EPISODE" --seek 59 --report "$OUT/scrobble.json" \
+  --capture-after 9 --quit-after 11 >"$OUT/app.log" 2>&1 || true
+sleep 0.5
 python3 - "$OUT" <<'PY'
 import json, os, sys
 out = sys.argv[1]
@@ -56,8 +60,10 @@ if "/:/timeline" not in log or "state=playing" not in log:
     errors.append("Plex timeline playing not reported")
 if "state=paused" not in log:
     errors.append("Plex timeline paused not reported")
-if "/:/scrobble" in log:
-    print("note: scrobble observed")
+if "/:/scrobble" not in log:
+    errors.append("Plex scrobble not reported")
+if "state=stopped" not in log:
+    errors.append("Plex timeline stopped not reported")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)

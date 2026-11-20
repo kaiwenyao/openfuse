@@ -1762,6 +1762,7 @@ final class PlayerModel: ObservableObject {
             remotePath: item.remotePath,
             remoteURL: item.isRemote ? item.playbackURL.absoluteString : nil
         )
+        if resolvedFinished { reportPlexStop() }
     }
 
     private func finishPlayback() {
