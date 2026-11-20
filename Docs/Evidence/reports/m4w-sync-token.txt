@@ -1,0 +1,14 @@
+OpenFuse M4w sync bearer-token evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; iPhone 18 Pro simulator iOS 27.2.
+Service: Tools/progress_sync_fixture.py --token sync-test.
+
+Results:
+  GET/POST without Authorization -> HTTP 401 (negative check in script).
+  Mac --sync-progress with OPENFUSE_SYNC_TOKEN=sync-test -> POST accepted.
+  iPhone OPENFUSE_SYNC_TOKEN=sync-test -> GET accepted, resume 11.00s.
+  Scripts/run-cross-device-sync.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  TLS, token provisioning, concurrent conflicts, CloudKit/real devices.

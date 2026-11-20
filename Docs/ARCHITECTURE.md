@@ -112,7 +112,8 @@ Docs/                   决策、素材、验收、证据
 
 - HTTPProgressTransport + OPENFUSE_SYNC_URL；Mac push，iPhone await sync→autoplay。
 - 短片 endGuard 改为10%时长；20s 片 11s 可续播。
-- HTTP 无 TLS/鉴权；并发/CloudKit/真机未验证。
+- Bearer token 鉴权（OPENFUSE_SYNC_TOKEN），无 token 401。
+- 仍为 HTTP 明文；TLS/并发/CloudKit/真机未验证。
 
 ## Jellyfin 权限隔离（M2i）
 

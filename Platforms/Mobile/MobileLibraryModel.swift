@@ -44,6 +44,9 @@ final class MobileLibraryModel: ObservableObject {
         guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"] else { return nil }
         return URL(string: raw)
     }
+    private var syncToken: String? {
+        ProcessInfo.processInfo.environment["OPENFUSE_SYNC_TOKEN"]
+    }
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -339,7 +342,7 @@ final class MobileLibraryModel: ObservableObject {
         do {
             let result = try await ProgressSyncService(
                 store: playbackStore,
-                transport: HTTPProgressTransport(url: syncURL)
+                transport: HTTPProgressTransport(url: syncURL, token: syncToken)
             ).sync()
             syncStatus = "同步：远端 \(result.remoteCount)，本地 \(result.localCount)，更新 \(result.changed)"
             recent = playbackStore.recentlyPlayed(limit: 12)

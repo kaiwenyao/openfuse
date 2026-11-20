@@ -96,7 +96,8 @@
 - **M2i Jellyfin 权限：完成隔离验证。** test2 无媒体库时扫描 0，恢复后 2；不泄漏其他用户内容。UI 用户切换/并发/HTTPS 未做。记录：[M2i 验收](Docs/M2I-JELLYFIN-PERMISSIONS.md)。
 - **M4u 跨设备 HTTP 续播：完成 Mac→iPhone。** 新增 HTTP transport/`OPENFUSE_SYNC_URL`，Mac 播到11s推送，iPhone 启动拉取并 resume=10.02s、HUD 10.0/20.1；短片片尾保护改为10%时长。HTTP 无TLS/鉴权，CloudKit/真机未测。记录：[M4u 验收](Docs/M4U-HTTP-CROSS-DEVICE.md)。
 - **M4v Jellyfin MP4 直连：完成并修正时间戳。** container 按逗号拆分识别 mp4，http(s) 统一 AVURLAsset header；手机样片改为首帧0s、`hvc1`+faststart，直连续播画面11.0s/HUD11.0s对齐。iOS OpenList/SMB MP4 回归通过。记录：[M4v 验收](Docs/M4V-DIRECT-MP4-RESUME.md)。
-- **下一项：** M4w/M6d：同步 HTTPS/token；真实 CloudKit/真机；Jellyfin UI 切换/HTTPS；SMB 多GB/DFS；音频/HDR/visionOS。
+- **M4w 同步 token：完成鉴权。** HTTP transport 加 Bearer token，fixture 无 token 401；Mac→iPhone resume 11.0s。仍为 HTTP 明文，TLS/并发/CloudKit 真机未做。记录：[M4w 验收](Docs/M4W-SYNC-TOKEN.md)。
+- **下一项：** M4x/M6d：同步 HTTPS、并发冲突、CloudKit 真机；Jellyfin UI 切换/HTTPS；SMB 多GB/DFS；音频/HDR/visionOS。
 
 开发入口：
 
@@ -127,7 +128,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4v-direct-mp4-resume`（基于 M4u 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m4w-sync-token`（基于 M4v 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

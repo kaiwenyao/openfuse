@@ -319,7 +319,7 @@ final class AppModel: ObservableObject {
         let environment = ProcessInfo.processInfo.environment
         let transport: ProgressSyncTransport
         if let raw = environment["OPENFUSE_SYNC_URL"], let url = URL(string: raw) {
-            transport = HTTPProgressTransport(url: url)
+            transport = HTTPProgressTransport(url: url, token: environment["OPENFUSE_SYNC_TOKEN"])
         } else if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
             transport = LocalProgressTransport(fileURL: URL(fileURLWithPath: path))
         } else if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {

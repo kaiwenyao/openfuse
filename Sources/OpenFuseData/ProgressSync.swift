@@ -35,17 +35,28 @@ public final class LocalProgressTransport: ProgressSyncTransport, @unchecked Sen
 /// HTTP JSON transport for a LAN sync service (GET/POST arrays of records).
 public final class HTTPProgressTransport: ProgressSyncTransport, @unchecked Sendable {
     private let url: URL
+    private let token: String?
     private let session: URLSession
 
-    public init(url: URL) {
+    public init(url: URL, token: String? = nil) {
         self.url = url
+        self.token = token
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 15
         self.session = URLSession(configuration: configuration)
     }
 
+    private func request(_ method: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        if let token, !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
     public func fetchAll() async throws -> [PlaybackRecord] {
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await session.data(for: request("GET"))
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
@@ -53,8 +64,7 @@ public final class HTTPProgressTransport: ProgressSyncTransport, @unchecked Send
     }
 
     public func push(_ records: [PlaybackRecord]) async throws {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        var request = request("POST")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder.openFuse.encode(records)
         let (_, response) = try await session.data(for: request)

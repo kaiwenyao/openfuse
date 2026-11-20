@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 LOCK = threading.Lock()
 RECORDS: dict[str, dict] = {}
 LOG = os.path.abspath("build/progress-sync.log")
+TOKEN: str | None = None
 
 
 def log(entry):
@@ -30,9 +31,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def authorized(self):
+        if not TOKEN:
+            return True
+        return self.headers.get("Authorization") == f"Bearer {TOKEN}"
+
     def do_GET(self):
         if self.path.split("?")[0] != "/progress":
             self.send_json({"error": "not found"}, 404); return
+        if not self.authorized():
+            self.send_json({"error": "unauthorized"}, 401); return
         with LOCK:
             rows = list(RECORDS.values())
         log({"method": "GET", "count": len(rows)})
@@ -41,6 +49,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.split("?")[0] != "/progress":
             self.send_json({"error": "not found"}, 404); return
+        if not self.authorized():
+            self.send_json({"error": "unauthorized"}, 401); return
         length = int(self.headers.get("Content-Length") or 0)
         rows = json.loads(self.rfile.read(length) or b"[]")
         with LOCK:
@@ -55,13 +65,15 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global LOG
+    global LOG, TOKEN
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8130)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--log", default=LOG)
+    parser.add_argument("--token", default="")
     args = parser.parse_args()
     LOG = os.path.abspath(args.log)
+    TOKEN = args.token or None
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"progress sync on http://{args.host}:{args.port}/progress", flush=True)
     server.serve_forever()
