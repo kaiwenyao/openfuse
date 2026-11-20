@@ -1207,8 +1207,11 @@ final class AppModel: ObservableObject {
             let media = MediaItem.plex(
                 source: source,
                 title: episode.title,
+                ratingKey: episode.serverID ?? "",
                 partKey: partKey,
                 size: size,
+                duration: episode.runtime,
+                token: token,
                 url: url
             )
             startPlayer(with: media)
@@ -1343,6 +1346,10 @@ final class PlayerModel: ObservableObject {
     private var selectionAttempts = 0
     private var jellyfinClient: JellyfinClient?
     private var jellyfinContext: JellyfinPlaybackContext?
+    private let plexClient: PlexClient?
+    private var plexContext: PlexPlaybackContext?
+    private var hasReportedPlexStart = false
+    private var hasReportedPlexStop = false
     private var hasReportedStop = false
     private var hasReportedStart = false
 
@@ -1352,6 +1359,17 @@ final class PlayerModel: ObservableObject {
         self.store = store
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
+        if let context = item.plexContext {
+            let source = PlexSource(
+                id: context.sourceID,
+                name: item.sourceName ?? "Plex",
+                baseURL: context.baseURL
+            )
+            self.plexClient = PlexClient(source: source, token: context.token)
+            self.plexContext = context
+        } else {
+            self.plexClient = nil
+        }
         if let context = item.jellyfinContext {
             let source = JellyfinSource(
                 id: context.sourceID,
@@ -1448,6 +1466,7 @@ final class PlayerModel: ObservableObject {
         debugSelection("file loaded, catalog=\(catalog.count)")
         fileLoaded = true
         reportJellyfinStart()
+        reportPlexStart()
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
         for track in catalog where track.source == .external {
@@ -1728,6 +1747,7 @@ final class PlayerModel: ObservableObject {
     func saveProgress(finished: Bool? = nil) {
         guard duration > 0 else { return }
         reportJellyfinProgress()
+        reportPlexProgress()
         let resolvedFinished = finished ?? (hasFinished || ResumePolicy.isFinished(position: position, duration: duration))
         store.update(
             fingerprint: fingerprint,
@@ -1748,8 +1768,57 @@ final class PlayerModel: ObservableObject {
         hasFinished = true
         saveProgress(finished: true)
         reportJellyfinStop(wait: false)
+        reportPlexStop()
         onFinished?()
         showControls = true
+    }
+
+    private func reportPlexStart() {
+        guard let client = plexClient, let context = plexContext, !hasReportedPlexStart else { return }
+        hasReportedPlexStart = true
+        let time = initialPosition
+        Task.detached {
+            await client.reportTimeline(
+                ratingKey: context.ratingKey,
+                partKey: context.partKey,
+                state: "playing",
+                time: time,
+                duration: context.duration
+            )
+        }
+    }
+
+    private func reportPlexProgress() {
+        guard let client = plexClient, let context = plexContext, !hasReportedPlexStop else { return }
+        let time = position
+        let state = isPaused ? "paused" : "playing"
+        let total = duration > 0 ? duration : context.duration
+        Task.detached {
+            await client.reportTimeline(
+                ratingKey: context.ratingKey,
+                partKey: context.partKey,
+                state: state,
+                time: time,
+                duration: total
+            )
+        }
+    }
+
+    private func reportPlexStop() {
+        guard let client = plexClient, let context = plexContext, !hasReportedPlexStop else { return }
+        hasReportedPlexStop = true
+        let time = position
+        let total = duration > 0 ? duration : context.duration
+        Task.detached {
+            await client.reportTimeline(
+                ratingKey: context.ratingKey,
+                partKey: context.partKey,
+                state: "stopped",
+                time: time,
+                duration: total
+            )
+            await client.scrobble(ratingKey: context.ratingKey)
+        }
     }
 
     private func reportJellyfinStart() {

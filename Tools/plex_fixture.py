@@ -46,6 +46,7 @@ def movie():
         "summary": "Plex 夹具电影：HEVC Main 10、E-AC-3 5.1 与双语 ASS。",
         "thumb": f"/library/metadata/{MOVIE_ID}/thumb/1",
         "addedAt": 1767225600,
+        "duration": 60000,
         "Media": media("101"),
     }
 
@@ -83,6 +84,7 @@ def episodes():
             "parentIndex": 1,
             "index": index,
             "addedAt": 1767312000 + index,
+            "duration": 60000,
             "thumb": f"/library/metadata/{episode_id}/thumb/1",
             "Media": media(episode_id),
         })
@@ -169,6 +171,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             self._record(401)
+            return
+        if path in ("/:/timeline", "/:/scrobble"):
+            query = urllib.parse.parse_qs(parsed.query)
+            self._record(200, {"endpoint": path, "state": (query.get("state") or [""])[0], "time": (query.get("time") or [""])[0], "ratingKey": (query.get("ratingKey") or query.get("key") or [""])[0]})
+            self.send_response(200)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
             return
         if path == "/library/sections":
             self._json({"Directory": SECTIONS, "size": len(SECTIONS)})

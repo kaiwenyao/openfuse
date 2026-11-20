@@ -25,6 +25,7 @@ public struct MediaItem: Sendable {
     public var origin: Origin
     public var sourceName: String?
     public var jellyfinContext: JellyfinPlaybackContext?
+    public var plexContext: PlexPlaybackContext?
 
     public var isRemote: Bool { origin.isRemote }
 
@@ -63,7 +64,8 @@ public struct MediaItem: Sendable {
         httpHeaders: [String] = [],
         origin: Origin,
         sourceName: String? = nil,
-        jellyfinContext: JellyfinPlaybackContext? = nil
+        jellyfinContext: JellyfinPlaybackContext? = nil,
+        plexContext: PlexPlaybackContext? = nil
     ) {
         self.title = title
         self.playbackURL = playbackURL
@@ -73,6 +75,7 @@ public struct MediaItem: Sendable {
         self.origin = origin
         self.sourceName = sourceName
         self.jellyfinContext = jellyfinContext
+        self.plexContext = plexContext
     }
 
     public static func local(url: URL) throws -> MediaItem {
@@ -89,11 +92,22 @@ public struct MediaItem: Sendable {
     public static func plex(
         source: PlexSource,
         title: String,
+        ratingKey: String,
         partKey: String,
         size: Int64,
+        duration: Double,
+        token: String,
         url: URL
     ) -> MediaItem {
         let key = "plex://\(source.id)/\(partKey)"
+        let context = PlexPlaybackContext(
+            sourceID: source.id,
+            baseURL: source.normalizedBaseURL,
+            token: token,
+            ratingKey: ratingKey,
+            partKey: partKey,
+            duration: duration
+        )
         return MediaItem(
             title: title,
             playbackURL: url,
@@ -101,7 +115,8 @@ public struct MediaItem: Sendable {
             subtitles: [],
             httpHeaders: [],
             origin: .plex(sourceID: source.id, partKey: partKey, url: url),
-            sourceName: source.name
+            sourceName: source.name,
+            plexContext: context
         )
     }
 
@@ -264,4 +279,14 @@ public extension MediaItem {
         }
         return tracks
     }
+}
+
+
+public struct PlexPlaybackContext: Sendable {
+    public var sourceID: String
+    public var baseURL: URL
+    public var token: String
+    public var ratingKey: String
+    public var partKey: String
+    public var duration: Double
 }

@@ -1,0 +1,5 @@
+{"endpoint": "/:/timeline", "path": "/:/timeline?ratingKey=401&key=/library/parts/401/file.mkv&state=playing&time=0&duration=60000&X-Plex-Token=REDACTED", "ratingKey": "401", "state": "playing", "status": 200, "time": "0"}
+{"endpoint": "/:/timeline", "path": "/:/timeline?ratingKey=401&key=/library/parts/401/file.mkv&state=playing&time=4708&duration=60000&X-Plex-Token=REDACTED", "ratingKey": "401", "state": "playing", "status": 200, "time": "4708"}
+{"endpoint": "/:/timeline", "path": "/:/timeline?ratingKey=401&key=/library/parts/401/file.mkv&state=playing&time=9708&duration=60000&X-Plex-Token=REDACTED", "ratingKey": "401", "state": "playing", "status": 200, "time": "9708"}
+{"endpoint": "/:/timeline", "path": "/:/timeline?ratingKey=401&key=/library/parts/401/file.mkv&state=paused&time=9958&duration=60000&X-Plex-Token=REDACTED", "ratingKey": "401", "state": "paused", "status": 200, "time": "9958"}
+{"endpoint": "/:/timeline", "path": "/:/timeline?ratingKey=401&key=/library/parts/401/file.mkv&state=paused&time=9958&duration=60000&X-Plex-Token=REDACTED", "ratingKey": "401", "state": "paused", "status": 200, "time": "9958"}

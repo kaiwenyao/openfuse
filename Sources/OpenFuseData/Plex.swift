@@ -58,13 +58,14 @@ public struct PlexMetadata: Codable, Hashable, Sendable {
     public var summary: String?
     public var thumb: String?
     public var addedAt: Int64?
+    public var duration: Int64?
     public var parentIndex: Int?
     public var index: Int?
     public var grandparentTitle: String?
     public var media: [PlexMedia]?
 
     enum CodingKeys: String, CodingKey {
-        case ratingKey, key, type, title, year, summary, thumb, addedAt
+        case ratingKey, key, type, title, year, summary, thumb, addedAt, duration
         case parentIndex, index, grandparentTitle
         case media = "Media"
     }
@@ -126,6 +127,45 @@ public actor PlexClient {
     public func children(ratingKey: String) async throws -> [PlexMetadata] {
         let response: PlexEnvelope<PlexMetadataContainer> = try await get("library/metadata/\(ratingKey)/children")
         return response.mediaContainer.metadata ?? []
+    }
+
+    public func reportTimeline(
+        ratingKey: String,
+        partKey: String,
+        state: String,
+        time: Double,
+        duration: Double
+    ) async {
+        let milliseconds = Int(max(0, time) * 1000)
+        let durationMS = Int(max(0, duration) * 1000)
+        var components = URLComponents(
+            url: source.normalizedBaseURL.appendingPathComponent(":/timeline"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "ratingKey", value: ratingKey),
+            URLQueryItem(name: "key", value: partKey),
+            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "time", value: String(milliseconds)),
+            URLQueryItem(name: "duration", value: String(durationMS)),
+            URLQueryItem(name: "X-Plex-Token", value: token),
+        ]
+        guard let url = components?.url else { return }
+        _ = try? await session.data(from: url)
+    }
+
+    public func scrobble(ratingKey: String) async {
+        var components = URLComponents(
+            url: source.normalizedBaseURL.appendingPathComponent(":/scrobble"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "key", value: ratingKey),
+            URLQueryItem(name: "identifier", value: "com.plexapp.plugins.library"),
+            URLQueryItem(name: "X-Plex-Token", value: token),
+        ]
+        guard let url = components?.url else { return }
+        _ = try? await session.data(from: url)
     }
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
@@ -266,7 +306,7 @@ public enum PlexLibraryScanner {
             episodeNumber: 1,
             title: movie.title,
             overview: movie.summary,
-            runtime: 0,
+            runtime: Double(movie.duration ?? 0) / 1000,
             poster: nil,
             serverID: movie.ratingKey,
             remotePath: part.key,
@@ -320,7 +360,7 @@ public enum PlexLibraryScanner {
                         episodeNumber: number,
                         title: episodeMeta.title,
                         overview: episodeMeta.summary,
-                        runtime: 0,
+                        runtime: Double(episodeMeta.duration ?? 0) / 1000,
                         poster: nil,
                         serverID: episodeMeta.ratingKey,
                         remotePath: part.key,

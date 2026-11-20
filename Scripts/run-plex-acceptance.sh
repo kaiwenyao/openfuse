@@ -51,6 +51,13 @@ if play.get("sourceKind") != "plex" or not 9.8 <= play.get("position", 0) <= 10.
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")
+log = open(os.path.join(out, "plex.log"), encoding="utf-8").read()
+if "/:/timeline" not in log or "state=playing" not in log:
+    errors.append("Plex timeline playing not reported")
+if "state=paused" not in log:
+    errors.append("Plex timeline paused not reported")
+if "/:/scrobble" in log:
+    print("note: scrobble observed")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)

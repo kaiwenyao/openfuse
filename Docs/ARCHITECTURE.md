@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex 进度回写（M5b）
+
+- `PlexPlaybackContext` 随 MediaItem；PlayerModel 在加载/保存/结束时上报 `/:/timeline`，结束时 `/:/scrobble`。
+- 夹具记录 timeline state/time；实测 playing 0s、paused 59.967s；scrobble 未触发（未真正到结尾）。
+- 未做真实 Plex、直连浏览/字幕、结束 scrobble 验证。
+
 ## Plex 来源（M5a）
 
 - `PlexClient` JSON API：sections、section/all、metadata children、parts/thumb；`X-Plex-Token`。

@@ -1,0 +1,25 @@
+OpenFuse M5b Plex progress evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, port 32400
+
+Implementation:
+  MediaItem.plexContext (source/baseURL/token/ratingKey/partKey/duration).
+  PlayerModel reports /:/timeline state=playing at file load, state=playing/
+  paused on progress saves, state=stopped + /:/scrobble at finishPlayback.
+
+Observed (acceptance):
+  Plex 第 1 集 playback, HUD position 9.917s.
+  /:/timeline?ratingKey=401&state=playing&time=0&duration=60000
+  /:/timeline?ratingKey=401&state=paused&time=...&duration=60000
+  No scrobble endpoint observed: playback paused at 59.967s before end, so
+  finishPlayback/scrobble was not triggered in this run.
+
+Builds/tests:
+  28/28 swift tests
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  Real Plex timeline/scrobble; finish-at-end scrobble; direct browse;
+  Plex subtitles/audio tracks; Emby/SMB/HDR; CloudKit/Trakt; audio.
