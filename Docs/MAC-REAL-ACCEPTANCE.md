@@ -99,20 +99,42 @@ WebDAV `…/电视剧/Sex Education (2019)/Season 01/Sex Education (2019) - S01E
 - 本机输出：`MacBook Pro Speakers`（内置，2 声道，48 kHz）是系统默认输出；`current-ao=coreaudio`，输出参数为 `stereo`，即 5.1 被下混为立体声。没有外接多声道设备，因此无法在本机验证 5.1 直通。
 - 外挂 `…chs.ass` 出现在字幕列表（另有 29 条内嵌字幕）。
 
-## 5. 与 Infuse 8.5.10 的对照
+## 5. 与 Infuse 8.5.10 的对照（第四轮，已安装 8.5.10 / 8.5.5815）
 
-**本机没有安装 Infuse**：`/Applications`、`~/Applications`、`mdfind -name Infuse`、按 bundle id 的 Spotlight 查询均为空；本机也没有 `mas`/App Store 已登录账号，无法代为安装。因此以下对照项无法执行，列为待验证。
+### 方法
 
-装好 Infuse 8.5.10 后按这张清单逐条比对（每项记录 Infuse 的结果即可，OpenFuse 一侧的期望值已在上文给出）：
+- 本机已装 Infuse 8.5.10（`/Applications/Infuse.app`，build 8.5.5815），启动后弹出 Pro 订阅页（月付 ¥13、年付 ¥88、终身 ¥698）。
+- Infuse 的 Mac 界面是 Catalyst 应用，辅助功能树只有一个不透明的 `iOSContentGroup`（按钮/列表/播放器都不暴露），本机也没有 Screen Recording 权限，因此无法用截图或控件树逐像素对照。
+- 改用 Infuse 自己的日志（`~/Library/Containers/com.firecore.infuse/Data/tmp/logs/`）与同源媒体做行为对照：把 WebDAV 上的 S03E13 与两份外挂 ASS 下载到 `/tmp`，用 `open -a Infuse …/e13.mkv` 让 Infuse 播放，再读日志。
 
-1. 添加 `https://ol.7miaozhong.top/dav/`（admin）与 `https://jellyfin.kaiwen.dev`（root），确认 Infuse 的 WebDAV/Jellyfin 都能进 `local/kaiwenyao/baidu/电视剧` 与 `百度网盘电视剧`。
-2. 打开《进击的巨人》S03E13：记录默认选中的字幕（简体/繁体/内嵌英文）与音轨，和 OpenFuse 的“简体优先、AAC 2.0 日语”比较。
-3. 分别拖到 45 s / 5:03 / 20:00：记录从松手到出画的耗时、字幕是否仍在正确时间点、繁体是否出现方框。
-4. 退出播放器：记录是否回到 Season 03（而不是首页）。
-5. 从“继续观看”打开：记录位置与字幕选择是否保留；再退出应用重开一次，重复该检查。
-6. 记录 Pro 权益弹窗出现的具体动作（例如选择外挂字幕、音频直通、拖动预览），以及被挡住后 Infuse 的实际降级行为。
+### 实测结果（Infuse）
 
-OpenFuse 自身的上述行为已在第 2、3 节用真实媒体逐项记录。
+| 项目 | Infuse 8.5.10 | 证据 |
+| --- | --- | --- |
+| 视频解码 | HEVC Main 10（`codecId:173 profile:2`），VideoToolbox 硬解（`decoder.vt.decode` 统计），24.174 fps | 日志 18:10:15–18:11:39 |
+| 默认音轨 | 容器内嵌 AAC 2.0（streamIndex 1） | `Will open audio player for stream … codecId:86018(AAC)` |
+| 默认字幕 | **容器内 default 标记的内嵌英文 ASS**（streamIndex 2，`language:eng default:1`），没有自动选外挂简体/繁体 | `Will open subtitles decoding stream, selected descriptor … language:eng … default:1` |
+| 字幕渲染 | libass + 自带 PingFang SC/TC/HK 字体 | `Loading font file …/Fonts_iOS18/PingFang TC.ttf` 等 |
+| 退出后重开续播 | 从上次位置继续：重开时 `backward seek to 55.597`（Esc 退出时约 56 s） | 日志 18:11:18 |
+| 音频输出 | `MacBook Pro Speakers`（内置 2ch），AVAudioSession MoviePlayback | 日志 18:10:15 |
+| Pro 权益（订阅页原文） | 4K Ultra-HD 等更多格式；跨设备同步观看进度；无损 24-bit HD 音频；云串流 | 订阅页文案 |
+
+### 与 OpenFuse 的差异
+
+| 项目 | Infuse | OpenFuse | 结论 |
+| --- | --- | --- | --- |
+| 默认字幕 | 容器 default 标记（本例内嵌英文） | 外挂中文优先（本例 zh-Hans） | 刻意不同：对中文库 OpenFuse 的选择更符合预期，且可随时在菜单里改 |
+| 默认音轨 | 内嵌 AAC | 内嵌 AAC | 一致 |
+| 视频 | HEVC Main 10 / VideoToolbox | HEVC Main 10 / VideoToolbox | 一致 |
+| 字幕渲染 | libass + 自带 PingFang | libass + 系统 PingFang | 一致（本轮 45/303/1200/1379 s 均无方框） |
+| 退出后续播 | 本地文件按上次位置续播 | WebDAV/Jellyfin 均按上次位置续播，并保留字幕选择 | 一致 |
+| 音频输出 | 内置扬声器 2ch | 内置扬声器 2ch（5.1 下混） | 一致 |
+| 收费门槛 | 4K/HD 音频/同步/云串流需 Pro | 无收费门槛 | OpenFuse 全功能免费；本轮未做云同步 |
+
+### 仍无法用工具核对的部分
+
+- Infuse 播放器内的**字幕菜单列表**（是否列出侧挂简体/繁体）、拖动的主观观感、Pro 弹窗出现的具体时机：受 Catalyst 界面不可读 + 无录屏权限限制，需要人工在 Infuse 窗口里看。
+- Infuse 走 **Jellyfin 集成**时对两路外挂 ASS 的默认选择：日志只能证明本地文件路径下的行为；Jellyfin 路径需要人工在 Infuse 里点开同一集确认。
 
 ## 6. 哪些是从窗口里亲手完成的
 
