@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Vision Pro 实际运行（M4o）
+
+- visionOS 27.2 runtime；`OpenFuseVision` target 以 `NavigationSplitView` 侧栏/详情启动。
+- `OPENFUSE_AUTOPLAY=1` 自动选择首部作品并打开 `VisionPlayerView` sheet。
+- 空间窗口与 HEVC/EAC3 播放实测；沉浸式影院/空间音频/手势未做。
+- 五端（Mac/iPhone/iPad/tvOS/visionOS）均已有实际启动证据。
+
 ## 移动端字幕自绘（M4j）
 
 - `SubtitleParser`：SRT/VTT/ASS/SSA → cues；去 HTML/ASS 标签、`\N` 换行。

@@ -42,6 +42,11 @@ struct VisionRootView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .task {
+            guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
+                  selectedWork == nil else { return }
+            selectedWork = model.groups.first?.primary
+        }
     }
 }
 
@@ -126,6 +131,12 @@ private struct VisionDetailView: View {
         .sheet(item: $item) { item in
             VisionPlayerView(item: item)
                 .environmentObject(model)
+        }
+        .task {
+            guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
+                  item == nil,
+                  let playback = model.playbackItem(for: work) else { return }
+            item = playback
         }
     }
 }

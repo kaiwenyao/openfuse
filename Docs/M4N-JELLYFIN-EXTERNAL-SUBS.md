@@ -38,4 +38,4 @@
 
 ## 下一项
 
-M4o：visionOS runtime 实际启动（约 86%）、音频听测、外挂简繁切换、自动播放时序稳定化、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。
+Vision Pro 已在 [M4o 验收](M4O-VISIONOS.md) 实际启动/播放，五端运行闭环。剩余 M5：SMB/Plex/Emby、HDR/AirPlay、自包含打包、CloudKit/Trakt、音频听测、M3 T07/WebDAV MKV 分辨率。

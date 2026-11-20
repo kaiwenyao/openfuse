@@ -1,0 +1,24 @@
+OpenFuse M4o visionOS actual run evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Runtime: visionOS 27.2 (24N120), Apple Vision Pro simulator
+Bundle: com.openfuse.vision
+
+Commands:
+  xcodebuild -scheme OpenFuseVision -destination 'generic/platform=visionOS Simulator'
+  xcrun simctl boot <Apple Vision Pro>
+  xcrun simctl install <device> build/vision-derived/.../OpenFuse.app
+  xcrun simctl launch <device> com.openfuse.vision
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 xcrun simctl launch <device> com.openfuse.vision
+
+Results:
+  Spatial window launched in the simulator room: sidebar library + detail.
+  Autoplay opened player sheet; HEVC Main10/E-AC3 sample rendered through frame
+  timecode 00:00:24:00 (video window visible).
+  27/27 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+  All five Apple platform runtimes now installed and apps launched (Mac,
+  iPhone, iPad, Apple TV, Vision Pro).
+
+Not verified:
+  Audio output/listening; immersive theater/spatial audio; hand/eye focus
+  automation; real services; CloudKit/Trakt; subtitle UI on visionOS.

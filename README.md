@@ -37,7 +37,8 @@
 - **M4l 远程字幕修复：完成。** 远程时长从播放器当前 asset 读取（20.0s），播放前等待 ready，新增 pause-at 钩子；WebDAV 远程字幕在 4.6/20.0s 实际显示第一句。远程 seek 同步仍不稳。记录：[M4l 验收](Docs/M4L-REMOTE-SUBTITLE-FIX.md)。
 - **M4m 远程精确 seek：完成。** AVPlayer 精确 seek + completion，WebDAV 远程 seek 到 10s 后 HUD 10.0/20.0，第二句字幕同步。Jellyfin 外挂字幕 DeliveryUrl 下载管线已加，但本轮未进入播放器，画面待验证。记录：[M4m 验收](Docs/M4M-SEEK-JFSUBS.md)。
 - **M4n Jellyfin 外挂字幕：完成。** movie-1 HLS 60s，App 下载 DeliveryUrl SRT 到缓存；播放 4.7/60.0s 显示第一句，菜单「外挂简体中文」。自动播放时序仍脆弱。记录：[M4n 验收](Docs/M4N-JELLYFIN-EXTERNAL-SUBS.md)。
-- **下一项：** M4o：visionOS runtime 实际启动（约 86%）、音频听测、外挂简繁切换、自动播放时序稳定化、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。
+- **M4o Vision Pro 实际运行：完成。** visionOS 27.2 runtime 安装，Apple Vision Pro 模拟器启动 OpenFuse 空间窗口；autoplay 播放 HEVC/EAC3 样本到 24s。至此 Mac/iPhone/iPad/Apple TV/Vision Pro 五端均有实际启动证据。音频与沉浸式空间交互未验证。记录：[M4o 验收](Docs/M4O-VISIONOS.md)。
+- **下一项：** M5：SMB/Plex/Emby、HDR/AirPlay、自包含打包；CloudKit/Trakt 同步；音频主观听测；M3 T07/WebDAV MKV 分辨率；真实服务验证。
 
 开发入口：
 
@@ -67,7 +68,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4n-jellyfin-subs`（基于 M4m 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4o-visionos`（基于 M4n 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本
