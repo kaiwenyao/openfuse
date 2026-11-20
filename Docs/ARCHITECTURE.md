@@ -180,6 +180,12 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## 真实 Samba SMB3（M5ak）
+
+- list 根用空路径；子路径绝对→相对回退，兼容 Samba/impacket。
+- 默认 libsmb2 协商；强制 SMB3/signing 会破坏 impacket。
+- 实测 Samba 扫描/seek/字幕；签名/加密/DFS/大文件未验证。
+
 ## EDR HDR 直通（M5ab）
 
 - 按 NSScreen EDR 自动 target-colorspace-hint=yes；OPENFUSE_HDR_PASSTHROUGH=0 关闭。

@@ -1,0 +1,20 @@
+OpenFuse M5ak real Samba SMB3 evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: dperson/samba 4.13.7 Docker, port 1445 -> 445, share SHARE.
+
+Implementation:
+  SMB list root now uses empty path (Samba rejects CREATE "/"); child paths
+  try absolute then relative (Samba rejects leading "/", impacket accepts).
+  Default libsmb2 dialect negotiation (forced SMB3/signing broke impacket).
+
+Results:
+  Samba scan: 1 work "OpenFuse Samba", 1080p.
+  Playback seek 10 -> position 11.0/60, subtitle mpv:1, sourceKind smb.
+  Scripts/run-samba-smb3.sh PASS.
+  Scripts/run-smb-acceptance.sh (impacket SMB2) regression PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Samba signing/encryption/DFS/large files/concurrency; real Windows/NAS;
+  audio listening.

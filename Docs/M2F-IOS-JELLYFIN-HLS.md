@@ -38,4 +38,4 @@ M2e 验证了 Mac 直连 MP4。本轮让 iPhone 播放真实 Jellyfin 库中的 
 
 ## 下一项
 
-M2g/M6d：HTTPS/4K/多用户 Jellyfin；HLS 音轨/字幕元数据；百度网盘；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；visionOS 真机。
+真实 Samba SMB3 已在 [M5ak 验收](Docs/M5AK-SAMBA-SMB3.md) 完成。剩余 M5al/M6d：SMB 签名/加密/DFS/大文件、Jellyfin HTTPS/4K/多用户、HLS 元数据、百度网盘、音频听测、HDR 测量、真实 Trakt/CloudKit、visionOS 真机。

@@ -60,7 +60,7 @@ for _ in {1..60}; do
   if nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test "$APP" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test "$APP" \
   --smb-server 127.0.0.1 --smb-port "$PORT" --smb-share SHARE --smb-user test --smb-pass test \
   --smb-name SMB --smb-scan --library-report "$OUT/library.json" \
   --capture-ui "$OUT/library.png" --ui-after 8 --quit-after 10 >"$OUT/app.log" 2>&1 || true
@@ -73,7 +73,7 @@ for item in data["items"]:
         print(item["episodes"][0]["id"]); break
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test "$APP" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test "$APP" \
   --library-play "$EPISODE" --subtitle zh-Hans --seek 30 --freeze-at 31 --capture "$OUT/play.png" \
   --capture-after 12 --report "$OUT/play.json" --quit-after 14 >"$OUT/app.log" 2>&1 || true
 sleep 0.5

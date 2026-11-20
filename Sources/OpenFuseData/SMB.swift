@@ -118,8 +118,16 @@ public final class SMBClient: @unchecked Sendable {
     public func list(path: String? = nil) throws -> [SMBEntry] {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }
-        let smbPath = Self.normalized(path ?? source.rootPath)
-        guard let directory = smb2_opendir(context, smbPath) else {
+        let rawPath = (path ?? source.rootPath).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let absolute = rawPath.isEmpty ? "" : "/" + rawPath
+        let relative = rawPath
+        var usedPath = absolute
+        var directory = smb2_opendir(context, absolute)
+        if directory == nil, !relative.isEmpty {
+            directory = smb2_opendir(context, relative)
+            usedPath = relative
+        }
+        guard let directory else {
             throw SMBError.operation(String(cString: smb2_get_error(context)))
         }
         defer { smb2_closedir(context, directory) }
@@ -134,7 +142,7 @@ public final class SMBClient: @unchecked Sendable {
             entries.append(
                 SMBEntry(
                     name: name,
-                    path: Self.join(smbPath, name),
+                    path: Self.join(usedPath, name),
                     isDirectory: isDirectory,
                     size: Int64(entry.pointee.st.smb2_size),
                     modifiedAt: modified
@@ -149,7 +157,12 @@ public final class SMBClient: @unchecked Sendable {
 
     private func handleLocked(_ smbPath: String, context: OpaquePointer) throws -> OpaquePointer {
         if let handle = handles[smbPath] { return handle }
-        guard let handle = smb2_open(context, smbPath, 0) else {
+        let relative = smbPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        var handle = smb2_open(context, smbPath, 0)
+        if handle == nil, !relative.isEmpty {
+            handle = smb2_open(context, relative, 0)
+        }
+        guard let handle else {
             throw SMBError.operation(String(cString: smb2_get_error(context)))
         }
         handles[smbPath] = handle
@@ -181,8 +194,13 @@ public final class SMBClient: @unchecked Sendable {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }
         let smbPath = Self.normalized(path)
+        let relative = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         var stat = smb2_stat_64()
-        guard smb2_stat(context, smbPath, &stat) == 0 else {
+        var status = smb2_stat(context, smbPath, &stat)
+        if status != 0, !relative.isEmpty {
+            status = smb2_stat(context, relative, &stat)
+        }
+        guard status == 0 else {
             throw SMBError.operation(String(cString: smb2_get_error(context)))
         }
         return Int64(stat.smb2_size)

@@ -88,7 +88,8 @@
 - **M2d iPhone OpenList：完成模拟器验证。** iPhone 18 Pro 连真实 OpenList Docker，播放到 15.958s，E-AC-3 5.1 + 简中 SRT，进度 12.061s 回写；修复移动端暂停不保存进度。百度网盘/真机未验证。记录：[M2d 验收](Docs/M2D-IOS-OPENLIST.md)。
 - **M2e 真实 Jellyfin：完成 Docker 全链路。** Jellyfin 12.4 启动向导/用户/媒体库脚本化，OpenFuse 扫描 1080p、seek 11.106s、6ch/字幕；服务器位置 11.022s/Played=false。修复 12.x Authorization 登录头与 quit-after 未发 Stopped。百度/HTTPS/转码/多用户未验证。记录：[M2e 验收](Docs/M2E-REAL-JELLYFIN.md)。
 - **M2f iPhone Jellyfin HLS：完成真实转码。** 真实 Jellyfin 12 MKV 经 libx264/AAC HLS 在 iPhone 播放 12.2/60s；修复 Jellyfin 12 HLS 认证头与 AVURLAsset header/路径映射。画质 416×234、音轨/字幕元数据待优化。记录：[M2f 验收](Docs/M2F-IOS-JELLYFIN-HLS.md)。
-- **下一项：** M2g/M6d：HTTPS/4K/多用户 Jellyfin；HLS 音轨/字幕元数据；百度网盘；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；visionOS 真机。
+- **M5ak 真实 Samba SMB3：完成 Docker 验证。** Samba 4.13.7 共享扫描 1 作品/1080p，seek 11.0/60、字幕 mpv:1；修复根/子路径前导 `/` 兼容，impacket 回归通过。签名/加密/DFS/大文件未测。记录：[M5ak 验收](Docs/M5AK-SAMBA-SMB3.md)。
+- **下一项：** M5al/M6d：SMB 签名/加密/DFS/大文件；Jellyfin HTTPS/4K/多用户；HLS 元数据；百度网盘；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
 
 开发入口：
 
@@ -119,7 +120,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m2f-ios-jellyfin-hls`（基于 M2e 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5ak-samba-smb3`（基于 M2f 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

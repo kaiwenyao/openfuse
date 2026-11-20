@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T09:40:43Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse samba",
+      "primary" : "OpenFuse Samba",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-4bde16d44315b101"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-4bde16d44315b101-main",
+          "remotePath" : "Movie\/OpenFuse Samba.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Samba",
+          "versions" : [
+            {
+              "contentKey" : "e7fef6010e9913716f4a063198d77164",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-4bde16d44315b101-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · SMB",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-4bde16d44315b101",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Samba",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Samba",
+          "versions" : [
+            "SMB · 1080p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse samba",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Samba"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse Samba"
+  ],
+  "works" : 1
+}
