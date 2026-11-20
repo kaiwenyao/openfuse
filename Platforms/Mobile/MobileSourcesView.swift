@@ -163,6 +163,7 @@ private struct MobileAddSourceForm: View {
     @State private var url = ""
     @State private var username = ""
     @State private var password = ""
+    @State private var subpath = ""
     @State private var isSaving = false
 
     var body: some View {
@@ -177,10 +178,15 @@ private struct MobileAddSourceForm: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                     SecureField("密码", text: $password)
+                    if kind == .webdav {
+                        TextField("子目录（可选）", text: $subpath)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    }
                 }
                 Section {
                     Text(kind == .webdav
-                         ? "地址示例：https://openlist.example.com/dav/"
+                         ? "地址示例：https://openlist.example.com/dav/。子目录例如 电视剧/Attack on Titan (2013)/Season 03 —— 指向剧或季目录可以显著加快扫描。"
                          : "地址示例：https://jellyfin.example.com")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -196,7 +202,7 @@ private struct MobileAddSourceForm: View {
                         isSaving = true
                         Task {
                             if kind == .webdav {
-                                await model.addWebDAV(name: name, urlText: url, username: username, password: password)
+                                await model.addWebDAV(name: name, urlText: Self.join(url, subpath), username: username, password: password)
                             } else {
                                 await model.addJellyfin(name: name, urlText: url, username: username, password: password)
                             }
@@ -208,5 +214,19 @@ private struct MobileAddSourceForm: View {
                 }
             }
         }
+    }
+
+    /// Appends the optional sub-directory to the server URL, encoding each
+    /// segment so Chinese folder names work.
+    static func join(_ base: String, _ subpath: String) -> String {
+        let trimmed = base.trimmingCharacters(in: .whitespacesAndNewlines)
+        let extra = subpath.trimmingCharacters(in: CharacterSet(charactersIn: " /"))
+        guard !extra.isEmpty else { return trimmed }
+        var result = trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
+        for segment in extra.split(separator: "/") {
+            let encoded = String(segment).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String(segment)
+            result += "/" + encoded
+        }
+        return result
     }
 }
