@@ -189,6 +189,10 @@ msg() {
             en="OpenFuse has been removed, including its local signing identity. Your sources, Keychain items and playback history under %s were kept."
             cn="OpenFuse 已卸载,本地签名身份也已移除。%s 下的来源、钥匙串凭据和观看记录都保留。"
             ;;
+        gh_needed)
+            en="This app lives in a private repository: install gh and run “gh auth login”, or install offline with --app <zip>."
+            cn="应用位于私有仓库：请安装 gh 并执行 gh auth login，或用 --app <zip> 离线安装。"
+            ;;
         uninstall_missing)
             en="OpenFuse.app is not installed; nothing to remove."
             cn="未找到已安装的 OpenFuse.app,无需卸载。"
@@ -703,6 +707,9 @@ install_app() {
             die download_failed
         fi
     else
+        if ! command -v gh >/dev/null 2>&1 || ! gh auth status >/dev/null 2>&1; then
+            die gh_needed
+        fi
         say downloading
         local base
         base=$(resolve_base)
