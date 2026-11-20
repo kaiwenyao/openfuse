@@ -72,6 +72,8 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 
 当前状态：本机没有连接 iPhone/iPad，也没有 Apple Development 身份，因此**设备安装尚未执行**。脚本在无设备时会打印上面四步并退出，不会误装。
 
+模拟器已做的事（不代表真机）：iPhone 18 Pro 模拟器上安装并启动 `com.openfuse.mobile`，用 `SIMCTL_CHILD_OPENFUSE_TEST_JELLYFIN_*` 注入真实 Jellyfin 账号（仅在内存/临时来源，不落 Keychain），`OPENFUSE_AUTOPLAY_*` 打开《进击的巨人》S03E13 并跳到 300 s，截图确认 HLS 转码播放与音轨信息。
+
 ## 三、移动端播放能力现状
 
 | 能力 | 状态 |
@@ -87,8 +89,8 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | | WebDAV | Jellyfin |
 | --- | --- | --- |
 | **Mac** | ✅ 已实测：S03E13 HEVC Main 10、内外挂 ASS、简繁切换、前中后拖动、退出回原季、续播；S01E01 E-AC-3 5.1 下混立体声 | ✅ 已实测：剧→季→集、直放、字幕切换、进度回写并恢复、退出回季、续播、自动下一集 |
-| **iPhone** | ⏳ 待真机：MP4 可播；MKV 直放缺引擎 | ⏳ 待真机：HLS 路径已就绪，模拟器可跑 |
-| **iPad** | ⏳ 待真机：同上；横竖屏/分屏待验 | ⏳ 待真机：同上 |
+| **iPhone** | ⏳ 待真机：MP4 可播；MKV 直放缺引擎 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放，进度条 324.4/1436.6 s，音轨 `Japanese - AAC - Stereo - Default（转码 AAC）`；默认字幕是服务器标记的 English，简体/繁体需在播放器字幕菜单里切换（待真机点按验证）；进度回写待真机 */
+| **iPad** | ⏳ 待真机：同上；横竖屏/分屏待验 | ⏳ 待真机：路径同上；横竖屏/分屏待验 |
 
 ## 五、还差什么
 
