@@ -1,0 +1,24 @@
+OpenFuse M4q Trakt device/scrobble evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/trakt_fixture.py, port 8123
+
+Implementation:
+  TraktClient: device code, poll token, search/movie, scrobble start/pause/stop.
+  TraktService env config (BASE_URL/CLIENT_ID/TOKEN); PlayerModel starts search+
+  start on file load, update on saves, stop on finished/finishPlayback.
+
+Results (fixture log):
+  POST /oauth/device/code -> device_code
+  POST /oauth/device/token -> access_token trakt-test-token
+  GET /search/movie?query=openfuse-fixture -> ids trakt=1001/tmdb=1001
+  POST /scrobble/start progress 0
+  POST /scrobble/stop progress 99.9467
+  playback position 59.968s.
+  Scripts/run-trakt-acceptance.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Trakt account/client ID/rate limits; OAuth UI/Keychain; show/episode
+  matching (movie-only search); pause/progress throttling over long playback;
+  Trakt history import; audio.

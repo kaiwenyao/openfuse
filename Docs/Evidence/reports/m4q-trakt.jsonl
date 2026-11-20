@@ -1,0 +1,8 @@
+{"method": "GET", "path": "/search/movie", "status": 200, "time": "2026-11-20T05:43:12.645031+00:00"}
+{"method": "POST", "path": "/oauth/device/code", "status": 200, "time": "2026-11-20T05:43:12.966978+00:00"}
+{"method": "POST", "path": "/oauth/device/token", "status": 200, "time": "2026-11-20T05:43:13.055761+00:00"}
+{"method": "GET", "path": "/search/movie?query=openfuse-fixture", "status": 200, "time": "2026-11-20T05:43:15.080747+00:00"}
+{"body": {"movie": {"ids": {"imdb": "tt0000001", "tmdb": 1001, "trakt": 1001}}, "progress": 0}, "method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:43:15.148957+00:00"}
+{"method": "POST", "path": "/scrobble/start", "status": 201, "time": "2026-11-20T05:43:15.149331+00:00"}
+{"body": {"movie": {"ids": {"imdb": "tt0000001", "tmdb": 1001, "trakt": 1001}}, "progress": 99.94666666666629}, "method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:43:19.611021+00:00"}
+{"method": "POST", "path": "/scrobble/stop", "status": 201, "time": "2026-11-20T05:43:19.612153+00:00"}

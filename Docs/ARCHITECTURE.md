@@ -91,6 +91,11 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt scrobble（M4q）
+
+- TraktClient：设备码/轮询/搜索/scrobble；TraktService 环境配置，PlayerModel 在加载/保存/结束触发。
+- 夹具实测 search/start/stop（99.9%）；仅 movie 搜索，无 OAuth UI/Keychain/历史同步，真实账号未验证。
+
 ## Jellyfin/Emby 版本级去重（M5p）
 
 - mergedEpisodes 以 mediaSourceID+name+resolution（回退 remotePath/fileURL/id）合并版本；标签拼接 Jellyfin/Emby。

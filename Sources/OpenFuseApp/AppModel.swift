@@ -1749,6 +1749,10 @@ final class PlayerModel: ObservableObject {
         fileLoaded = true
         reportJellyfinStart()
         reportPlexStart()
+        TraktService.shared.start(
+            title: title,
+            progress: duration > 0 ? position / duration * 100 : 0
+        )
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
         for track in catalog where track.source == .external {
@@ -2044,7 +2048,19 @@ final class PlayerModel: ObservableObject {
             remotePath: item.remotePath,
             remoteURL: item.isRemote ? item.playbackURL.absoluteString : nil
         )
-        if resolvedFinished { reportPlexStop() }
+        if resolvedFinished {
+            reportPlexStop()
+            TraktService.shared.stop(
+                title: title,
+                progress: duration > 0 ? min(100, position / duration * 100) : 0
+            )
+        } else {
+            TraktService.shared.update(
+                title: title,
+                progress: duration > 0 ? min(100, position / duration * 100) : 0,
+                isPaused: isPaused
+            )
+        }
     }
 
     private func finishPlayback() {
@@ -2052,6 +2068,10 @@ final class PlayerModel: ObservableObject {
         saveProgress(finished: true)
         reportJellyfinStop(wait: false)
         reportPlexStop()
+        TraktService.shared.stop(
+            title: title,
+            progress: duration > 0 ? min(100, position / duration * 100) : 0
+        )
         onFinished?()
         showControls = true
     }

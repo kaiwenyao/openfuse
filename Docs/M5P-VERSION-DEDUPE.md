@@ -35,4 +35,4 @@ M5g 只做到作品组去重，组内同分辨率版本仍会重复出现 Jellyf
 
 ## 下一项
 
-M5q：真实服务器版本 ID/顺序；音频轨去重；SMB3/并发；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+Trakt 已在 [M4q 验收](Docs/M4Q-TRAKT.md) 完成夹具验证。剩余 M5r：Trakt 真实账号/剧集/历史、音频听测、SMB3/并发、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

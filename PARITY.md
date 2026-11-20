@@ -332,3 +332,12 @@
 | 版本合并 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin+Emby 同夹具 | Infuse 未安装 | 2 组；1080/720 各合并为双来源标签 | Evidence 81、`reports/m5p-dedupe.json` | 通过 |
 | 单元测试 | 同上 | 两来源同 mediaSourceID | 待采样 | 1 版本，标签含 Jellyfin/Emby；29/29 | 终端 | 通过 |
 | 真实服务器 | 同上 | 真实 ID | 待采样 | 未测 | — | 待验证 |
+
+### M4q Trakt 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 设备码/轮询 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | device_code + access_token | `reports/m4q-trakt.jsonl` | 通过（夹具） |
+| 搜索/scrobble | 同上 | 本地样本 | 待采样 | search 1001；start 0；stop 99.9467 | Evidence 82 | 通过 |
+| 真实 Trakt | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |
+| 音频回环 | 同上 | iFlyrec | 待采样 | ffmpeg 捕获被系统权限阻断 | — | 待验证 |
