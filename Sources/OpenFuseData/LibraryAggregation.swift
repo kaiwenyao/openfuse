@@ -90,10 +90,11 @@ public enum LibraryAggregation {
                         bucket.versions[index] = existing
                         continue
                     }
+                    let hdr = version.dynamicRange.map { " · \($0)" } ?? ""
                     bucket.versions.append(
                         MergedLibraryVersion(
                             id: version.id + "@" + work.id,
-                            label: "\(source) · \(version.name)",
+                            label: "\(source) · \(version.name)\(hdr)",
                             work: work,
                             episode: episode,
                             version: version

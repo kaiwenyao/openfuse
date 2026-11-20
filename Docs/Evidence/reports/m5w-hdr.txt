@@ -1,0 +1,23 @@
+OpenFuse M5w HDR10 metadata evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Fixture:
+  ffmpeg/libx265 1920x1080 10-bit, 3s; remuxed with hevc_metadata +
+  -color_trc smpte2084 -color_primaries bt2020 -colorspace bt2020nc.
+  ffprobe: Main 10, bt2020nc, smpte2084, bt2020.
+
+Implementation:
+  ScannedVersion/LibraryVersion dynamicRange; SQLite versions.dynamic_range
+  (+ALTER migration). MediaProbe ffprobe color_transfer/primaries → HDR10/HLG.
+  Labels show HDR; library report serializes dynamicRange.
+
+Results:
+  Scan: resolution=1080p, dynamicRange=HDR10.
+  UI card subtitle: 2026 · 本地文件 · HDR10.
+  Scripts/run-hdr-acceptance.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Actual HDR display/tone mapping; WebDAV/Jellyfin HDR metadata; Dolby Vision;
+  HDR10+; audio.

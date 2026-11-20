@@ -389,3 +389,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 自动轮询 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | device code 后 1.07s token；App 授权成功 | `reports/m5v-trakt-auto.jsonl` | 通过 |
 | 真实 Trakt/Keychain | 同上 | 真实账号/签名 | 待采样 | 未测；测试跳过 Keychain | — | 待验证 |
+
+### M5w HDR10 元数据执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| HDR10 样片 | MacBook Pro M2 Pro／macOS 27.2.1 | bt2020/smpte2084 1080p10bit | Infuse 未安装 | ffprobe 识别；dynamicRange=HDR10 | Evidence 87、`reports/m5w-hdr-library.json` | 通过（元数据） |
+| HDR 输出 | 同上 | 同上 | 待采样 | 未验证显示/tone mapping | — | 待验证 |
+| 远程 HDR | 同上 | WebDAV/Jellyfin | 待采样 | 未解析 | — | 待验证 |

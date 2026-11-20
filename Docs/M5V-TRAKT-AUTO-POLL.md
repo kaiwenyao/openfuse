@@ -36,4 +36,4 @@ M5t 设置页需要手动点「检查」。本轮获取设备码后按 interval 
 
 ## 下一项
 
-M5w：真实 Trakt/Keychain；音频听测；SMB3/大文件；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+HDR10 元数据已在 [M5w 验收](Docs/M5W-HDR.md) 完成。剩余 M5x：HDR 输出/tone mapping、WebDAV/Jellyfin HDR、音频听测、真实 SMB3/Trakt、AirPlay 实机、CloudKit、M3 多根/损坏过滤。

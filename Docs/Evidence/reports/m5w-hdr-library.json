@@ -1,0 +1,77 @@
+{
+  "episodes": 1,
+  "generatedAt": "2026-11-20T06:22:49Z",
+  "groups": [
+    {
+      "key": "movie|openfuse",
+      "primary": "OpenFuse",
+      "sources": [
+        "local"
+      ],
+      "workIDs": [
+        "local-328a85342cc8e96e"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "file:///Users/ykw/Documents/openfuse/build/hdr-acceptance/library/Movies/OpenFuse%20HDR%20(2026).mkv",
+          "id": "local-328a85342cc8e96e-main",
+          "remotePath": "",
+          "season": 0,
+          "sourceKind": "local",
+          "title": "OpenFuse",
+          "versions": [
+            {
+              "dynamicRange": "HDR10",
+              "fileURL": "file:///Users/ykw/Documents/openfuse/build/hdr-acceptance/library/Movies/OpenFuse%20HDR%20(2026).mkv",
+              "id": "local-328a85342cc8e96e-main-v0",
+              "mediaSourceID": "",
+              "name": "本地文件",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "local-328a85342cc8e96e",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "",
+      "seasons": [],
+      "sourceID": "local-68468748a1a5410d",
+      "sourceKind": "local",
+      "title": "OpenFuse",
+      "year": 2026
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse",
+          "versions": [
+            "本地 · 本地文件 · HDR10"
+          ]
+        }
+      ],
+      "key": "movie|openfuse",
+      "sources": [
+        "local"
+      ],
+      "title": "OpenFuse"
+    }
+  ],
+  "rawEpisodes": 1,
+  "rawWorks": 1,
+  "status": "已扫描 library：1 个作品",
+  "visible": [
+    "OpenFuse"
+  ],
+  "works": 1
+}

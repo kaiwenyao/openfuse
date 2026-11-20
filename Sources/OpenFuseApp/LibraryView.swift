@@ -148,7 +148,7 @@ struct LibraryCard: View {
             if work.seasonCount > 0 { parts.append("\(work.seasonCount) 季") }
             if work.episodeCount > 0 { parts.append("\(work.episodeCount) 集") }
         } else if let version = model.libraryVersions(itemID: work.id + "-main").first {
-            parts.append(version.name)
+            parts.append(version.dynamicRange.map { "\(version.name) · \($0)" } ?? version.name)
         }
         if group.works.count > 1 {
             parts.append(group.sourceLabel)

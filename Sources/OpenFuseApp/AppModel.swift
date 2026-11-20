@@ -161,16 +161,23 @@ final class AppModel: ObservableObject {
         let defaults = UserDefaults.standard
         let storedClient = defaults.string(forKey: "openfuse.trakt.clientID") ?? ""
         let storedBase = defaults.string(forKey: "openfuse.trakt.baseURL") ?? "https://api.trakt.tv"
-        let storedSecret = CredentialStore.load(account: "trakt-secret", service: "com.openfuse.trakt") ?? ""
-        let storedToken = CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
-
         traktClientID = envClient ?? storedClient
-        traktClientSecret = storedSecret
         traktBaseURL = envBase ?? storedBase
+        guard !traktClientID.isEmpty || envToken != nil else {
+            traktMessage = "Trakt 未连接"
+            return
+        }
+        let storedSecret = envToken == nil
+            ? CredentialStore.load(account: "trakt-secret", service: "com.openfuse.trakt") ?? ""
+            : ""
+        let storedToken = envToken == nil
+            ? CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
+            : nil
+        traktClientSecret = storedSecret
         let token = envToken ?? storedToken
         guard let client = Optional(traktClientID), !client.isEmpty,
               let base = URL(string: traktBaseURL), token != nil else {
-            traktMessage = "Trakt 未连接"
+            traktMessage = "Trakt 未配置完成"
             return
         }
         TraktService.shared.configure(
@@ -1615,6 +1622,7 @@ final class AppModel: ObservableObject {
                                 "id": version.id,
                                 "name": version.name,
                                 "resolution": version.resolution ?? "",
+                                "dynamicRange": version.dynamicRange ?? "",
                                 "fileURL": version.fileURL ?? "",
                                 "mediaSourceID": version.mediaSourceID ?? "",
                             ]

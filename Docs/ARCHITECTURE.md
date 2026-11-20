@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## HDR10 元数据（M5w）
+
+- ScannedVersion/LibraryVersion.dynamicRange；SQLite versions.dynamic_range + ALTER。
+- MediaProbe ffprobe color_transfer/primaries → HDR10/HLG；UI/报告显示。
+- 实测 1080p HDR10；实际 HDR 输出、WebDAV/Jellyfin HDR、DV/HDR10+ 未验证。
+- Trakt 初始化改为未配置时不读 Keychain，避免授权弹窗阻塞。
+
 ## Trakt 自动轮询（M5v）
 
 - 设备码后 Task 按 interval 轮询 token；pending 继续，成功保存并停止；失败/过期结束。

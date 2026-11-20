@@ -19,6 +19,8 @@ public final class LibraryStore: @unchecked Sendable {
         database = handle
         sqlite3_busy_timeout(handle, 3000)
         try execute(schema)
+        // Lightweight migration for existing libraries.
+        try? execute("ALTER TABLE versions ADD COLUMN dynamic_range TEXT;")
     }
 
     deinit {
@@ -46,7 +48,7 @@ public final class LibraryStore: @unchecked Sendable {
         CREATE TABLE IF NOT EXISTS versions (
           id TEXT PRIMARY KEY, item_id TEXT NOT NULL, work_id TEXT NOT NULL, name TEXT NOT NULL,
           source_kind TEXT NOT NULL, source_id TEXT NOT NULL, remote_path TEXT, media_source_id TEXT,
-          container TEXT, resolution TEXT, file_url TEXT
+          container TEXT, resolution TEXT, dynamic_range TEXT, file_url TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_works_sort ON works(sort_title);
         CREATE INDEX IF NOT EXISTS idx_works_source ON works(source_kind, source_id);
@@ -101,8 +103,8 @@ public final class LibraryStore: @unchecked Sendable {
             """
             let versionSQL = """
             INSERT OR REPLACE INTO versions
-            (id, item_id, work_id, name, source_kind, source_id, remote_path, media_source_id, container, resolution, file_url)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            (id, item_id, work_id, name, source_kind, source_id, remote_path, media_source_id, container, resolution, dynamic_range, file_url)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             """
             for work in source.works {
                 try run(workSQL, [
@@ -164,7 +166,7 @@ public final class LibraryStore: @unchecked Sendable {
         try run(sql, [
             .text(version.id), .text(itemID), .text(workID), .text(version.name), .text(sourceKind),
             .text(sourceID), .text(version.remotePath), .text(version.mediaSourceID), .text(version.container),
-            .text(version.resolution), .text(version.fileURL),
+            .text(version.resolution), .text(version.dynamicRange), .text(version.fileURL),
         ])
     }
 
@@ -279,7 +281,7 @@ public final class LibraryStore: @unchecked Sendable {
         return try query(
             """
             SELECT id, item_id, work_id, name, source_kind, source_id, remote_path, media_source_id,
-                   container, resolution, file_url
+                   container, resolution, dynamic_range, file_url
             FROM versions WHERE item_id=? ORDER BY name
             """,
             [.text(itemID)]
@@ -295,7 +297,8 @@ public final class LibraryStore: @unchecked Sendable {
                 mediaSourceID: row.text(7),
                 container: row.text(8),
                 resolution: row.text(9),
-                fileURL: row.text(10)
+                dynamicRange: row.text(10),
+                fileURL: row.text(11)
             )
         }
     }
