@@ -74,7 +74,8 @@
 - **M3q MKV 头部解析：完成本地验证。** 纯 Swift EBML 解析 2MB Range，iOS 远程 MKV 可得到 1080p/HDR10；单元测试 31/31。iOS 运行期扫描未跑。另补 5.1→stereo downmix PCM（2ch 非静音）。记录：[M3q 验收](Docs/M3Q-MKV-HEADER.md)。
 - **M3r iOS 运行期 MKV：完成模拟器验证。** iPhone 18 Pro 模拟器启动后扫描 WebDAV HDR MKV，沙盒 SQLite 得到 `1080p · WebDAV` / `dynamic_range=HDR10`，并有截图。真实 OpenList/大头部 EBML 未测。记录：[M3r 验收](Docs/M3R-IOS-MKV-RUNTIME.md)。
 - **M5ab HDR 直通：完成 EDR 参数验证。** Built-in Retina EDR=16，mpv 自动 target-colorspace-hint=yes；输出 bt.2020/pq、light=display、max-luma=1000。OpenGL 渲染器禁用 HDR peak computation，肉眼/色度计未测。记录：[M5ab 验收](Docs/M5AB-HDR-PASSTHROUGH.md)。
-- **下一项：** M5ac：Metal/EDR 渲染与 HDR 测量；音频听测/设备路由；SMB/WebDAV 指纹；真实 SMB3/Trakt；AirPlay；CloudKit；真实 OpenList。
+- **M5ac 音频设备：完成属性验证。** 枚举 CoreAudio 输出设备，播放器菜单可选自动/具体设备，报告确认 selected/active 为 BuiltInSpeakerDevice、AO coreaudio、6 声道。实际听测/热插拔未做。记录：[M5ac 验收](Docs/M5AC-AUDIO-DEVICES.md)。
+- **下一项：** M5ad：听测/热插拔/exclusive；HDR 测量；SMB/WebDAV 指纹；真实 SMB3/Trakt；CloudKit；真实 OpenList。
 
 开发入口：
 
@@ -105,7 +106,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5ab-hdr-passthrough`（基于 M3r 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5ac-audio-devices`（基于 M5ab 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

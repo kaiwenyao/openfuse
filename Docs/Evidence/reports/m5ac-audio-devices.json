@@ -1,0 +1,17 @@
+[
+  {
+    "channels" : "2",
+    "id" : "coreaudio\/BlackHole2ch_UID_IFLYREC",
+    "name" : "iFlyrecAudioDevice"
+  },
+  {
+    "channels" : "2",
+    "id" : "coreaudio\/iShotAudioPlugin_UID",
+    "name" : "iShotAudioPlugin"
+  },
+  {
+    "channels" : "2",
+    "id" : "coreaudio\/BuiltInSpeakerDevice",
+    "name" : "MacBook Pro Speakers"
+  }
+]

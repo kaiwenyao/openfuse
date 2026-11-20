@@ -1,0 +1,21 @@
+OpenFuse M5ac audio device selection evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Implementation:
+  AudioDevices enumerates CoreAudio output devices (name, UID, channels);
+  PlayerModel exposes audioDevices/selectedAudioDeviceID; menu adds auto +
+  each device; report adds audioDevice/audioDeviceActive.
+  OPENFUSE_AUDIO_DEVICE selects a device for tests/CLI.
+
+Results:
+  Probe audio-devices lists coreaudio/BuiltInSpeakerDevice and others.
+  Playback with OPENFUSE_AUDIO_DEVICE=coreaudio/BuiltInSpeakerDevice:
+    audioDevice/audioDeviceActive both coreaudio/BuiltInSpeakerDevice;
+    currentAO=coreaudio; audioChannels=6.
+  Scripts/run-audio-devices.sh PASS.
+  swift test 31/31; five platforms/device/Mac build succeed.
+
+Not verified:
+  Actual sound from speakers/headphones, device hot-plug, AirPlay/output route,
+  exclusive mode; audio listening.

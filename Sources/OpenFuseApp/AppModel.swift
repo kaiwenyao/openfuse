@@ -1850,7 +1850,6 @@ final class AppModel: ObservableObject {
             "hwdecCurrent": player.engine.getPropertyString("hwdec-current") ?? "",
             "audioParams": player.engine.getPropertyString("audio-params") ?? "",
             "audioOutParams": player.engine.getPropertyString("audio-out-params") ?? "",
-            "audioDevice": player.engine.getPropertyString("audio-device") ?? "",
             "currentAO": player.engine.getPropertyString("current-ao") ?? "",
             "currentVO": player.engine.getPropertyString("current-vo") ?? "",
             "isFullScreen": NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false,
@@ -1862,6 +1861,8 @@ final class AppModel: ObservableObject {
             "videoGamma": player.engine.getPropertyString("video-params/gamma") ?? "",
             "videoSigPeak": player.engine.getPropertyString("video-params/sig-peak") ?? "",
             "targetColorspaceHint": player.engine.getPropertyString("target-colorspace-hint") ?? "",
+            "audioDevice": player.selectedAudioDeviceID,
+            "audioDeviceActive": player.engine.getPropertyString("audio-device") ?? "",
             "screenEDR": NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1,
             "selectedSubtitle": player.selectedSubtitleID ?? "off",
             "selectedAudio": player.selectedAudioID ?? "default",
@@ -1913,6 +1914,8 @@ final class PlayerModel: ObservableObject {
     @Published var audioTracks: [AudioTrack] = []
     @Published var selectedSubtitleID: String?
     @Published var selectedAudioID: String?
+    @Published var audioDevices: [AudioDeviceInfo] = []
+    @Published var selectedAudioDeviceID = "auto"
     @Published var showControls = true
     @Published var isScrubbing = false
     @Published var statusMessage: String?
@@ -1951,6 +1954,13 @@ final class PlayerModel: ObservableObject {
         self.store = store
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
+        self.audioDevices = AudioDevices.outputDevices()
+        if let device = ProcessInfo.processInfo.environment["OPENFUSE_AUDIO_DEVICE"], !device.isEmpty {
+            self.engine.setProperty("audio-device", device)
+            self.selectedAudioDeviceID = device
+        } else {
+            self.selectedAudioDeviceID = self.engine.getPropertyString("audio-device") ?? "auto"
+        }
         if let context = item.plexContext {
             let source = PlexSource(
                 id: context.sourceID,
@@ -2330,6 +2340,11 @@ final class PlayerModel: ObservableObject {
             engine.setAudioTrack(id: engineID)
         }
         showControlsTemporarily()
+    }
+
+    func selectAudioDevice(_ id: String) {
+        engine.setProperty("audio-device", id)
+        selectedAudioDeviceID = id
     }
 
     func setAudioLayout(_ layout: String) {

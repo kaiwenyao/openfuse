@@ -350,6 +350,11 @@ case "jellyfin-hls":
     }
     RunLoop.main.run(until: Date().addingTimeInterval(12))
     exit(1)
+case "audio-devices":
+    let devices = AudioDevices.outputDevices()
+    let payload = devices.map { ["id": $0.id, "name": $0.name, "channels": String($0.outputChannels)] }
+    let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+    print(String(decoding: data, as: UTF8.self))
 case "trakt-device":
     guard arguments.count >= 4, let base = URL(string: arguments[2]) else {
         print("usage: openfuse-probe trakt-device BASE_URL CLIENT_ID [SECRET]")

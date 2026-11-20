@@ -471,3 +471,10 @@
 | EDR 直通 | MacBook Pro M2 Pro／macOS 27.2.1／Built-in Retina | HDR10 MKV | Infuse 未安装 | EDR 16；target hint yes；bt.2020/pq/light=display | Evidence 91、`reports/m5ab-hdr-passthrough.json` | 通过（参数） |
 | HDR 观感/测量 | 同上 | 同上 | 待色度计 | 未做 | — | 待验证 |
 | Metal/EDR 渲染 | 同上 | 同上 | 待采样 | OpenGL 禁用 peak computation | — | 待验证 |
+
+### M5ac 音频设备执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 设备枚举/切换 | MacBook Pro M2 Pro／macOS 27.2.1 | 5.1 样片 | Infuse 未安装 | selected/active BuiltInSpeakerDevice；AO coreaudio；6ch | `reports/m5ac-audio-device-play.json` | 通过（属性） |
+| 实际听测/热插拔 | 同上 | 同上 | 待人工 | 未做 | — | 待验证 |

@@ -36,4 +36,4 @@ M5y 只做 SDR 色调映射。本机 Built-in Retina Display 的 EDR 潜力为 1
 
 ## 下一项
 
-M5ac：Metal/EDR 渲染与 HDR 测量；音频听测/设备路由；SMB/WebDAV 指纹；真实 SMB3/Trakt；AirPlay；CloudKit；真实 OpenList。
+CoreAudio 设备选择已在 [M5ac 验收](Docs/M5AC-AUDIO-DEVICES.md) 完成属性验证。剩余 M5ad：听测/热插拔/exclusive、HDR 测量、SMB/WebDAV 指纹、真实 SMB3/Trakt、CloudKit、真实 OpenList。

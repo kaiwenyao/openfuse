@@ -236,6 +236,27 @@ struct PlayerView: View {
                         Button("自动（立体声下混）") { player.setAudioLayout("auto-safe") }
                         Button("5.1 环绕") { player.setAudioLayout("5.1") }
                         Button("直通") { player.setAudioLayout("auto") }
+                        Divider()
+                        Button {
+                            player.selectAudioDevice("auto")
+                        } label: {
+                            if player.selectedAudioDeviceID == "auto" {
+                                Label("自动选择设备", systemImage: "checkmark")
+                            } else {
+                                Text("自动选择设备")
+                            }
+                        }
+                        ForEach(player.audioDevices) { device in
+                            Button {
+                                player.selectAudioDevice(device.id)
+                            } label: {
+                                if player.selectedAudioDeviceID == device.id {
+                                    Label("\(device.name)（\(device.outputChannels)ch）", systemImage: "checkmark")
+                                } else {
+                                    Text("\(device.name)（\(device.outputChannels)ch）")
+                                }
+                            }
+                        }
                     }
                 } label: {
                     Label(selectedAudioName ?? "音轨", systemImage: "speaker.wave.2")

@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## CoreAudio 输出设备选择（M5ac）
+
+- AudioDevices 枚举 UID/名称/输出声道；PlayerModel 菜单与 selectAudioDevice。
+- 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
+- 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
+
 ## EDR HDR 直通（M5ab）
 
 - 按 NSScreen EDR 自动 target-colorspace-hint=yes；OPENFUSE_HDR_PASSTHROUGH=0 关闭。
