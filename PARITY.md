@@ -614,3 +614,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 多用户隔离 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin 12，test/test2 | Infuse 未安装 | test2 11.064s；test 仍 0 | `reports/m2h-jellyfin-user*.json` | 通过 |
 | UI 用户切换/权限/并发 | 同上 | 同上 | 待采样 | 未做 | — | 待验证 |
+
+### M2i Jellyfin 权限执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 无库权限 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin test2 | Infuse 未安装 | rawWorks 0 | `reports/m2i-jellyfin-restricted.json` | 通过 |
+| 恢复权限 | 同上 | 同上 | 待采样 | rawWorks 2 | `reports/m2i-jellyfin-allowed.json` | 通过 |
+| UI切换/并发/HTTPS | 同上 | 同上 | 待采样 | 未测 | — | 待验证 |

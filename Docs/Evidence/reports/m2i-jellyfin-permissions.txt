@@ -1,0 +1,14 @@
+OpenFuse M2i Jellyfin permissions evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Jellyfin 12.4 Docker, user test2.
+
+Flow:
+  Admin token updates test2 Policy EnableAllFolders=false/EnabledFolders=[].
+  OpenFuse test2 scan -> 0 works.
+  Restore EnableAllFolders=true -> scan 2 works.
+  Scripts/run-jellyfin-permissions.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  UI user switching, per-folder ACL, concurrent sessions, HTTPS.

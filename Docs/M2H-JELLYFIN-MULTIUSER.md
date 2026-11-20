@@ -35,4 +35,4 @@
 
 ## 下一项
 
-M2i/M6d：Jellyfin 用户切换/权限/并发/HTTPS；SMB 多GB/DFS；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+Jellyfin 权限隔离已在 [M2i 验收](Docs/M2I-JELLYFIN-PERMISSIONS.md) 完成。剩余 M2j/M6d：UI 用户切换/并发/HTTPS、SMB 多GB/DFS、音频听测、HDR 测量、真实 Trakt/CloudKit、visionOS 真机。
