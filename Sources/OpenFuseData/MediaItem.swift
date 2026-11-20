@@ -100,19 +100,19 @@ public struct MediaItem: Sendable {
         path: String,
         title: String,
         size: Int64,
-        cachedURL: URL
+        playbackURL: URL
     ) -> MediaItem {
         MediaItem(
             title: title,
-            playbackURL: cachedURL,
+            playbackURL: playbackURL,
             fingerprint: MediaFingerprint(
                 path: "smb://\(source.id)/\(path)",
                 fileSize: size,
                 modifiedAt: nil
             ),
-            subtitles: SubtitleCatalog.discover(for: cachedURL),
+            subtitles: [],
             httpHeaders: [],
-            origin: .smb(sourceID: source.id, path: path, cachedURL: cachedURL),
+            origin: .smb(sourceID: source.id, path: path, cachedURL: playbackURL),
             sourceName: source.name
         )
     }

@@ -38,8 +38,8 @@ print(data["items"][0]["episodes"][0]["id"])
 PY
 )
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test "$APP" \
-  --library-play "$EPISODE" --freeze-at 9.9 --capture "$OUT/play.png" \
-  --capture-after 16 --report "$OUT/play.json" --quit-after 18 >"$OUT/app.log" 2>&1 || true
+  --library-play "$EPISODE" --seek 30 --freeze-at 31 --capture "$OUT/play.png" \
+  --capture-after 12 --report "$OUT/play.json" --quit-after 14 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
 python3 - "$OUT" <<'PY'
 import json, os, sys
@@ -51,19 +51,21 @@ if library["rawWorks"] != 1 or library["rawEpisodes"] != 1:
 if library["items"][0]["sourceKind"] != "smb":
     errors.append("sourceKind not smb")
 play = json.load(open(os.path.join(out, "play.json")))
-if play.get("sourceKind") != "smb" or not 9.8 <= play.get("position", 0) <= 10.1:
-    errors.append(f"play {play.get('sourceKind')} {play.get('position')}")
+if play.get("sourceKind") != "smb" or not 30.8 <= play.get("position", 0) <= 31.2:
+    errors.append(f"play/seek {play.get('sourceKind')} {play.get('position')}")
 if "OpenFuse.SMB.mkv" not in play.get("remotePath", ""):
     errors.append(f"remotePath {play.get('remotePath')}")
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")
 cache = os.path.join(out, "support", "SMBCache")
-if not os.path.isdir(cache) or not os.listdir(cache):
-    errors.append("SMBCache empty")
+if os.path.isdir(cache) and os.listdir(cache):
+    errors.append("SMBCache should be empty for streaming playback")
+if not play.get("file", "").startswith("http://127.0.0.1:"):
+    errors.append(f"not loopback stream: {play.get('file')}")
 if errors:
     print("FAIL")
     for error in errors: print(" -", error)
     sys.exit(1)
-print("PASS: SMB scan 1 work/1 episode, sourceKind=smb, cached playback 9.9s")
+print("PASS: SMB scan + loopback Range stream, seek to 31s, no file cache")
 PY

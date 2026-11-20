@@ -41,4 +41,4 @@ Homebrew 没有 libsmb2 formula。本轮从源码构建 libsmb2 7.0，加入 CSM
 
 ## 下一项
 
-M5m：SMB Range 代理/边下边播、真实服务器、NFO/字幕；版本级去重；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+SMB 回环 Range 边下边播已在 [M5m 验收](Docs/M5M-SMB-STREAMING.md) 完成。剩余 M5n：真实 SMB3/大文件/并发、NFO/字幕、版本级去重、HDR/AirPlay 实机、CloudKit/Trakt、音频、M3 多根/损坏过滤。

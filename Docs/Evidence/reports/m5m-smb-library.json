@@ -1,0 +1,76 @@
+{
+  "episodes": 1,
+  "generatedAt": "2026-11-20T04:58:20Z",
+  "groups": [
+    {
+      "key": "movie|openfuse smb",
+      "primary": "OpenFuse SMB",
+      "sources": [
+        "smb"
+      ],
+      "workIDs": [
+        "smb-3dec7137ef31bfe3"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "smb-3dec7137ef31bfe3-main",
+          "remotePath": "/Movie/OpenFuse.SMB.mkv",
+          "season": 0,
+          "sourceKind": "smb",
+          "title": "OpenFuse SMB",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "smb-3dec7137ef31bfe3-main-v0",
+              "mediaSourceID": "",
+              "name": "SMB",
+              "resolution": ""
+            }
+          ]
+        }
+      ],
+      "id": "smb-3dec7137ef31bfe3",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "",
+      "poster": "",
+      "seasons": [],
+      "sourceID": "bdebc1099012fbb7",
+      "sourceKind": "smb",
+      "title": "OpenFuse SMB",
+      "year": 0
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse SMB",
+          "versions": [
+            "SMB · SMB"
+          ]
+        }
+      ],
+      "key": "movie|openfuse smb",
+      "sources": [
+        "smb"
+      ],
+      "title": "OpenFuse SMB"
+    }
+  ],
+  "rawEpisodes": 1,
+  "rawWorks": 1,
+  "status": "SMB SMB：1 个作品",
+  "visible": [
+    "OpenFuse SMB"
+  ],
+  "works": 1
+}

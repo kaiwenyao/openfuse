@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## SMB 回环 Range 边下边播（M5m）
+
+- SMBStreamServer：BSD socket 127.0.0.1 随机端口，HTTP HEAD/GET、206/Content-Range，64KiB 分块；libsmb2 pread 按需读。
+- NWListener 在此环境 EINVAL，改 BSD socket。
+- MediaItem.smb playbackURL 为回环 HTTP；smb:// 续播键；关闭播放器停 server；无 SMBCache。
+- 实测 seek 30→31s、无缓存；真实 SMB3/大文件/并发未验证。
+
 ## SMB 来源（M5l）
 
 - 源码 libsmb2 7.0 + CSMB2 C shim，macOS-only 条件依赖；Package -L/rpath /opt/homebrew。

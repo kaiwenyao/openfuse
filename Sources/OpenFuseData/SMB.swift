@@ -143,6 +143,17 @@ public final class SMBClient: @unchecked Sendable {
         }
     }
 
+    public func size(path: String) throws -> Int64 {
+        let context = try connectedContext()
+        lock.lock(); defer { lock.unlock() }
+        let smbPath = Self.normalized(path)
+        var stat = smb2_stat_64()
+        guard smb2_stat(context, smbPath, &stat) == 0 else {
+            throw SMBError.operation(String(cString: smb2_get_error(context)))
+        }
+        return Int64(stat.smb2_size)
+    }
+
     public func fetch(path: String) throws -> Data {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }

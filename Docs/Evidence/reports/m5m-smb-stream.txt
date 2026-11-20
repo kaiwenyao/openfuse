@@ -1,0 +1,24 @@
+OpenFuse M5m SMB loopback Range streaming evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Client: libsmb2 7.0; server: impacket SMB2 port 1445 (test/test)
+
+Implementation:
+  SMBStreamServer uses a BSD socket listener on 127.0.0.1:ephemeral; HTTP/1.1
+  HEAD/GET, Accept-Ranges, Content-Range, 64KiB reads through SMBClient.read.
+  NWListener was rejected by this environment with POSIX EINVAL (also in a
+  standalone Swift test), so BSD sockets are used.
+  App opens http://127.0.0.1:<port>/stream in libmpv; no SMBCache file.
+
+Results:
+  Scan: 1 work/1 episode sourceKind=smb.
+  Playback with --seek 30 --freeze-at 31:
+    sourceKind=smb, position=31.0, file starts http://127.0.0.1:,
+    remotePath=/Movie/OpenFuse.SMB.mkv.
+  SMBCache absent/empty.
+  Scripts/run-smb-acceptance.sh PASS.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real SMB3/DFS/signing, very large files, concurrent Range clients/backpressure,
+  NFO/subtitles, iOS SMB, audio; SMB server only impacket.

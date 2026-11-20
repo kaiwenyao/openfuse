@@ -9,16 +9,16 @@
 | M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3m | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07 扫描中播放/损坏单文件；WebDAV MKV 分辨率（macOS ffprobe）与 1080p 筛选通过。多根本地库策略、损坏过滤、iOS 远程 MKV 探测仍待。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M4p | 五端实际启动；iPhone/iPad 远程 WebDAV+Jellyfin；移动音轨/字幕；tvOS/visionOS 播放；进度同步协议 + 本地共享文件两设备续播实测（A 9.917s → B 14.417s）；CloudKit transport 代码、真实 iCloud 未验证。音频听测、ASS 样式、沉浸式交互、Trakt/自动同步未做。 |
-| M5 其余来源与高级播放 | 部分完成：M5a–M5l | Plex 扫描/播放/进度/字幕/多版本/Direct 浏览/详情；macOS 自包含 app；Emby；Jellyfin+Emby 去重/progress；Mac AirPlay 入口；SMB 来源（libsmb2、缓存播放）。未公证/仅 arm64；SMB 边下边播、真实服务器、版本级去重、HDR/AirPlay 实机、CloudKit/Trakt、音频未做。 |
+| M5 其余来源与高级播放 | 部分完成：M5a–M5m | Plex 扫描/播放/进度/字幕/多版本/Direct/详情；macOS 自包含 app；Emby；Jellyfin+Emby 去重/progress；Mac AirPlay 入口；SMB 来源 + 回环 HTTP Range 边下边播（seek 31s、无缓存）。未公证/仅 arm64；真实 SMB3/大文件/NFO/字幕、版本级去重、HDR/AirPlay 实机、CloudKit/Trakt、音频未做。 |
 | M6 Vision Pro | 未开始 | |
 
 ## 当前分支
 
-`m5l-smb`（基于 M5k 提交）。M5m 从该分支继续。
+`m5m-smb-stream`（基于 M5l 提交）。M5n 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M5m：SMB 边下边播/真实服务器；版本级去重；HDR/AirPlay 实机；CloudKit/Trakt；音频；M3 多根/损坏过滤。
+1. M5n：SMB 句柄复用/并发/大文件/真实 SMB3；NFO/字幕；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

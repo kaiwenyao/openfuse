@@ -94,6 +94,7 @@ final class AppModel: ObservableObject {
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
     @Published var syncStatus: String?
+    private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
     @Published var libraryKindFilter: LibraryKind?
@@ -203,6 +204,8 @@ final class AppModel: ObservableObject {
     }
 
     private func startPlayer(with item: MediaItem, serverStart: Double = 0) {
+        smbStreamServer?.stop()
+        smbStreamServer = nil
         if let current = player {
             current.stopAndClose()
         }
@@ -211,6 +214,8 @@ final class AppModel: ObservableObject {
         let startAt = max(localStart, serverStart)
         let model = PlayerModel(item: item, startAt: startAt, store: store)
         model.onClose = { [weak self] in
+            self?.smbStreamServer?.stop()
+            self?.smbStreamServer = nil
             self?.player = nil
             self?.route = .home
             self?.browsingSource = nil
@@ -333,6 +338,8 @@ final class AppModel: ObservableObject {
     }
 
     func closePlayer() {
+        smbStreamServer?.stop()
+        smbStreamServer = nil
         player?.stopAndClose()
         player = nil
         route = .home
@@ -470,26 +477,23 @@ final class AppModel: ObservableObject {
         }
         let client = SMBClient(source: source, password: password)
         do {
-            let data = try await Task.detached(priority: .userInitiated) {
-                try client.fetch(path: path)
+            let size = try await Task.detached(priority: .userInitiated) {
+                try client.size(path: path)
             }.value
-            let cache = supportDirectory.appendingPathComponent("SMBCache", isDirectory: true)
-            try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
-            let ext = (path as NSString).pathExtension.lowercased()
-            let target = cache.appendingPathComponent(
-                LibraryID.hash("\(source.id)|\(path)") + "." + (ext.isEmpty ? "mkv" : ext)
-            )
-            try data.write(to: target, options: .atomic)
+            smbStreamServer?.stop()
+            smbStreamServer = nil
+            let server = try await SMBStreamServer.start(client: client, path: path, size: size)
             let media = MediaItem.smb(
                 source: source,
                 path: path,
                 title: title,
-                size: Int64(data.count),
-                cachedURL: target
+                size: size,
+                playbackURL: server.url
             )
             startPlayer(with: media)
+            smbStreamServer = server
         } catch {
-            statusMessage = "SMB 读取失败：\(error.localizedDescription)"
+            statusMessage = "SMB 流读取失败：\(error.localizedDescription)"
         }
     }
 
