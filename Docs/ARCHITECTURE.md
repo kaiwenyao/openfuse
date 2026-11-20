@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## EDR HDR 直通（M5ab）
+
+- 按 NSScreen EDR 自动 target-colorspace-hint=yes；OPENFUSE_HDR_PASSTHROUGH=0 关闭。
+- 报告 screenEDR/targetColorspaceHint/videoOutParams；实测 EDR16、bt.2020/pq/light=display/max-luma1000。
+- OpenGL 渲染器无 compute shader/SSBO，HDR peak computation 禁用；测量未做。
+
 ## iOS 运行期 MKV 验证（M3r）
 
 - iPhone 18 Pro 模拟器启动后 WebDAV 扫描 HDR MKV；沙盒 SQLite dynamic_range=HDR10/1080p。

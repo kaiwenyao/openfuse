@@ -1862,6 +1862,7 @@ final class AppModel: ObservableObject {
             "videoGamma": player.engine.getPropertyString("video-params/gamma") ?? "",
             "videoSigPeak": player.engine.getPropertyString("video-params/sig-peak") ?? "",
             "targetColorspaceHint": player.engine.getPropertyString("target-colorspace-hint") ?? "",
+            "screenEDR": NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1,
             "selectedSubtitle": player.selectedSubtitleID ?? "off",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",

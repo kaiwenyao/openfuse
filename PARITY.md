@@ -463,3 +463,11 @@
 | iOS 远程 MKV | iPhone 18 Pro 模拟器／iOS 27.2 | WebDAV HDR10 MKV | Infuse 未安装 | SQLite `1080p · WebDAV`/HDR10 | Evidence 90、`reports/m3r-ios-mkv.txt` | 通过 |
 | 真实 OpenList/大头部 | 同上 | 真实服务 | 待采样 | 未测 | — | 待验证 |
 | 扬声器听测 | 同上 | 5.1 样片 | 待人工 | 未做 | — | 待验证 |
+
+### M5ab HDR 直通执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| EDR 直通 | MacBook Pro M2 Pro／macOS 27.2.1／Built-in Retina | HDR10 MKV | Infuse 未安装 | EDR 16；target hint yes；bt.2020/pq/light=display | Evidence 91、`reports/m5ab-hdr-passthrough.json` | 通过（参数） |
+| HDR 观感/测量 | 同上 | 同上 | 待色度计 | 未做 | — | 待验证 |
+| Metal/EDR 渲染 | 同上 | 同上 | 待采样 | OpenGL 禁用 peak computation | — | 待验证 |

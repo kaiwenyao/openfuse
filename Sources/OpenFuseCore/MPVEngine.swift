@@ -87,6 +87,9 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("tone-mapping", ProcessInfo.processInfo.environment["OPENFUSE_TONE_MAPPING"] ?? "spline")
         setOption("hdr-compute-peak", "yes")
         setOption("target-peak", "auto")
+        let edr = NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1
+        let allowHDR = ProcessInfo.processInfo.environment["OPENFUSE_HDR_PASSTHROUGH"] != "0"
+        setOption("target-colorspace-hint", (allowHDR && edr > 1) ? "yes" : "no")
         if !httpHeaders.isEmpty {
             setOption("http-header-fields", httpHeaders.joined(separator: ","))
         }

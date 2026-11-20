@@ -1,0 +1,22 @@
+OpenFuse M5ab HDR passthrough evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; Built-in Retina Display.
+
+Implementation:
+  MPVEngine reads NSScreen.maximumPotentialExtendedDynamicRangeColorComponentValue;
+  if >1 and OPENFUSE_HDR_PASSTHROUGH != 0, sets target-colorspace-hint=yes.
+  Report adds screenEDR and existing targetColorspaceHint/video-out-params.
+
+Results:
+  screenEDR=16.0; targetColorspaceHint=yes.
+  Source: bt.2020/pq.
+  video-out-params: light=display, primaries=bt.2020, gamma=pq,
+  max-luma=1000, hw-pixelformat=p010.
+  mpv warns it disables HDR peak computation because the OpenGL renderer lacks
+  compute shaders/SSBO; tone mapping still configured as fallback.
+  Scripts/run-hdr-passthrough.sh PASS.
+  swift test 31/31; five platforms/device/Mac build succeed.
+
+Not verified:
+  Measured HDR luminance/EDR capture, visual HDR quality, native Metal renderer;
+  real HDR display colorimeter; audio listening.

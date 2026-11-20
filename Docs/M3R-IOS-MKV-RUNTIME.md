@@ -34,4 +34,4 @@ M3q 只验证了 macOS 强制 parser + iOS 构建。本轮在 iPhone 18 Pro 模�
 
 ## 下一项
 
-M3s/M5aa：真实 OpenList/大头部 EBML；扬声器听测/设备路由；SMB/WebDAV 指纹；HDR 直通；真实 SMB3/Trakt；AirPlay；CloudKit。
+EDR HDR 直通已在 [M5ab 验收](Docs/M5AB-HDR-PASSTHROUGH.md) 完成参数验证。剩余 M5ac：Metal/EDR 渲染与测量、音频听测/设备路由、SMB/WebDAV 指纹、真实 SMB3/Trakt、AirPlay、CloudKit、真实 OpenList。
