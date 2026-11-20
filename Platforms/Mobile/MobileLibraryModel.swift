@@ -25,6 +25,7 @@ final class MobileLibraryModel: ObservableObject {
     @Published var groups: [LibraryGroup] = []
     @Published var recent: [PlaybackRecord] = []
     @Published var status: String?
+    @Published var syncStatus: String?
     @Published var isWorking = false
     @Published var webdavSources: [WebDAVSource] = []
     @Published var jellyfinSources: [JellyfinSource] = []
@@ -38,6 +39,11 @@ final class MobileLibraryModel: ObservableObject {
     private let jellyfinStore: JellyfinSourceStore
     private var ephemeralPasswords: [String: String] = [:]
     private var ephemeralTokens: [String: String] = [:]
+    private var lastSyncAt = Date.distantPast
+    private var syncURL: URL? {
+        guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"] else { return nil }
+        return URL(string: raw)
+    }
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -55,6 +61,7 @@ final class MobileLibraryModel: ObservableObject {
         jellyfinSources = jellyfinStore.sources
         seedBundledSampleIfNeeded()
         reload()
+        Task { await syncProgress(force: true) }
     }
 
     var countsText: String {
@@ -165,7 +172,21 @@ final class MobileLibraryModel: ObservableObject {
         }
         let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
         let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
+        if playbackStore.record(forPath: key) == nil, syncURL != nil {
+            await syncProgress(force: true)
+        }
         let record = playbackStore.record(forPath: key)
+        if ProcessInfo.processInfo.environment["OPENFUSE_REPORT_RESUME"] == "1" {
+            let report: [String: Any] = [
+                "key": key,
+                "position": record?.position ?? 0,
+                "duration": record?.duration ?? 0,
+                "resume": record.flatMap(ResumePolicy.resumePosition(for:)) ?? 0,
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: report) {
+                try? data.write(to: supportDirectory.appendingPathComponent("autoplay-resume.json"))
+            }
+        }
         let audioStream = media.mediaStreams?.first(where: { $0.type == "Audio" && $0.isDefault == true })
             ?? media.mediaStreams?.first(where: { $0.type == "Audio" })
         let audioLabel = audioStream.map { stream in
@@ -307,6 +328,23 @@ final class MobileLibraryModel: ObservableObject {
             remoteURL: item.remoteURL
         )
         recent = playbackStore.recentlyPlayed(limit: 12)
+        Task { await syncProgress(force: true) }
+    }
+
+    func syncProgress(force: Bool = false) async {
+        guard let syncURL else { return }
+        if !force, Date().timeIntervalSince(lastSyncAt) < 5 { return }
+        lastSyncAt = Date()
+        do {
+            let result = try await ProgressSyncService(
+                store: playbackStore,
+                transport: HTTPProgressTransport(url: syncURL)
+            ).sync()
+            syncStatus = "同步：远端 \(result.remoteCount)，本地 \(result.localCount)，更新 \(result.changed)"
+            recent = playbackStore.recentlyPlayed(limit: 12)
+        } catch {
+            syncStatus = "同步失败：\(error.localizedDescription)"
+        }
     }
 
     func bootstrapTestSourcesIfRequested() async {

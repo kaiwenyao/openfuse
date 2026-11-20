@@ -1,0 +1,21 @@
+{
+  "records" : {
+    "jellyfin:\/\/c135dd80bab7e30f\/c9a8049da54e0f1e4ffbf6cce67cee71\/c9a8049da54e0f1e4ffbf6cce67cee71" : {
+      "displayTitle" : "OpenFuse Jellyfin",
+      "duration" : 20.105,
+      "fileSize" : 0,
+      "isFinished" : false,
+      "lastPlayedAt" : "2026-11-20T10:39:36.270Z",
+      "mediaPath" : "jellyfin:\/\/c135dd80bab7e30f\/c9a8049da54e0f1e4ffbf6cce67cee71\/c9a8049da54e0f1e4ffbf6cce67cee71",
+      "playCount" : 0,
+      "position" : 13.112482825,
+      "preferredAudioTrackID" : "mpv-audio:1",
+      "preferredSubtitleTrackID" : "mpv:1",
+      "remotePath" : "c9a8049da54e0f1e4ffbf6cce67cee71|c9a8049da54e0f1e4ffbf6cce67cee71",
+      "remoteURL" : "http:\/\/127.0.0.1:8096\/Videos\/c9a8049da54e0f1e4ffbf6cce67cee71\/master.m3u8?MediaSourceId=c9a8049da54e0f1e4ffbf6cce67cee71&VideoCodec=h264&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=hls&SegmentContainer=ts&VideoBitrate=8000000&AudioBitrate=640000&MaxWidth=1920&MaxHeight=1080&DeviceId=openfuse-c135dd80bab7e30f&api_key=db90fa6969e74b07b59fa6b9d0f94cb9",
+      "sourceID" : "c135dd80bab7e30f",
+      "sourceKind" : "jellyfin"
+    }
+  },
+  "version" : 1
+}

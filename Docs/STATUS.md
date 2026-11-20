@@ -14,11 +14,11 @@
 
 ## 当前分支
 
-`m2i-jellyfin-permissions`（基于 M2h 提交）。M2j/M6d 从该分支继续。
+`m4u-http-sync`（基于 M2i 提交）。M4v/M6d 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M2j/M6d：Jellyfin UI 用户切换/并发/HTTPS；SMB 多GB/DFS；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+1. M4v/M6d：HTTPS/token 同步、并发冲突、HLS seek 时间戳；真实 CloudKit/真机；Jellyfin UI 切换/HTTPS；音频/HDR/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

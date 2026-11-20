@@ -622,3 +622,10 @@
 | 无库权限 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin test2 | Infuse 未安装 | rawWorks 0 | `reports/m2i-jellyfin-restricted.json` | 通过 |
 | 恢复权限 | 同上 | 同上 | 待采样 | rawWorks 2 | `reports/m2i-jellyfin-allowed.json` | 通过 |
 | UI切换/并发/HTTPS | 同上 | 同上 | 待采样 | 未测 | — | 待验证 |
+
+### M4u HTTP 跨设备续播执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Mac→iPhone | Mac M2 Pro／iPhone 18 Pro 模拟器 | 真实 Jellyfin MP4 | Infuse 未安装 | Mac 11.022s；iPhone resume 10.02s/HUD10.0 | Evidence 103、`reports/m4u-*` | 通过（LAN HTTP） |
+| TLS/鉴权/CloudKit/真机 | 同上 | 生产同步 | 待采样 | 未测 | — | 待验证 |

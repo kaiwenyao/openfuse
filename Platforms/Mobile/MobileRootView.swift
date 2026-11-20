@@ -38,6 +38,7 @@ struct MobileRootView: View {
                 .environmentObject(model)
         }
         .task {
+            await model.syncProgress(force: true)
             await model.bootstrapTestSourcesIfRequested()
             guard model.autoplaySample, autoplayItem == nil else { return }
             let preferred = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SOURCE"] ?? ""

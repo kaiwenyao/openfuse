@@ -32,6 +32,38 @@ public final class LocalProgressTransport: ProgressSyncTransport, @unchecked Sen
     }
 }
 
+/// HTTP JSON transport for a LAN sync service (GET/POST arrays of records).
+public final class HTTPProgressTransport: ProgressSyncTransport, @unchecked Sendable {
+    private let url: URL
+    private let session: URLSession
+
+    public init(url: URL) {
+        self.url = url
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 15
+        self.session = URLSession(configuration: configuration)
+    }
+
+    public func fetchAll() async throws -> [PlaybackRecord] {
+        let (data, response) = try await session.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return (try? JSONDecoder.openFuse.decode([PlaybackRecord].self, from: data)) ?? []
+    }
+
+    public func push(_ records: [PlaybackRecord]) async throws {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder.openFuse.encode(records)
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+}
+
 public enum ProgressSyncError: LocalizedError {
     case cloudKitUnavailable(String)
 

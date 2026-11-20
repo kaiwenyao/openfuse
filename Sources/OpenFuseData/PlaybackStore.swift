@@ -77,7 +77,8 @@ public enum ResumePolicy {
     public static func resumePosition(for record: PlaybackRecord) -> TimeInterval? {
         guard !record.isFinished, record.duration > 0 else { return nil }
         guard record.position >= minimumResumePosition else { return nil }
-        guard record.position < record.duration - endGuard else { return nil }
+        let scaledGuard = record.duration < 60 ? max(1, record.duration * 0.1) : endGuard
+        guard record.position < record.duration - scaledGuard else { return nil }
         return record.position
     }
 }

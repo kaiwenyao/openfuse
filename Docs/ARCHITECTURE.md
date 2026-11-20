@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## HTTP 跨设备续播（M4u）
+
+- HTTPProgressTransport + OPENFUSE_SYNC_URL；Mac push，iPhone await sync→autoplay。
+- 短片 endGuard 改为10%时长；20s 片 11s 可续播。
+- HTTP 无 TLS/鉴权；并发/CloudKit/真机未验证。
+
 ## Jellyfin 权限隔离（M2i）
 
 - test2 Policy 受限时扫描 0，恢复后 2；不泄漏库。

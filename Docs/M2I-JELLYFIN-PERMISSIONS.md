@@ -30,4 +30,4 @@ M2h 验证了位置隔离。本轮验证媒体库权限：test2 无任何库时 
 
 ## 下一项
 
-M2j/M6d：Jellyfin UI 用户切换/并发/HTTPS；SMB 多GB/DFS；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+跨设备 HTTP 续播已在 [M4u 验收](Docs/M4U-HTTP-CROSS-DEVICE.md) 完成。剩余 M4v/M6d：同步 HTTPS/token/并发、HLS seek 时间戳、真实 CloudKit/真机、Jellyfin UI 切换/HTTPS、音频/HDR/visionOS。

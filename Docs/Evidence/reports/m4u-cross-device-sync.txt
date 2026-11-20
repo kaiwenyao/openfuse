@@ -1,0 +1,25 @@
+OpenFuse M4u HTTP cross-device progress evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2.
+Sync: Tools/progress_sync_fixture.py, http://127.0.0.1:8130/progress.
+Source: real Jellyfin 12 OpenFuse Jellyfin MP4.
+
+Flow:
+  Mac fresh support scan/play seek10 -> position 11.022; --sync-progress POST.
+  iPhone install with OPENFUSE_SYNC_URL; awaits sync; autoplay no seek.
+  iPhone resume report: key jellyfin://c135.../c9a8.../c9a8..., position 11.022,
+  resume 10.02 (end guard scaled for short video).
+  Screenshot HUD 10.0/20.1.
+
+Changes:
+  HTTPProgressTransport; Mac OPENFUSE_SYNC_URL; mobile await sync before
+  autoplay and forced sync before reading a missing resume record;
+  ResumePolicy short-video end guard = 10% duration (<60s), 10s otherwise.
+
+Results:
+  Scripts/run-cross-device-sync.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  TLS/auth, CloudKit real account, real devices, concurrent conflict resolution;
+  HLS frame timecode vs HUD after seek (screenshot frame 4s while HUD 10s).

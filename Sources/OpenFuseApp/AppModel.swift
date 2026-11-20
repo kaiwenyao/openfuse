@@ -318,12 +318,14 @@ final class AppModel: ObservableObject {
     func syncPlaybackProgressFromEnvironment() async {
         let environment = ProcessInfo.processInfo.environment
         let transport: ProgressSyncTransport
-        if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
+        if let raw = environment["OPENFUSE_SYNC_URL"], let url = URL(string: raw) {
+            transport = HTTPProgressTransport(url: url)
+        } else if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
             transport = LocalProgressTransport(fileURL: URL(fileURLWithPath: path))
         } else if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {
             transport = CloudKitProgressTransport(containerIdentifier: container)
         } else {
-            syncStatus = "未配置同步（OPENFUSE_SYNC_FILE / OPENFUSE_CLOUDKIT_CONTAINER）"
+            syncStatus = "未配置同步（OPENFUSE_SYNC_URL / OPENFUSE_SYNC_FILE / OPENFUSE_CLOUDKIT_CONTAINER）"
             return
         }
         do {
