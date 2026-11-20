@@ -37,4 +37,4 @@ M2c 验证了 Mac 连真实 OpenList。本轮在 iPhone 18 Pro 模拟器用同�
 
 ## 下一项
 
-M2e/M6d：百度网盘/云跳转；iPad/真机 OpenList；音频听测；HDR 测量；真实 Jellyfin/SMB/Trakt；CloudKit；visionOS 真机。
+真实 Jellyfin 12 已在 [M2e 验收](Docs/M2E-REAL-JELLYFIN.md) 完成。剩余 M2f/M6d：HTTPS/转码/多用户 Jellyfin、百度网盘、iPad/真机 OpenList、音频听测、HDR 测量、真实 SMB3/Trakt、CloudKit、visionOS 真机。

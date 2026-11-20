@@ -86,7 +86,8 @@
 - **M3s 远程损坏过滤：完成本地验证。** WebDAV/SMB 读 64B 容器签名，Broken.Movie 不再入库；SMB read 重连重试修复 NFO 后读失败。单测 36/36。记录：[M3s 验收](Docs/M3S-REMOTE-CORRUPT.md)。
 - **M2c 真实 OpenList：完成本地 Docker 验证。** 官方 OpenList 镜像 + Local 存储，`/dav` 扫描 1 作品/1080p，seek 11.0s、远程简中字幕、Range 206；截图 t=15s 双语字幕同步。百度网盘账号/云跳转未验证。记录：[M2c 验收](Docs/M2C-OPENLIST-REAL.md)。
 - **M2d iPhone OpenList：完成模拟器验证。** iPhone 18 Pro 连真实 OpenList Docker，播放到 15.958s，E-AC-3 5.1 + 简中 SRT，进度 12.061s 回写；修复移动端暂停不保存进度。百度网盘/真机未验证。记录：[M2d 验收](Docs/M2D-IOS-OPENLIST.md)。
-- **下一项：** M2e/M6d：百度网盘/云跳转；iPad/真机 OpenList；音频听测；HDR 测量；真实 Jellyfin/SMB/Trakt；CloudKit；visionOS 真机。
+- **M2e 真实 Jellyfin：完成 Docker 全链路。** Jellyfin 12.4 启动向导/用户/媒体库脚本化，OpenFuse 扫描 1080p、seek 11.106s、6ch/字幕；服务器位置 11.022s/Played=false。修复 12.x Authorization 登录头与 quit-after 未发 Stopped。百度/HTTPS/转码/多用户未验证。记录：[M2e 验收](Docs/M2E-REAL-JELLYFIN.md)。
+- **下一项：** M2f/M6d：HTTPS/转码/多用户 Jellyfin；百度网盘；iPad/真机 OpenList；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit；visionOS 真机。
 
 开发入口：
 
@@ -117,7 +118,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m2d-ios-openlist`（基于 M2c 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m2e-real-jellyfin`（基于 M2d 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

@@ -341,7 +341,7 @@ public actor JellyfinClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(
             "MediaBrowser Client=\"OpenFuse\", Device=\"Mac\", DeviceId=\"\(source.deviceID)\", Version=\"0.1.0\"",
-            forHTTPHeaderField: "X-Emby-Authorization"
+            forHTTPHeaderField: "Authorization"
         )
         request.httpBody = try JSONEncoder().encode(["Username": source.username, "Pw": password])
         do {

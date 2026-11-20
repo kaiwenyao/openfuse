@@ -1,0 +1,24 @@
+OpenFuse M2e real Jellyfin 12 evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: jellyfin/jellyfin 12.4.0 Docker, port 8096, local media.
+
+Setup (scripted):
+  Startup/Configuration -> GET Startup/User -> POST Startup/User test/test ->
+  Startup/Complete -> auth with Authorization: MediaBrowser ...
+  Create /Library/VirtualFolders Movies -> /media/Movies;
+  set MinResumeDurationSeconds=0 for 20s sample.
+
+Results:
+  OpenFuse scan: 1 movie, 1080p version, sourceKind jellyfin.
+  Playback seek10: position 11.106/20.041, audioChannels 6,
+  selectedSubtitle mpv:1, direct /Videos/.../stream?Static=true URL.
+  Server UserData after Stopped:
+    PlaybackPositionTicks=110220000, PlayedPercentage=54.82, Played=false.
+  Product fixes: Jellyfin authenticate uses Authorization header (12.x);
+  quit-after calls finishSession so Stopped is sent.
+  Scripts/run-real-jellyfin.sh PASS; 36/36 tests; five platforms/device/Mac build.
+
+Not verified:
+  HTTPS/reverse proxy/transcoding/multiuser, other Jellyfin versions, real Baidu,
+  audio listening, HDR measurement.

@@ -103,6 +103,13 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## 真实 Jellyfin 12 验证（M2e）
+
+- 官方 Jellyfin Docker；启动向导/用户/媒体库脚本化。
+- 12.x 登录头改 Authorization；quit-after 先 finishSession 发 Stopped。
+- 实测 1080p/seek11.106/6ch/字幕；服务器位置11.022s/Played=false。
+- HTTPS/转码/多用户/长片阈值未验证。
+
 ## 真实 OpenList 验证（M2c/M2d）
 
 - Docker OpenList `/dav` + Local 存储；Mac 与 iPhone 模拟器扫描/播放/seek/Range/远程字幕/进度通过。

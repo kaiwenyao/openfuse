@@ -445,6 +445,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + quitAfter) {
+                model.player?.finishSession()
                 NSApp.terminate(nil)
             }
         }
@@ -453,6 +454,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func scheduleQuitOnly(arguments: [String]) {
         if let quitAfter = value(after: "--quit-after", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + quitAfter) {
+                AppModel.shared.player?.finishSession()
                 NSApp.terminate(nil)
             }
         }

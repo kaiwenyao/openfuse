@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T09:07:36Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse jellyfin",
+      "primary" : "OpenFuse Jellyfin",
+      "sources" : [
+        "jellyfin"
+      ],
+      "workIDs" : [
+        "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71-main",
+          "remotePath" : "c9a8049da54e0f1e4ffbf6cce67cee71",
+          "season" : 0,
+          "sourceKind" : "jellyfin",
+          "title" : "OpenFuse Jellyfin",
+          "versions" : [
+            {
+              "contentKey" : "",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71-main-v0",
+              "mediaSourceID" : "c9a8049da54e0f1e4ffbf6cce67cee71",
+              "name" : "OpenFuse Jellyfin",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "jf:c135dd80bab7e30f:c9a8049da54e0f1e4ffbf6cce67cee71",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "jellyfin:c9a8049da54e0f1e4ffbf6cce67cee71|91c24fca7d3366ada5c395bbbe24b2ca",
+      "seasons" : [
+
+      ],
+      "sourceID" : "c135dd80bab7e30f",
+      "sourceKind" : "jellyfin",
+      "title" : "OpenFuse Jellyfin",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Jellyfin",
+          "versions" : [
+            "Jellyfin · OpenFuse Jellyfin"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse jellyfin",
+      "sources" : [
+        "jellyfin"
+      ],
+      "title" : "OpenFuse Jellyfin"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "Jellyfin Jellyfin：1 个作品",
+  "visible" : [
+    "OpenFuse Jellyfin"
+  ],
+  "works" : 1
+}
