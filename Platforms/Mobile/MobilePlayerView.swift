@@ -35,24 +35,34 @@ struct MobilePlayerView: View {
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        // Centre alignment: the video, subtitle and HUD all need the full
+        // screen. Only the close button pins to the top-right corner, which is
+        // what keeps the iPad (portrait and landscape) layout honest.
+        ZStack {
             Color.black.ignoresSafeArea()
             if let player {
                 VideoPlayer(player: player)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
             } else {
                 ProgressView().tint(.white)
             }
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .padding(10)
-                    .background(.black.opacity(0.6), in: Circle())
-                    .foregroundStyle(.white)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .padding(10)
+                            .background(.black.opacity(0.6), in: Circle())
+                            .foregroundStyle(.white)
+                    }
+                    .padding(16)
+                }
+                Spacer()
             }
-            .padding(16)
             if !subtitleText.isEmpty {
                 VStack {
                     Spacer()
@@ -217,6 +227,15 @@ struct MobilePlayerView: View {
             } else {
                 selectSidecar(number == 0 ? nil : number - 1)
             }
+        } else if !sidecarTracks.isEmpty {
+            // Match the Mac player: prefer a Chinese sidecar, 简体 first.
+            let preferred = sidecarTracks.firstIndex { track in
+                let language = (track.language ?? "").lowercased()
+                return language.hasPrefix("zh-hans") || language.hasPrefix("zh-cn") || language == "zh"
+            } ?? sidecarTracks.firstIndex { track in
+                (track.language ?? "").lowercased().hasPrefix("zh")
+            }
+            if let preferred { selectSidecar(preferred) }
         }
     }
 

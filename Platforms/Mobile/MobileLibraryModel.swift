@@ -159,11 +159,16 @@ final class MobileLibraryModel: ObservableObject {
         let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
         try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         for stream in media.mediaStreams ?? [] where stream.type == "Subtitle" && stream.isExternal == true {
-            guard let delivery = stream.deliveryURL,
-                  var components = URLComponents(
-                    url: URL(string: delivery, relativeTo: source.normalizedBaseURL)?.absoluteURL ?? source.normalizedBaseURL,
-                    resolvingAgainstBaseURL: false
-                  ) else { continue }
+            // Jellyfin 12 omits DeliveryUrl for sidecar subtitles; the stream
+            // endpoint still serves them (same fallback the Mac app uses), and
+            // it is what makes 简体/繁體 selectable in the mobile player.
+            let codec = stream.codec ?? "ass"
+            let delivery = stream.deliveryURL
+                ?? "/Videos/\(itemID)/\(media.id)/Subtitles/\(stream.index)/Stream.\(codec)"
+            guard var components = URLComponents(
+                url: URL(string: delivery, relativeTo: source.normalizedBaseURL)?.absoluteURL ?? source.normalizedBaseURL,
+                resolvingAgainstBaseURL: false
+            ) else { continue }
             var query = components.queryItems ?? []
             query.append(URLQueryItem(name: "api_key", value: token))
             components.queryItems = query
@@ -172,8 +177,7 @@ final class MobileLibraryModel: ObservableObject {
             request.setValue(token, forHTTPHeaderField: "X-Emby-Token")
             request.setValue("MediaBrowser Token=\"\(token)\"", forHTTPHeaderField: "Authorization")
             guard let (data, _) = try? await URLSession.shared.data(for: request), !data.isEmpty else { continue }
-            let ext = (stream.deliveryURL as NSString?)?.pathExtension.lowercased()
-            let suffix = (ext?.isEmpty == false ? ext! : "srt")
+            let suffix = codec.isEmpty ? "srt" : codec.lowercased()
             let target = cache.appendingPathComponent(
                 LibraryID.hash("\(itemID)|subtitle|\(stream.index)") + "." + suffix
             )
@@ -181,8 +185,13 @@ final class MobileLibraryModel: ObservableObject {
             sidecars.append(
                 SubtitleTrack(
                     id: "jellyfin-ext:\(itemID):\(stream.index)",
-                    displayName: stream.displayTitle ?? "服务器字幕",
-                    language: stream.language,
+                    displayName: SubtitleLabel.make(
+                        language: LanguageTag.normalizeISO(stream.language),
+                        format: SubtitleFormat(fileExtension: suffix),
+                        forced: stream.isForced ?? false,
+                        includeFormat: true
+                    ),
+                    language: LanguageTag.normalizeISO(stream.language),
                     format: SubtitleFormat(fileExtension: suffix),
                     source: .downloaded,
                     url: target
