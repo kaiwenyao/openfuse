@@ -24,6 +24,12 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp ".build/$CONFIG/OpenFuse" "$APP/Contents/MacOS/OpenFuse"
 cp Scripts/Info.plist "$APP/Contents/Info.plist"
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo 1)
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist" >/dev/null
+/usr/libexec/PlistBuddy -c "Add :OpenFuseCommit string $COMMIT" "$APP/Contents/Info.plist" >/dev/null 2>&1 \
+  || /usr/libexec/PlistBuddy -c "Set :OpenFuseCommit $COMMIT" "$APP/Contents/Info.plist" >/dev/null
+/usr/libexec/PlistBuddy -c "Add :OpenFuseBuildDate string $(date -u +%Y-%m-%dT%H:%M:%SZ)" "$APP/Contents/Info.plist" >/dev/null 2>&1 || true
 
 # A stable ad-hoc signature keeps macOS from invalidating the bundle after
 # each rebuild during local testing.
