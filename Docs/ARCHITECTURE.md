@@ -106,7 +106,7 @@ Docs/                   决策、素材、验收、证据
 ## Jellyfin MP4 直连（M4v）
 
 - container 按逗号拆分识别 mp4；http(s) 统一 AVURLAsset header。
-- 续播10.02s、出画；画面时间码比 HUD 快约4s，待修。
+- 手机样片修正为首帧0s/hvc1/faststart；续播画面11.0s/HUD11.0s对齐。
 
 ## HTTP 跨设备续播（M4u）
 

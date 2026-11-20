@@ -634,5 +634,5 @@
 
 | 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| MP4 直连续播 | iPhone 18 Pro 模拟器／iOS 27.2 | 真实 Jellyfin MP4 | Infuse 未安装 | resume10.02s；直连 URL；出画 | Evidence 104、`reports/m4v-*` | 部分通过 |
-| 时间戳 | 同上 | 同上 | 待采样 | 画面16.833s/HUD12.8s（+4s） | Evidence 104 | 未通过 |
+| MP4 直连续播 | iPhone 18 Pro 模拟器／iOS 27.2 | 真实 Jellyfin MP4 | Infuse 未安装 | resume10.02s；直连 URL；出画 | Evidence 104、`reports/m4v-*` | 通过 |
+| 时间戳 | 同上 | 修正样片（首帧0s/hvc1） | 待采样 | 画面11.0s/HUD11.0s | Evidence 105 | 通过 |

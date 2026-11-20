@@ -126,3 +126,17 @@ shasum -a 256 "$OUT/openfuse-fixture.mkv" "$OUT/audio.wav" "$OUT/video.mkv" \
   | tee "$OUT/SHA256SUMS.txt"
 
 echo "fixture ready: $OUT/openfuse-fixture.mkv"
+
+echo "==> mobile MP4 (20 s, hvc1 faststart, mov_text)"
+mkdir -p Fixtures/mobile
+ffmpeg -hide_banner -loglevel warning -y \
+  -i "$OUT/openfuse-fixture.mkv" -t 20 \
+  -map 0:v:0 -map 0:a:0 -map 0:s:0 \
+  -c:v copy -c:a copy -c:s mov_text -tag:v hvc1 -movflags +faststart \
+  -metadata:s:a:0 language=chi \
+  -metadata:s:a:0 title="E-AC-3 5.1 测试音轨" \
+  -disposition:a:0 default \
+  -metadata:s:s:0 language=chi \
+  -metadata:s:s:0 title="中文（简体）" \
+  -disposition:s:0 0 \
+  Fixtures/mobile/openfuse-mobile.mp4

@@ -16,6 +16,7 @@ Results:
   Scripts/run-cross-device-sync.sh PASS.
   36/36 tests; five platforms/device/Mac build succeed.
 
-Known issue:
-  Direct MP4 seek display: embedded timecode leads HUD by ~4s (HLS previously
-  led by ~7s). Resume state is correct; AVPlayer edit-list/PTS offset needs fix.
+Root cause and fix:
+  The old mobile fixture started at 4s and remuxed as hev1 (AVPlayer requires
+  hvc1). Regenerated from MKV t=0 with -tag:v hvc1 -movflags +faststart.
+  Fixed result: embedded timecode 11.0s, HUD 11.0s (aligned).
