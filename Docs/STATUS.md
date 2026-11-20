@@ -1,5 +1,7 @@
 # 里程碑状态
 
+当前只排期 [Mac 的 WebDAV 和 Jellyfin](MAC-FIRST.md)。下表是既有实现的历史记录。
+
 更新：2026-11-19。基线 Infuse 8.5.10。
 
 | 阶段 | 状态 | 说明 |
@@ -12,11 +14,11 @@
 | M5 其余来源与高级播放 | 部分完成：M5a–M5ao | Plex 全链路；Emby；Jellyfin+Emby 去重；SMB SMB3/2.4GB seek；HDR10/EDR 直通。未公证/仅 arm64；SMB >4GB/DFS/域、HDR 测量、AirPlay 实机、CloudKit 未做。 |
 | M6 Vision Pro | 部分完成：M6a–M6c | `.full` 沉浸实际出画；星点环境、3D 播放/关闭球、进度条；窗口切换；自动关闭写回进度；空间音频 intended experience。真机手势/空间音频/HDR 待验证。 |
 
-## 当前分支
+## 阶段快照分支（历史）
 
 `m6i-tvos`（基于 M6h 提交）。M6j/M5au 从该分支继续。
 
-## 下一批可执行工作
+## 上一轮的候选工作（历史）
 
 1. M6j/M5au：tvOS遥控/远程来源；物理5.1/HDMI；HDR测量；小时级/DFS；CloudKit/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
