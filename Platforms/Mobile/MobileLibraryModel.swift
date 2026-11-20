@@ -342,7 +342,11 @@ final class MobileLibraryModel: ObservableObject {
         do {
             let result = try await ProgressSyncService(
                 store: playbackStore,
-                transport: HTTPProgressTransport(url: syncURL, token: syncToken)
+                transport: HTTPProgressTransport(
+                    url: syncURL,
+                    token: syncToken,
+                    caPath: ProcessInfo.processInfo.environment["OPENFUSE_SYNC_CA"]
+                )
             ).sync()
             syncStatus = "同步：远端 \(result.remoteCount)，本地 \(result.localCount)，更新 \(result.changed)"
             recent = playbackStore.recentlyPlayed(limit: 12)

@@ -1,0 +1,16 @@
+OpenFuse M4y HTTPS sync evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: progress_sync_fixture --tls-cert/--tls-key, self-signed CA.
+
+Results:
+  curl --cacert ca.pem + Bearer -> HTTP 200.
+  curl without CA -> SSL certificate problem (rejected).
+  OpenFuse --sync-progress with OPENFUSE_SYNC_URL=https://...
+  OPENFUSE_SYNC_CA=ca.pem, OPENFUSE_SYNC_TOKEN=sync-test -> 同步完成,
+  POST accepted.
+  Scripts/run-sync-https.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  iPhone CA distribution, real public CA, TLS 1.3/cipher audit, concurrent sync.

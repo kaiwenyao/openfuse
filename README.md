@@ -99,7 +99,8 @@
 - **M4w 同步 token：完成鉴权。** HTTP transport 加 Bearer token，fixture 无 token 401；Mac→iPhone resume 11.0s。仍为 HTTP 明文，TLS/并发/CloudKit 真机未做。记录：[M4w 验收](Docs/M4W-SYNC-TOKEN.md)。
 - **M4x Jellyfin 用户切换：完成。** Settings 增加用户列表/切换面板，CLI 可无头切换；清旧库后 test2 仍 2 作品、播放进度 11.042s 写入。修复删除来源未清 library 导致重复。记录：[M4x 验收](Docs/M4X-JELLYFIN-USER-SWITCH.md)。
 - **M5an SMB >1GB：完成。** 1200s/1.4GB HEVC 文件在 Samba 上 seek 902s，RSS≈154MB、无整文件缓存。>2GB/并发/DFS/域未测。记录：[M5an 验收](Docs/M5AN-SAMBA-MULTIGB.md)。
-- **下一项：** M5ao/M6d：>2GB/并发/DFS；切换面板自动化；同步 HTTPS/CloudKit 真机；音频/HDR/visionOS。
+- **M4y 同步 HTTPS：完成 Mac 验证。** HTTP transport 支持 `OPENFUSE_SYNC_CA` 固定自签 CA；curl 无 CA 拒绝，Mac HTTPS 同步完成。iPhone CA 分发/公共 CA/并发未测。记录：[M4y 验收](Docs/M4Y-SYNC-HTTPS.md)。
+- **下一项：** M4z/M6d：iPhone CA 分发、并发同步、CloudKit 真机；SMB >2GB/DFS；切换面板自动化；音频/HDR/visionOS。
 
 开发入口：
 
@@ -130,7 +131,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5an-samba-multigb`（基于 M4x 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m4y-sync-https`（基于 M5an 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

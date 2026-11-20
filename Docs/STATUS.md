@@ -14,11 +14,11 @@
 
 ## 当前分支
 
-`m5an-samba-multigb`（基于 M4x 提交）。M5ao/M6d 从该分支继续。
+`m4y-sync-https`（基于 M5an 提交）。M4z/M6d 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M5ao/M6d：SMB >2GB/并发/DFS；切换面板自动化；同步 HTTPS/CloudKit 真机；音频/HDR/visionOS。
+1. M4z/M6d：iPhone CA 分发、并发同步、CloudKit 真机；SMB >2GB/DFS；切换面板自动化；音频/HDR/visionOS。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

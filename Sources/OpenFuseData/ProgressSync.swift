@@ -1,5 +1,6 @@
 import CloudKit
 import Foundation
+import Security
 
 public protocol ProgressSyncTransport: Sendable {
     func fetchAll() async throws -> [PlaybackRecord]
@@ -37,13 +38,20 @@ public final class HTTPProgressTransport: ProgressSyncTransport, @unchecked Send
     private let url: URL
     private let token: String?
     private let session: URLSession
+    private let trustDelegate: PinnedTrustDelegate?
 
-    public init(url: URL, token: String? = nil) {
+    public init(url: URL, token: String? = nil, caPath: String? = nil) {
         self.url = url
         self.token = token
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 15
-        self.session = URLSession(configuration: configuration)
+        let delegate = caPath.flatMap { PinnedTrustDelegate(caPath: $0) }
+        self.trustDelegate = delegate
+        self.session = URLSession(
+            configuration: configuration,
+            delegate: delegate,
+            delegateQueue: nil
+        )
     }
 
     private func request(_ method: String) -> URLRequest {
@@ -70,6 +78,49 @@ public final class HTTPProgressTransport: ProgressSyncTransport, @unchecked Send
         let (_, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
+        }
+    }
+}
+
+final class PinnedTrustDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
+    private let anchors: [SecCertificate]
+
+    init?(caPath: String) {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: caPath)) else { return nil }
+        let text = String(decoding: data, as: UTF8.self)
+        let derBlocks: [Data]
+        if text.contains("BEGIN CERTIFICATE") {
+            derBlocks = text.components(separatedBy: "-----BEGIN CERTIFICATE-----")
+                .dropFirst()
+                .compactMap { chunk in
+                    let body = chunk.components(separatedBy: "-----END CERTIFICATE-----").first ?? ""
+                    return Data(base64Encoded: body.components(separatedBy: .whitespacesAndNewlines).joined())
+                }
+        } else {
+            derBlocks = [data]
+        }
+        let certificates = derBlocks.compactMap { SecCertificateCreateWithData(nil, $0 as CFData) }
+        guard !certificates.isEmpty else { return nil }
+        self.anchors = certificates
+        super.init()
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        SecTrustSetAnchorCertificates(trust, anchors as CFArray)
+        SecTrustSetAnchorCertificatesOnly(trust, true)
+        if SecTrustEvaluateWithError(trust, nil) {
+            completionHandler(.useCredential, URLCredential(trust: trust))
+        } else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
         }
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LAN progress sync fixture: GET/POST /progress, merge by mediaPath."""
 from __future__ import annotations
-import argparse, datetime, json, os, threading
+import argparse, datetime, json, os, ssl, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 LOCK = threading.Lock()
@@ -71,11 +71,19 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--log", default=LOG)
     parser.add_argument("--token", default="")
+    parser.add_argument("--tls-cert", default="")
+    parser.add_argument("--tls-key", default="")
     args = parser.parse_args()
     LOG = os.path.abspath(args.log)
     TOKEN = args.token or None
     server = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"progress sync on http://{args.host}:{args.port}/progress", flush=True)
+    scheme = "http"
+    if args.tls_cert and args.tls_key:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(args.tls_cert, args.tls_key)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        scheme = "https"
+    print(f"progress sync on {scheme}://{args.host}:{args.port}/progress", flush=True)
     server.serve_forever()
 
 

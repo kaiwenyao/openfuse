@@ -658,3 +658,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1.4GB seek | Mac M2 Pro／macOS 27.2.1 | 1200s/1.4GB over Samba | Infuse 未安装 | seek 902.04/1200；RSS≈154MB | Evidence 108、`reports/m5an-*` | 通过 |
 | >2GB/并发/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |
+
+### M4y 同步 HTTPS 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| CA 固定 | Mac M2 Pro／macOS 27.2.1 | 自签 CA + HTTPS fixture | Infuse 未安装 | 有 CA 200；无 CA 拒绝；同步 POST 成功 | `reports/m4y-https-*` | 通过（Mac） |
+| iPhone CA/公共 CA/并发 | 同上 | 生产同步 | 待采样 | 未测 | — | 待验证 |
