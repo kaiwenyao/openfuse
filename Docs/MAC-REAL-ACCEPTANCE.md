@@ -101,13 +101,16 @@ WebDAV `…/电视剧/Sex Education (2019)/Season 01/Sex Education (2019) - S01E
 
 ## 5. 与 Infuse 8.5.10 的对照
 
-**本机没有安装 Infuse**：`/Applications`、`~/Applications`、`mdfind -name Infuse`、按 bundle id 的 Spotlight 查询均为空。因此以下对照项无法执行，列为待验证：
+**本机没有安装 Infuse**：`/Applications`、`~/Applications`、`mdfind -name Infuse`、按 bundle id 的 Spotlight 查询均为空；本机也没有 `mas`/App Store 已登录账号，无法代为安装。因此以下对照项无法执行，列为待验证。
 
-- 默认选轨（简/繁 ASS、音轨）与 OpenFuse 是否一致；
-- 拖动后的恢复耗时与字幕同步；
-- 退出后返回的位置（原目录/原季）；
-- 续播位置与字幕选择；
-- Pro 权益挡住的具体项目。
+装好 Infuse 8.5.10 后按这张清单逐条比对（每项记录 Infuse 的结果即可，OpenFuse 一侧的期望值已在上文给出）：
+
+1. 添加 `https://ol.7miaozhong.top/dav/`（admin）与 `https://jellyfin.kaiwen.dev`（root），确认 Infuse 的 WebDAV/Jellyfin 都能进 `local/kaiwenyao/baidu/电视剧` 与 `百度网盘电视剧`。
+2. 打开《进击的巨人》S03E13：记录默认选中的字幕（简体/繁体/内嵌英文）与音轨，和 OpenFuse 的“简体优先、AAC 2.0 日语”比较。
+3. 分别拖到 45 s / 5:03 / 20:00：记录从松手到出画的耗时、字幕是否仍在正确时间点、繁体是否出现方框。
+4. 退出播放器：记录是否回到 Season 03（而不是首页）。
+5. 从“继续观看”打开：记录位置与字幕选择是否保留；再退出应用重开一次，重复该检查。
+6. 记录 Pro 权益弹窗出现的具体动作（例如选择外挂字幕、音频直通、拖动预览），以及被挡住后 Infuse 的实际降级行为。
 
 OpenFuse 自身的上述行为已在第 2、3 节用真实媒体逐项记录。
 
