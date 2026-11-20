@@ -79,7 +79,8 @@
 - **M5ae SMB HDR：完成本地验证。** SMB 扫描读前 2MB，MatroskaProbe 得到 `1080p · SMB`/HDR10，contentKey 保持；SMB HDR 样片验收 PASS。真实 SMB3/大头部/性能未测。记录：[M5ae 验收](Docs/M5AE-SMB-HDR.md)。
 - **M5af SMB MP4：完成本地验证。** 纯 Swift MP4Probe 解析 moov/tkhd/colr，SMB MP4 得到 `1080p · SMB`；单测 32/32。尾部/碎片 MP4、HDR colr 未测。记录：[M5af 验收](Docs/M5AF-SMB-MP4.md)。
 - **M5ag 尾部/HDR MP4：完成本地验证。** 20s HDR10 MP4（moov 在尾、colr 9/16）经 SMB 头 4MB→尾 8MB 回退解析为 `1080p · SMB`/HDR10；修复 MP4Probe stsd/sample entry 头与 SMB 短读循环。单测 33/33。记录：[M5ag 验收](Docs/M5AG-TAIL-MP4.md)。
-- **下一项：** M5ah：moov 扫描/碎片 MP4；SMB 性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+- **M5ah 大 MP4 moov 扫描：完成本地验证。** 12.6MB tail-moov HDR MP4 经 SMB 头4MB→尾8MB（中段开始）扫描 moov，得到 `1080p · SMB`/HDR10；单测 34/34。碎片 MP4/moov>8MB 未测。记录：[M5ah 验收](Docs/M5AH-MOOV-SCAN.md)。
+- **下一项：** M5ai：碎片 MP4/大 moov；SMB 性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
 
 开发入口：
 
@@ -110,7 +111,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5ag-tail-mp4`（基于 M5af 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5ah-moov-scan`（基于 M5ag 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

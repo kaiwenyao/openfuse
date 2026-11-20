@@ -1,0 +1,20 @@
+OpenFuse M5ah moov scan for large tail MP4 evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: 40s 1080p HDR10 MP4, 12.6MB, moov at end, colr 9/16.
+
+Implementation:
+  MP4Probe first parses from offset 0; if no dimensions, scans for the ASCII
+  "moov" signature and parses from its preceding size field. This handles SMB
+  tail reads that start in the middle of mdat.
+
+Results:
+  Synthetic unit test (1MB prefix + moov) -> 1080p/HDR10.
+  SMB 12.6MB file: head 4MB misses moov; tail 8MB starts mid-mdat; moov scan
+  yields "1080p · SMB"/HDR10, contentKey present.
+  Scripts/run-smb-large-mp4.sh PASS; total tests 34/34.
+  Five platforms/device/Mac build succeed.
+
+Not verified:
+  Fragmented MP4/moof, moov larger than 8MB/tail beyond, real SMB3/performance;
+  audio listening.

@@ -103,6 +103,11 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## 大 MP4 moov 扫描（M5ah）
+
+- 头部解析失败后扫描 "moov" 签名，从 size 字段解析；解决尾读从 mdat 中间开始。
+- 12.6MB tail-moov HDR over SMB 通过；碎片 MP4/大 moov/性能未验证。
+
 ## SMB 尾部/HDR MP4（M5ag）
 
 - MP4Probe 跳 stsd 8B/sample entry 78B，解析 colr/nclx。

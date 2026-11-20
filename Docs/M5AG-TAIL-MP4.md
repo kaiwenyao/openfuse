@@ -34,4 +34,4 @@ M5af 只测了 moov 在前的 SDR MP4，且 SMB `pread` 可能短读。本轮生
 
 ## 下一项
 
-M5ah：moov 扫描/碎片 MP4；SMB 性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+大 MP4 尾部 moov 扫描已在 [M5ah 验收](Docs/M5AH-MOOV-SCAN.md) 完成。剩余 M5ai：碎片 MP4/大 moov、SMB 性能、听测/热插拔、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

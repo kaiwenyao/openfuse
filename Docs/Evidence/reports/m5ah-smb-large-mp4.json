@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T07:52:57Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse large",
+      "primary" : "OpenFuse Large",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-501e4930a9f96d78"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-501e4930a9f96d78-main",
+          "remotePath" : "\/Movie\/OpenFuse.Large.mp4",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Large",
+          "versions" : [
+            {
+              "contentKey" : "3338e583dc9d4ec9c6d45ca7629f8a86",
+              "dynamicRange" : "HDR10",
+              "fileURL" : "",
+              "id" : "smb-501e4930a9f96d78-main-v0",
+              "mediaSourceID" : "",
+              "name" : "1080p · SMB",
+              "resolution" : "1080p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-501e4930a9f96d78",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Large",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Large",
+          "versions" : [
+            "SMB · 1080p · SMB · HDR10"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse large",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Large"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB SMB：1 个作品",
+  "visible" : [
+    "OpenFuse Large"
+  ],
+  "works" : 1
+}

@@ -508,3 +508,11 @@
 | tail-moov HDR | MacBook Pro M2 Pro／macOS 27.2.1 | 20s HDR10 MP4 over SMB | Infuse 未安装 | `1080p · SMB`/HDR10 | `reports/m5ag-smb-hdr-mp4.json` | 通过 |
 | SMB Range 回归 | 同上 | 主 fixture | 待采样 | 并发 Range 哈希仍一致 | 脚本 PASS | 通过 |
 | 碎片/moov >8MB | 同上 | 特殊 MP4 | 待采样 | 未做 | — | 待验证 |
+
+### M5ah moov 扫描执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 大 tail MP4 | MacBook Pro M2 Pro／macOS 27.2.1 | 12.6MB HDR MP4 over SMB | Infuse 未安装 | 尾8MB中段扫描 moov → 1080p/HDR10 | `reports/m5ah-smb-large-mp4.json` | 通过 |
+| 单测 | 同上 | 1MB前缀+moov | 待采样 | 34/34 | 终端 | 通过 |
+| 碎片 MP4/大 moov | 同上 | 特殊文件 | 待采样 | 未做 | — | 待验证 |

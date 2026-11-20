@@ -19,6 +19,24 @@ public enum MP4Probe {
         let bytes = [UInt8](data)
         var info = Info()
         _ = walk(bytes, 0, bytes.count, info: &info, depth: 0)
+        if info.width == nil && info.height == nil {
+            // The tail of a large MP4 may start in the middle of mdat. Locate
+            // a complete moov atom signature and parse from its size field.
+            let needle: [UInt8] = [0x6D, 0x6F, 0x6F, 0x76] // "moov"
+            var index = 4
+            while index + 4 <= bytes.count {
+                if bytes[index] == needle[0], bytes[index + 1] == needle[1],
+                   bytes[index + 2] == needle[2], bytes[index + 3] == needle[3] {
+                    var candidate = Info()
+                    _ = walk(bytes, index - 4, bytes.count, info: &candidate, depth: 0)
+                    if candidate.width != nil || candidate.height != nil {
+                        info = candidate
+                        break
+                    }
+                }
+                index += 1
+            }
+        }
         guard info.width != nil || info.height != nil else { return nil }
         if info.transferCharacteristics == 16 {
             info.dynamicRange = info.colourPrimaries == 9 ? "HDR10" : "HDR"
