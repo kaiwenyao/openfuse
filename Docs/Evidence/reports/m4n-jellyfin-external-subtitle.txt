@@ -1,0 +1,25 @@
+OpenFuse M4n Jellyfin external subtitle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2
+
+Fixture:
+  Jellyfin mediaStreams for movie-1/movie-mobile include external SRT
+  DeliveryUrl /Videos/{item}/subtitles/zh-Hans.srt; handler serves 200 with token.
+
+App:
+  remotePlaybackItem downloads DeliveryUrl with X-Emby-Token/MediaBrowser auth
+  to SubtitleCache and adds SubtitleTrack(.downloaded).
+  Autoplay source=jellyfin, subtitle index=1, pause_at=4.5.
+  Screenshot: HUD 4.7/60.0s (movie-1 HLS), subtitle
+  "最初の字幕。タイミングは 2.5 秒。/ 第一句：画面 2.5 秒，字幕准时出现。"
+  Menu: 字幕：外挂简体中文.
+
+Builds/tests:
+  27/27 swift tests
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+  visionOS runtime download ~85.7% (7.65GB), not installed.
+
+Not verified:
+  Audio output/listening; visionOS runtime; true external subtitle language
+  switching; real Jellyfin; CloudKit/Trakt.

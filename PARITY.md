@@ -205,6 +205,15 @@
 | 本地字幕回归 | 同上 | 本地 SRT | 待采样 | M4j 简体/繁体/seek 截图通过 | Evidence 49–50 | 通过 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 
+### M4n Jellyfin 外挂字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 外挂字幕下载 | iPhone 18 Pro Simulator／iOS 27.2 | Jellyfin DeliveryUrl SRT | Infuse 未安装 | 带 token GET 200，缓存 | `reports/m4n-jellyfin-external-subtitle.txt` | 通过 |
+| 外挂字幕画面 | 同上 | movie-1 HLS 60s | 待采样 | HUD 4.7/60.0，第一句字幕显示，菜单「外挂简体中文」 | Evidence 54 | 通过 |
+| 音频 | 同上 | HLS 音频 | 待采样 | 未听测 | — | 待验证 |
+| 四平台构建 | Xcode 27.2 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
 ### M4m 远程 seek/Jellyfin 字幕执行记录（2026-11-20）
 
 | 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
@@ -213,6 +222,15 @@
 | 远程字幕同步 | 同上 | 同上 | 待采样 | 拖动后重算 cue，显示「第二句…」 | 同上 | 通过 |
 | Jellyfin 外挂字幕 | 同上 | DeliveryUrl SRT | 待采样 | 下载管线已写；autoplay 返回主页，画面未验证 | `reports/m4m-seek-jfsubs.txt` | 部分通过/待验证 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
+### M4n Jellyfin 外挂字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 外挂字幕下载 | iPhone 18 Pro Simulator／iOS 27.2 | Jellyfin DeliveryUrl SRT | Infuse 未安装 | 带 token GET 200，缓存 | `reports/m4n-jellyfin-external-subtitle.txt` | 通过 |
+| 外挂字幕画面 | 同上 | movie-1 HLS 60s | 待采样 | HUD 4.7/60.0，第一句字幕显示，菜单「外挂简体中文」 | Evidence 54 | 通过 |
+| 音频 | 同上 | HLS 音频 | 待采样 | 未听测 | — | 待验证 |
+| 四平台构建 | Xcode 27.2 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 
 ### M4l 远程字幕画面执行记录（2026-11-20）
 
@@ -223,6 +241,15 @@
 | 远程 seek 同步 | 同上 | 同上 | 待采样 | seek 不稳定，未证明；用 pause-at 验证 | — | 待修 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 
+### M4n Jellyfin 外挂字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 外挂字幕下载 | iPhone 18 Pro Simulator／iOS 27.2 | Jellyfin DeliveryUrl SRT | Infuse 未安装 | 带 token GET 200，缓存 | `reports/m4n-jellyfin-external-subtitle.txt` | 通过 |
+| 外挂字幕画面 | 同上 | movie-1 HLS 60s | 待采样 | HUD 4.7/60.0，第一句字幕显示，菜单「外挂简体中文」 | Evidence 54 | 通过 |
+| 音频 | 同上 | HLS 音频 | 待采样 | 未听测 | — | 待验证 |
+| 四平台构建 | Xcode 27.2 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
 ### M4m 远程 seek/Jellyfin 字幕执行记录（2026-11-20）
 
 | 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
@@ -231,6 +258,15 @@
 | 远程字幕同步 | 同上 | 同上 | 待采样 | 拖动后重算 cue，显示「第二句…」 | 同上 | 通过 |
 | Jellyfin 外挂字幕 | 同上 | DeliveryUrl SRT | 待采样 | 下载管线已写；autoplay 返回主页，画面未验证 | `reports/m4m-seek-jfsubs.txt` | 部分通过/待验证 |
 | 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
+### M4n Jellyfin 外挂字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 外挂字幕下载 | iPhone 18 Pro Simulator／iOS 27.2 | Jellyfin DeliveryUrl SRT | Infuse 未安装 | 带 token GET 200，缓存 | `reports/m4n-jellyfin-external-subtitle.txt` | 通过 |
+| 外挂字幕画面 | 同上 | movie-1 HLS 60s | 待采样 | HUD 4.7/60.0，第一句字幕显示，菜单「外挂简体中文」 | Evidence 54 | 通过 |
+| 音频 | 同上 | HLS 音频 | 待采样 | 未听测 | — | 待验证 |
+| 四平台构建 | Xcode 27.2 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 

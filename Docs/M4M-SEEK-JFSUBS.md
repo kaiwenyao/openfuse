@@ -30,4 +30,4 @@
 
 ## 下一项
 
-M4n：Jellyfin 外挂字幕播放验证/失败分支、音频听测、visionOS runtime、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。
+Jellyfin 外挂字幕画面已在 [M4n 验收](Docs/M4N-JELLYFIN-EXTERNAL-SUBS.md) 完成。剩余 M4o：visionOS runtime、音频听测、外挂简繁切换、自动播放时序、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。

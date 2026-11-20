@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## Jellyfin 外挂字幕（M4n）
+
+- 夹具 MediaStreams 增加 `IsExternal=true` + DeliveryUrl SRT。
+- `remotePlaybackItem` 对每个外挂流带 X-Emby-Token/MediaBrowser 下载到 SubtitleCache，生成 `SubtitleTrack(.downloaded)`；自绘菜单/解析复用。
+- 实测 movie-1 HLS HUD 4.7/60.0 显示第一句；自动播放时序仍脆弱。
+- 未做：繁体 DeliveryUrl、音频听测、真实 Jellyfin。
+
 ## 远程精确 seek（M4m）
 
 - `preciseSeek`：AVPlayer.seek(to:toleranceBefore:.zero,toleranceAfter:.zero, completionHandler) 包装为 async，返回 finished。
