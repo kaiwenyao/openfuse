@@ -91,7 +91,8 @@
 - **M5ak 真实 Samba SMB3：完成 Docker 验证。** Samba 4.13.7 共享扫描 1 作品/1080p，seek 11.0/60、字幕 mpv:1；修复根/子路径前导 `/` 兼容，impacket 回归通过。签名/加密/DFS/大文件未测。记录：[M5ak 验收](Docs/M5AK-SAMBA-SMB3.md)。
 - **M5al SMB3 签名/加密：完成本地验证。** 强制签名/加密 Samba 下自动回退到 `smb2_set_sign/seal`，会话 SMB3_11、AES-128-CCM 加密、AES-128-CMAC 签名，扫描/seek 11s；impacket 回归通过。DFS/域/大文件未测。记录：[M5al 验收](Docs/M5AL-SAMBA-ENCRYPTED.md)。
 - **M2g Jellyfin HLS 质量：完成 1080p/标签验证。** master.m3u8 加 8Mbps/1920×1080，服务器按 maxrate 8000000 转码；HUD 显示服务器音轨/字幕名称（转码 AAC/服务器）。4K/HTTPS/多用户/真机未测。记录：[M2g 验收](Docs/M2G-JELLYFIN-HLS-QUALITY.md)。
-- **下一项：** M2h/M6d：4K/HTTPS/多用户 Jellyfin；SMB DFS/域/大文件；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+- **M5am SMB 大文件：完成本地验证。** 120s/90MB HEVC/E-AC-3 在 Samba 上 seek 62s，回环 URL，RSS≈100MB、无整文件缓存。多GB/并发/DFS未测。记录：[M5am 验收](Docs/M5AM-SAMBA-LARGE.md)。
+- **下一项：** M5an/M6d：SMB 多GB/并发/DFS/域；4K/HTTPS/多用户 Jellyfin；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
 
 开发入口：
 
@@ -122,7 +123,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m2g-jellyfin-hls-quality`（基于 M5al 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5am-samba-large`（基于 M2g 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

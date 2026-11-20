@@ -37,4 +37,4 @@ M5ak 验证了 Samba 默认配置。本轮强制 `server signing = mandatory`、
 
 ## 下一项
 
-M5am/M6d：DFS/域/大文件；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+SMB 大文件流式已在 [M5am 验收](Docs/M5AM-SAMBA-LARGE.md) 完成。剩余 M5an/M6d：多GB/并发/DFS/域、音频听测、HDR 测量、真实 Trakt/CloudKit、visionOS 真机。

@@ -186,6 +186,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## SMB 大文件流式（M5am）
+
+- 120s/90MB Samba 文件 seek62、RSS≈100MB；仅海报/字幕缓存。
+- 多GB/并发/DFS/域未验证。
+
 ## SMB3 签名/加密回退（M5al）
 
 - connectedContext 普通失败后以 smb2_set_sign/set_seal 重试。

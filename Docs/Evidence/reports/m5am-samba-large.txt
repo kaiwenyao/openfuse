@@ -1,0 +1,17 @@
+OpenFuse M5am large SMB file evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7 Docker; file 120s 1920x1080 HEVC/E-AC-3, ~90MB.
+
+Flow:
+  Generate 120s sample; scan; play seek60; sample RSS at 8s; report at10; wait.
+
+Results:
+  Library: 1080p version.
+  Play: position 62.04/120, sourceKind smb, loopback URL, subtitle cache.
+  Process RSS ≈100MB; only SMBPosterCache/SMBSubtitleCache, no whole-file cache.
+  Scripts/run-samba-large.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  Multi-GB files, concurrent range/backpressure, real NAS; audio listening.

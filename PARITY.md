@@ -600,3 +600,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 1080p HLS | iPhone 18 Pro 模拟器／iOS 27.2 | Jellyfin 12 MKV | Infuse 未安装 | 1920×1080、maxrate8M、AAC6ch；12.0/60；服务器标签 | Evidence 101、`reports/m2g-*` | 通过 |
 | 4K/HTTPS/多用户 | 同上 | 真实服务器 | 待采样 | 未测 | — | 待验证 |
+
+### M5am SMB 大文件执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 大文件 seek | MacBook Pro M2 Pro／macOS 27.2.1 | 120s/90MB over Samba | Infuse 未安装 | seek 62.04/120；RSS≈100MB；无整文件缓存 | Evidence 102、`reports/m5am-samba-large-*` | 通过 |
+| 多GB/并发/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |
