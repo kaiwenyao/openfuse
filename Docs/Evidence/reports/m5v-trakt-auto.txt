@@ -1,0 +1,20 @@
+OpenFuse M5v Trakt auto-poll evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/trakt_fixture.py port 8123.
+
+Implementation:
+  AppModel begins device code then starts a Task polling oauth/device/token at
+  the returned interval until success/expiry; manual "Check" cancels auto poll.
+  SettingsView onDisappear cancels poll. Test CLI --trakt-auto-auth with
+  OPENFUSE_TRAKT_SKIP_KEYCHAIN=1.
+
+Results:
+  POST /oauth/device/code 200.
+  POST /oauth/device/token 200 about 1.07s later (interval 1).
+  App log: "Trakt 授权成功".
+  Scripts/run-trakt-auto-auth.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Trakt/account/refresh; unsigned Keychain save; auto-poll expiry; audio.

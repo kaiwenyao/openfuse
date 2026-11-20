@@ -67,5 +67,6 @@ struct SettingsView: View {
         .padding(22)
         .frame(width: 560)
         .background(Theme.background)
+        .onDisappear { model.cancelTraktPolling() }
     }
 }

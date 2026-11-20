@@ -64,6 +64,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 model.showSettings = true
             }
         }
+        if arguments.contains("--trakt-auto-auth") {
+            model.traktBaseURL = self.value(after: "--trakt-base", in: arguments) ?? "http://127.0.0.1:8123"
+            model.traktClientID = self.value(after: "--trakt-client", in: arguments) ?? "test-client"
+            model.traktClientSecret = self.value(after: "--trakt-secret", in: arguments) ?? "test-secret"
+            Task { @MainActor in
+                await model.beginTraktDeviceCode()
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                print(model.traktMessage ?? "trakt auth finished")
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if arguments.contains("--sync-trakt") {
             Task { @MainActor in
                 _ = await model.syncTraktHistory()

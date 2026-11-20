@@ -35,4 +35,4 @@ SMB 回环 HTTP 服务器此前串行处理连接；拖动/多请求会被旧响
 
 ## 下一项
 
-M5v：真实 SMB3/大文件压力；Trakt 自动轮询；音频听测；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+Trakt 自动轮询已在 [M5v 验收](Docs/M5V-TRAKT-AUTO-POLL.md) 完成。剩余 M5w：真实 Trakt/Keychain、音频听测、SMB3/大文件压力、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

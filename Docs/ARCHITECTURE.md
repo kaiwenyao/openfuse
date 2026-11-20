@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt 自动轮询（M5v）
+
+- 设备码后 Task 按 interval 轮询 token；pending 继续，成功保存并停止；失败/过期结束。
+- 手动检查取消自动任务；设置页关闭取消；测试可跳过 Keychain。
+- 夹具实测 1.07s 成功；真实账号/Keychain 未验证。
+
 ## Trakt OAuth 设置（M5t）
 
 - SettingsView：Client ID/Secret/API/状态 + 设备码/检查；TraktService.configure。

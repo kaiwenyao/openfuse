@@ -125,6 +125,7 @@ final class AppModel: ObservableObject {
     private var sessionJellyfinTokens: [String: String] = [:]
     private var sessionPlexTokens: [String: String] = [:]
     private var sessionSMBPasswords: [String: String] = [:]
+    private var traktPollTask: Task<Void, Never>?
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -211,16 +212,64 @@ final class AppModel: ObservableObject {
     func beginTraktDeviceCode() async {
         guard saveTraktSettings() else { return }
         traktBusy = true
-        defer { traktBusy = false }
         do {
             let code = try await TraktService.shared.requestDeviceCode()
             traktDeviceCode = code.deviceCode
             traktUserCode = code.userCode
             traktVerificationURL = code.verificationURL
             traktMessage = "在浏览器打开 \(code.verificationURL) 输入 \(code.userCode)"
+            startTraktPolling(deviceCode: code.deviceCode, interval: code.interval, expiresIn: code.expiresIn)
         } catch {
+            traktBusy = false
             traktMessage = "获取设备码失败：\(error.localizedDescription)"
         }
+    }
+
+    func cancelTraktPolling() {
+        traktPollTask?.cancel()
+        traktPollTask = nil
+        traktBusy = false
+    }
+
+    private func startTraktPolling(deviceCode: String, interval: Int, expiresIn: Int) {
+        traktPollTask?.cancel()
+        traktPollTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let interval = max(1, interval)
+            let attempts = max(1, expiresIn / interval)
+            for _ in 0..<attempts {
+                try? await Task.sleep(nanoseconds: UInt64(interval) * 1_000_000_000)
+                if Task.isCancelled { return }
+                do {
+                    let token = try await TraktService.shared.pollDeviceToken(code: deviceCode)
+                    self.saveTraktToken(token.accessToken)
+                    return
+                } catch TraktError.pending {
+                    continue
+                } catch {
+                    self.traktBusy = false
+                    self.traktMessage = "自动授权失败：\(error.localizedDescription)"
+                    return
+                }
+            }
+            self.traktBusy = false
+            self.traktMessage = "设备码已过期，请重新获取"
+        }
+    }
+
+    private func saveTraktToken(_ token: String) {
+        if ProcessInfo.processInfo.environment["OPENFUSE_TRAKT_SKIP_KEYCHAIN"] != "1" {
+            try? CredentialStore.save(
+                password: token,
+                account: "trakt-token",
+                service: "com.openfuse.trakt"
+            )
+        }
+        traktBusy = false
+        traktMessage = "Trakt 授权成功"
+        traktDeviceCode = nil
+        traktUserCode = nil
+        traktVerificationURL = nil
     }
 
     func pollTraktToken() async {
@@ -228,22 +277,16 @@ final class AppModel: ObservableObject {
             traktMessage = "请先获取设备码"
             return
         }
+        cancelTraktPolling()
         traktBusy = true
-        defer { traktBusy = false }
         do {
             let token = try await TraktService.shared.pollDeviceToken(code: code)
-            try? CredentialStore.save(
-                password: token.accessToken,
-                account: "trakt-token",
-                service: "com.openfuse.trakt"
-            )
-            traktMessage = "Trakt 授权成功"
-            traktDeviceCode = nil
-            traktUserCode = nil
-            traktVerificationURL = nil
+            saveTraktToken(token.accessToken)
         } catch TraktError.pending {
+            traktBusy = false
             traktMessage = "尚未授权，请完成网页授权后再检查"
         } catch {
+            traktBusy = false
             traktMessage = "授权失败：\(error.localizedDescription)"
         }
     }

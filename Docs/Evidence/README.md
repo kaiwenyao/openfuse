@@ -169,6 +169,8 @@
 | `86-trakt-settings.jpg` | Trakt OAuth 设置页 | 应用内窗口快照 |
 | `reports/m5t-trakt-settings.txt` | 设置页/构建摘要 | 运行记录 |
 | `reports/m5u-smb-concurrency.txt` | SMB 并发 Range/SHA 摘要 | 运行记录 |
+| `reports/m5v-trakt-auto.jsonl` | 自动轮询设备码/token 事件 | 夹具日志 |
+| `reports/m5v-trakt-auto.txt` | 自动轮询摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
