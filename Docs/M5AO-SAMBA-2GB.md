@@ -33,4 +33,4 @@ M5an 验证 1.4GB。本轮生成 1800s、720p、**2.4GB** HEVC/E-AC-3 样片，S
 
 ## 下一项
 
-M5ap/M6d：>4GB/并发/DFS；音频/HDR/visionOS；CloudKit 真机。
+SMB 并发/背压已在 [M5ap 验收](Docs/M5AP-SAMBA-CONCURRENCY.md) 完成。剩余 M5aq/M6d：>8并发/长稳/DFS、音频/HDR/visionOS、CloudKit 真机。

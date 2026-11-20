@@ -1,0 +1,17 @@
+OpenFuse M5ap SMB concurrency evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 2.4GB file.
+
+Bug: acceptLoop closed connections when 4-slot semaphore was full, so 8
+concurrent Range clients saw connection resets (3/8 succeeded).
+Fix: wait for a slot before accept; excess clients queue in kernel backlog.
+
+Results:
+  8/8 Range requests: HTTP 206, 1048576 bytes each.
+  Playback continued at 1202/1800.
+  Scripts/run-samba-concurrency.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  >8 clients, long soak, DFS/domain, real NAS; audio.

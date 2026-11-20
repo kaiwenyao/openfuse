@@ -83,10 +83,14 @@ final class SMBStreamServer: @unchecked Sendable {
 
     private func acceptLoop() {
         while isRunning {
+            // Wait for a slot before accepting so excess clients queue in the
+            // kernel backlog instead of being reset without an HTTP response.
+            connectionLimit.wait()
             var address = sockaddr()
             var length = socklen_t(MemoryLayout<sockaddr>.size)
             let fd = accept(listenFD, &address, &length)
             if fd < 0 {
+                connectionLimit.signal()
                 if !isRunning { break }
                 if errno == EINTR { continue }
                 usleep(20_000)
@@ -94,10 +98,6 @@ final class SMBStreamServer: @unchecked Sendable {
             }
             var noSigPipe: Int32 = 1
             setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
-            guard connectionLimit.wait(timeout: .now()) == .success else {
-                close(fd)
-                continue
-            }
             connectionQueue.async { [weak self] in
                 defer { self?.connectionLimit.signal() }
                 self?.handle(fd)
