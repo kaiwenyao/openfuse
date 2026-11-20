@@ -34,4 +34,4 @@ M5w 只解析本地 ffprobe HDR。本轮让 Jellyfin 解析 `VideoRange/VideoRan
 
 ## 下一项
 
-M5y：HDR 输出/tone mapping；真实远程 HDR；音频听测；真实 SMB3/Trakt；AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+HDR10 SDR 色调映射播放已在 [M5y 验收](Docs/M5Y-HDR-PLAYBACK.md) 完成。剩余 M5z：HDR 直通/真实显示器、音频听测、真实 SMB3/Trakt、AirPlay 实机、CloudKit、M3 多根/损坏过滤。

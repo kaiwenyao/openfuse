@@ -75,6 +75,11 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("audio-file-auto", "no")
         setOption("sub-ass", "yes")
         setOption("sub-scale-with-window", "yes")
+        // SDR tone mapping for HDR10/HLG sources. HDR passthrough still
+        // depends on the output/compositor and is not verified.
+        setOption("tone-mapping", ProcessInfo.processInfo.environment["OPENFUSE_TONE_MAPPING"] ?? "spline")
+        setOption("hdr-compute-peak", "yes")
+        setOption("target-peak", "auto")
         if !httpHeaders.isEmpty {
             setOption("http-header-fields", httpHeaders.joined(separator: ","))
         }

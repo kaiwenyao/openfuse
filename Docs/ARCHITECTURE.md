@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## HDR10 播放/色调映射（M5y）
+
+- MPVEngine tone-mapping=spline、hdr-compute-peak=yes、target-peak=auto。
+- 播放报告暴露 primaries/gamma/sig-peak/tone-mapping；实测 bt.2020/pq/sig-peak4.93。
+- 仅验证 SDR tone mapping；HDR 直通/真实显示器未验证。
+
 ## 远程 HDR 元数据（M5x）
 
 - Jellyfin VideoRange/VideoRangeType → HDR10/HDR10+/HLG/DV/HDR。

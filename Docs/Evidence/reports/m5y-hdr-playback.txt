@@ -1,0 +1,24 @@
+OpenFuse M5y HDR playback/tone mapping evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Fixtures/generated/openfuse-hdr.mkv (1080p10bit, bt2020/smpte2084).
+
+Implementation:
+  MPVEngine sets tone-mapping=spline (env OPENFUSE_TONE_MAPPING override),
+  hdr-compute-peak=yes, target-peak=auto. Player report exposes tone/color
+  properties.
+
+Results:
+  videoPrimaries bt.2020
+  videoGamma pq
+  videoSigPeak 4.926108
+  toneMapping spline
+  hdrComputePeak yes
+  position 1.542s
+  Screenshot shows tone-mapped color bars (not black/clipped).
+  Scripts/run-hdr-playback.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  HDR display/passthrough, target-colorspace-hint behavior, real HDR monitor,
+  HDR10+/DV tone mapping accuracy; audio.
