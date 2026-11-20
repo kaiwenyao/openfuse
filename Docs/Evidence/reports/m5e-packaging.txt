@@ -1,0 +1,32 @@
+OpenFuse M5e self-contained macOS packaging
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+
+Commands:
+  Scripts/package-app.sh
+  # rebuilds app, copies 50 dylibs into Contents/Frameworks, rewrites
+  # @rpath, ad-hoc signs, verifies, zips.
+
+Artifacts:
+  build/OpenFuse.app                67 MB
+  build/OpenFuse-macOS-self-contained.zip 27 MB
+  Frameworks: 50 dylibs incl. libmpv.2, libavcodec.63, libass.9,
+  libplacebo.387, libbrotli*.
+
+Runtime verification (lsof of live app):
+  .../Contents/Frameworks/libmpv.2.dylib
+  .../Contents/Frameworks/libavcodec.63.1.102.dylib
+  .../Contents/Frameworks/libass.9.dylib
+  /opt/homebrew dependencies loaded: 0
+
+Playback with packaged app:
+  fixture MKV, duration 60, position 4.583, video hevc/Main 10,
+  audio eac3/6ch, current AO coreaudio.
+  UI capture and playback capture succeed.
+
+codesign --verify --deep --strict: pass.
+swift test: 28/28.
+
+Not verified:
+  Notarization/Gatekeeper on another Mac; arm64 only; real Intel; audio
+  listening; Homebrew-free build machine; Emby/SMB/HDR/AirPlay; CloudKit/Trakt.

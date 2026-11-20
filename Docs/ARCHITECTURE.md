@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## macOS 自包含打包（M5e）
+
+- Tools/bundle_runtime.py 递归复制 libmpv 与非系统 dylib（50 个）到 Contents/Frameworks，解析绝对与 @rpath 依赖，改 install name，加 @executable_path/../Frameworks。
+- Scripts/bundle-runtime.sh 重建→打包→逐库签名→深验→检查无 /opt/homebrew；package-app.sh 产出 zip。
+- lsof 确认 libmpv/libavcodec/libass 从 app 加载，Homebrew 0；打包 app 实际播放 HEVC/EAC3 MKV。
+- 未公证/仅 arm64；音频未听测。
+
 ## Plex 外挂字幕（M5d）
 
 - PlexPart.Stream 解码；metadata(ratingKey) + subtitleData(streamKey) 带 token。

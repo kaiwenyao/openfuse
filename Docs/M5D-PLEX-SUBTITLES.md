@@ -38,4 +38,4 @@ Plex metadata 的 `Media[].Part[].Stream[]` 中字幕流（streamType=3）现在
 
 ## 下一项
 
-M5e：Plex 直连浏览/音轨/版本；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 尾项。
+macOS 自包含打包已在 [M5e 验收](Docs/M5E-PACKAGING.md) 完成。剩余 M5f：公证/Universal、Plex 直连/音轨/版本、Emby/SMB/HDR/AirPlay、CloudKit/Trakt、音频、M3 尾项。

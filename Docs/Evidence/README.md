@@ -103,6 +103,8 @@
 | `61-plex-subtitle.jpg` | Plex 外挂中文字幕 9.958s | 播放器抓帧 |
 | `reports/m5d-plex-*.json` | Plex 字幕库/播放报告 | 应用报告 |
 | `reports/m5d-plex-subtitle.txt` | Plex 字幕下载/选择摘要 | 运行记录 |
+| `62-self-contained-playback.jpg` | 自包含 app 播放 MKV | 播放器抓帧 |
+| `reports/m5e-packaging.txt` | 依赖/体积/播放摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |
