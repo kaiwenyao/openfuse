@@ -92,7 +92,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let hasRemoteOrLocalLaunch = arguments.contains("--jellyfin-url")
-            || arguments.contains("--webdav-url") || arguments.contains("--open")
+            || arguments.contains("--webdav-url") || arguments.contains("--plex-url")
+            || arguments.contains("--open")
         if !hasRemoteOrLocalLaunch,
            arguments.contains("--library-work") || arguments.contains("--library-report")
             || arguments.contains("--library-search") {
@@ -164,6 +165,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     model.resume(record)
                 }
                 self.scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            }
+            return
+        }
+        if let plexURL = value(after: "--plex-url", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                let token = self.value(after: "--plex-token", in: arguments)
+                    ?? ProcessInfo.processInfo.environment["OPENFUSE_PLEX_TOKEN"]
+                    ?? ""
+                let name = self.value(after: "--plex-name", in: arguments) ?? "Plex"
+                Task { @MainActor in
+                    let ok = await model.addPlexSource(name: name, urlText: plexURL, token: token)
+                    if ok {
+                        self.finishLibraryLaunch(model: model, arguments: arguments)
+                    } else {
+                        self.scheduleQuitOnly(arguments: arguments)
+                    }
+                }
             }
             return
         }
@@ -391,6 +409,7 @@ struct HomeView: View {
     @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
     @State private var isDropTarget = false
     @State private var showAddJellyfin = false
+    @State private var showAddPlex = false
 
     private let columns = [GridItem(.adaptive(minimum: 250, maximum: 340), spacing: 22)]
 
@@ -419,6 +438,9 @@ struct HomeView: View {
                         if !model.jellyfinSources.isEmpty {
                             jellyfinSourcesSection
                         }
+                        if !model.plexSources.isEmpty {
+                            plexSourcesSection
+                        }
                         engineCard
                     }
                     .padding(.horizontal, 36)
@@ -445,6 +467,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAddJellyfin) {
             AddJellyfinSheet()
+                .environmentObject(model)
+        }
+        .sheet(isPresented: $showAddPlex) {
+            AddPlexSheet()
                 .environmentObject(model)
         }
     }
@@ -479,6 +505,13 @@ struct HomeView: View {
                     ForEach(model.jellyfinSources) { source in
                         Button("扫描 Jellyfin：\(source.name)") {
                             model.startJellyfinScan(source)
+                        }
+                    }
+                }
+                if !model.plexSources.isEmpty {
+                    ForEach(model.plexSources) { source in
+                        Button("扫描 Plex：\(source.name)") {
+                            Task { await model.scanPlexSource(source) }
                         }
                     }
                 }
@@ -517,6 +550,17 @@ struct HomeView: View {
                 showAddJellyfin = true
             } label: {
                 Label("Jellyfin", systemImage: "play.tv")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Theme.elevated, in: Capsule())
+                    .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button {
+                showAddPlex = true
+            } label: {
+                Label("Plex", systemImage: "play.rectangle.on.rectangle")
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -802,6 +846,58 @@ struct HomeView: View {
         }
     }
 
+    private var plexSourcesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Plex")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Spacer()
+                Button {
+                    showAddPlex = true
+                } label: {
+                    Label("添加", systemImage: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.accent)
+            }
+            ForEach(model.plexSources) { source in
+                HStack(spacing: 14) {
+                    Image(systemName: "play.rectangle.on.rectangle.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Theme.warm)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(source.name)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(source.baseURL.absoluteString)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(Theme.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Button("扫描") {
+                        Task { await model.scanPlexSource(source) }
+                    }
+                    .buttonStyle(.bordered)
+                    Button {
+                        model.removePlexSource(source)
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(Theme.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(14)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
+            }
+        }
+    }
+
     private var networkSources: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -1004,5 +1100,49 @@ enum Timecode {
             return String(format: "%d:%02d:%02d", hours, minutes, secs)
         }
         return String(format: "%02d:%02d", minutes, secs)
+    }
+}
+
+
+struct AddPlexSheet: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name = "Plex"
+    @State private var url = "http://127.0.0.1:32400"
+    @State private var token = ""
+    @State private var saving = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("添加 Plex")
+                .font(.system(size: 18, weight: .semibold))
+            Text("输入服务器地址与 X-Plex-Token；token 只保存在 Keychain。")
+                .font(.system(size: 11.5))
+                .foregroundStyle(Theme.secondary)
+            Form {
+                TextField("名称", text: $name)
+                TextField("服务器地址", text: $url)
+                SecureField("X-Plex-Token", text: $token)
+            }
+            .formStyle(.grouped)
+            HStack {
+                Button("取消") { dismiss() }
+                Spacer()
+                Button(saving ? "添加中…" : "添加并扫描") {
+                    saving = true
+                    Task {
+                        let ok = await model.addPlexSource(name: name, urlText: url, token: token)
+                        saving = false
+                        if ok { dismiss() }
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(saving || token.isEmpty || url.isEmpty)
+            }
+        }
+        .padding(22)
+        .frame(width: 520)
+        .background(Theme.background)
     }
 }

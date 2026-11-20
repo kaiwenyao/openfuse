@@ -119,6 +119,7 @@ public enum LibraryAggregation {
         switch kind {
         case "jellyfin": return "Jellyfin"
         case "webdav": return "WebDAV"
+        case "plex": return "Plex"
         default: return "本地"
         }
     }

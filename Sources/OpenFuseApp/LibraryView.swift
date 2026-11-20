@@ -36,6 +36,21 @@ struct LibraryPoster: View {
                     } else {
                         placeholder
                     }
+                case "plex":
+                    if let url = model.plexPosterURL(sourceID: work.sourceID, itemID: parsed.value) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .clipped()
+                            default:
+                                placeholder
+                            }
+                        }
+                    } else {
+                        placeholder
+                    }
                 case "file":
                     if let image = NSImage(contentsOfFile: parsed.value) {
                         Image(nsImage: image).resizable().scaledToFill()

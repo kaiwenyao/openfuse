@@ -59,6 +59,7 @@ public struct LibraryGroup: Identifiable, Sendable {
             switch kind {
             case "jellyfin": return "Jellyfin"
             case "webdav": return "WebDAV"
+            case "plex": return "Plex"
             default: return "本地"
             }
         }.joined(separator: " · ")
@@ -194,6 +195,7 @@ public enum PosterRef {
         "jellyfin:\(itemID)|\(tag ?? "")"
     }
 
+    public static func plex(itemID: String) -> String { "plex:\(itemID)" }
     public static func file(_ path: String) -> String { "file:\(path)" }
     public static func remote(_ url: String) -> String { "remote:\(url)" }
 

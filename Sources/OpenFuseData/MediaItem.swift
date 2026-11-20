@@ -7,11 +7,12 @@ public struct MediaItem: Sendable {
         case local(URL)
         case webdav(sourceID: String, path: String, url: URL)
         case jellyfin(sourceID: String, itemID: String, mediaSourceID: String)
+        case plex(sourceID: String, partKey: String, url: URL)
 
         public var isRemote: Bool {
             switch self {
             case .local: return false
-            case .webdav, .jellyfin: return true
+            case .webdav, .jellyfin, .plex: return true
             }
         }
     }
@@ -32,6 +33,7 @@ public struct MediaItem: Sendable {
         case .local: return "local"
         case .webdav: return "webdav"
         case .jellyfin: return "jellyfin"
+        case .plex: return "plex"
         }
     }
 
@@ -39,6 +41,7 @@ public struct MediaItem: Sendable {
         switch origin {
         case .webdav(let sourceID, _, _): return sourceID
         case .jellyfin(let sourceID, _, _): return sourceID
+        case .plex(let sourceID, _, _): return sourceID
         case .local: return nil
         }
     }
@@ -48,6 +51,7 @@ public struct MediaItem: Sendable {
         if case .jellyfin(_, let itemID, let mediaSourceID) = origin {
             return "\(itemID)|\(mediaSourceID)"
         }
+        if case .plex(_, let partKey, _) = origin { return partKey }
         return nil
     }
 
@@ -79,6 +83,25 @@ public struct MediaItem: Sendable {
             fingerprint: fingerprint,
             subtitles: SubtitleCatalog.discover(for: url),
             origin: .local(url)
+        )
+    }
+
+    public static func plex(
+        source: PlexSource,
+        title: String,
+        partKey: String,
+        size: Int64,
+        url: URL
+    ) -> MediaItem {
+        let key = "plex://\(source.id)/\(partKey)"
+        return MediaItem(
+            title: title,
+            playbackURL: url,
+            fingerprint: MediaFingerprint(path: key, fileSize: size, modifiedAt: nil),
+            subtitles: [],
+            httpHeaders: [],
+            origin: .plex(sourceID: source.id, partKey: partKey, url: url),
+            sourceName: source.name
         )
     }
 

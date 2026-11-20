@@ -40,4 +40,4 @@
 
 ## 下一项
 
-M4q/M5：CloudKit entitlements/真实账号验证、自动同步与离线队列、Trakt、移动端同步 UI；SMB/Plex/Emby、HDR/AirPlay、自包含打包；音频听测；M3 尾项。
+Plex 来源已在 [M5 Plex 验收](M5-PLEX.md) 完成（本地夹具）。剩余 M5b：Plex 直连/进度/字幕、Emby、SMB、HDR/AirPlay、自包含打包、CloudKit 真实账号/Trakt、音频听测、M3 尾项。

@@ -1,0 +1,17 @@
+OpenFuse M5 Plex acceptance evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, token test fixture, port 32400
+
+Results:
+  Plex source add + scan: 2 works / 3 episodes (movie + show with 2 episodes).
+  Works: OpenFuse Plex Movie (2026), Plex 示例剧 (1 season/2 episodes).
+  Posters stored as token-free plex:<ratingKey> refs; UI resolves with token.
+  Library playback: sourceKind=plex, position 9.917s, title "Plex 第 1 集".
+  swift test: 28/28.
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED.
+  Mac build: success.
+
+Not verified:
+  Real Plex server/auth/token lifetime; direct browse; transcoding; HDR;
+  Emby/SMB; CloudKit real; audio.

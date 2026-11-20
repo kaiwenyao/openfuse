@@ -91,6 +91,14 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex 来源（M5a）
+
+- `PlexClient` JSON API：sections、section/all、metadata children、parts/thumb；`X-Plex-Token`。
+- `PlexSourceStore` + Keychain；`PlexLibraryScanner` 生成电影/剧/季/集；海报 `plex:<ratingKey>`，UI 用 token 解析，不落库。
+- `MediaItem.Origin.plex` + `plex://` 续播键；库播放走 libmpv。
+- Mac UI 添加/扫描/删除 Plex 来源；夹具与验收脚本。
+- 未做直连浏览、Plex 进度回写、字幕、真实服务器、Emby/SMB/HDR。
+
 ## 跨设备进度同步（M4p）
 
 - `PlaybackStore.merge(records:)`：新 `lastPlayedAt` 优先；JSON 日期改为带毫秒 ISO8601。

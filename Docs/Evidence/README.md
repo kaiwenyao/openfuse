@@ -91,6 +91,10 @@
 | `57-progress-sync-b.jpg` | B 设备续播到 21.9s | 应用内渲染抓帧 |
 | `reports/m4p-*.json` | 两设备播放/同步记录 | 应用报告 |
 | `reports/m4p-progress-sync.txt` | 跨设备续播摘要 | 运行记录 |
+| `58-plex-library.jpg` | Plex 扫描后的媒体库 | 应用内窗口快照 |
+| `59-plex-playback.jpg` | Plex 条目播放 9.9s | 播放器抓帧 |
+| `reports/m5-plex-*.json` | Plex 库/播放报告 | 应用报告 |
+| `reports/m5-plex.txt` | Plex 验收/构建摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

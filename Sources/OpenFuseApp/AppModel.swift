@@ -84,6 +84,7 @@ final class AppModel: ObservableObject {
     @Published var showAddSource = false
     @Published var showAddJellyfin = false
     @Published var jellyfinSources: [JellyfinSource] = []
+    @Published var plexSources: [PlexSource] = []
     @Published var libraryWorks: [LibraryWork] = []
     @Published var libraryGroups: [LibraryGroup] = []
     @Published var libraryWorkCount = 0
@@ -104,10 +105,12 @@ final class AppModel: ObservableObject {
     let store: PlaybackStore
     let sourceStore: SourceStore
     let jellyfinStore: JellyfinSourceStore
+    let plexStore: PlexSourceStore
     let libraryStore: LibraryStore
     let libraryOverrideStore: LibraryOverrideStore
     @Published var libraryOverrides: [String: LibraryOverride] = [:]
     private var sessionJellyfinTokens: [String: String] = [:]
+    private var sessionPlexTokens: [String: String] = [:]
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -116,6 +119,7 @@ final class AppModel: ObservableObject {
             self.store = try PlaybackStore(directory: directory)
             self.sourceStore = try SourceStore(directory: directory)
             self.jellyfinStore = try JellyfinSourceStore(directory: directory)
+            self.plexStore = try PlexSourceStore(directory: directory)
             self.libraryStore = try LibraryStore(directory: directory)
             self.libraryOverrideStore = try LibraryOverrideStore(directory: directory)
         } catch {
@@ -123,6 +127,7 @@ final class AppModel: ObservableObject {
         }
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
+        self.plexSources = plexStore.sources
         self.libraryOverrides = libraryOverrideStore.all
         refreshRecent()
         reloadLibrary()
@@ -365,6 +370,77 @@ final class AppModel: ObservableObject {
         }
         if let cached = sessionJellyfinTokens[source.id] { return cached }
         return CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
+    }
+
+    func plexToken(for source: PlexSource) -> String? {
+        if let token = sessionPlexTokens[source.id] { return token }
+        if let token = ProcessInfo.processInfo.environment["OPENFUSE_PLEX_TOKEN"], !token.isEmpty {
+            return token
+        }
+        return CredentialStore.load(account: source.id, service: "com.openfuse.plex")
+    }
+
+    func plexPosterURL(sourceID: String, itemID: String) -> URL? {
+        guard let source = plexSources.first(where: { $0.id == sourceID }),
+              let token = plexToken(for: source) else { return nil }
+        return PlexClient(source: source, token: token).imageURL(
+            thumb: "/library/metadata/\(itemID)/thumb/1"
+        )
+    }
+
+    @discardableResult
+    func addPlexSource(name: String, urlText: String, token: String) async -> Bool {
+        guard let url = URL(string: urlText) else {
+            statusMessage = "Plex 地址无效"
+            return false
+        }
+        let source = PlexSource(name: name.isEmpty ? url.host ?? "Plex" : name, baseURL: url)
+        let client = PlexClient(source: source, token: token)
+        do {
+            _ = try await client.sections()
+            try plexStore.upsert(source)
+            sessionPlexTokens[source.id] = token
+            try? CredentialStore.save(password: token, account: source.id, service: "com.openfuse.plex")
+            plexSources = plexStore.sources
+            statusMessage = "已添加 \(source.name)"
+            await scanPlexSource(source)
+            return true
+        } catch {
+            statusMessage = "Plex 添加失败：\(error.localizedDescription)"
+            return false
+        }
+    }
+
+    func scanPlexSource(_ source: PlexSource) async {
+        guard let token = plexToken(for: source) else {
+            statusMessage = "缺少 \(source.name) 的 Plex token"
+            return
+        }
+        isScanningLibrary = true
+        scanProgress = 0
+        libraryStatus = "正在扫描 Plex：\(source.name)…"
+        do {
+            let scanned = try await PlexLibraryScanner.scan(
+                source: source,
+                client: PlexClient(source: source, token: token)
+            )
+            try libraryStore.replace(source: scanned)
+            reloadLibrary()
+            let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
+            libraryStatus = "Plex \(source.name)：\(counts.works) 个作品"
+        } catch {
+            libraryStatus = "Plex 扫描失败：\(error.localizedDescription)"
+        }
+        isScanningLibrary = false
+    }
+
+    func removePlexSource(_ source: PlexSource) {
+        try? plexStore.remove(id: source.id)
+        sessionPlexTokens.removeValue(forKey: source.id)
+        CredentialStore.delete(account: source.id, service: "com.openfuse.plex")
+        try? libraryStore.removeSource(kind: "plex", sourceID: source.id)
+        plexSources = plexStore.sources
+        reloadLibrary()
     }
 
     func addJellyfinSource(name: String, urlText: String, username: String, password: String) async -> JellyfinSource? {
@@ -1118,6 +1194,24 @@ final class AppModel: ObservableObject {
                     preferredMediaSourceID: version?.mediaSourceID
                 )
             }
+        case "plex":
+            guard let source = plexSources.first(where: { $0.id == work.sourceID }),
+                  let token = plexToken(for: source),
+                  let partKey = version?.remotePath ?? episode.remotePath,
+                  let url = PlexClient(source: source, token: token).streamURL(partKey: partKey)
+            else {
+                libraryStatus = "Plex 来源或 token 已失效"
+                return
+            }
+            let size = Int64(0)
+            let media = MediaItem.plex(
+                source: source,
+                title: episode.title,
+                partKey: partKey,
+                size: size,
+                url: url
+            )
+            startPlayer(with: media)
         case "webdav":
             guard let source = sources.first(where: { $0.id == work.sourceID }),
                   let path = episode.remotePath ?? version?.remotePath
