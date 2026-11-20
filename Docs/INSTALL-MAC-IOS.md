@@ -81,16 +81,18 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | 本地 MP4/MOV、WebDAV 认证 MP4 | 已有（AVPlayer） |
 | Jellyfin 剧→季→集、HLS 转码播放、音字幕选择、进度回写、续播 | 已有，模拟器可跑；真机待验 |
 | Jellyfin 直放/转码选择 | 已有界面与逻辑，待真机验证 |
+| Jellyfin 外挂 ASS（简/繁） | 已实现：Jellyfin 12 不返回 `DeliveryUrl` 时回退 `/Videos/{id}/{source}/Subtitles/{index}/Stream.ass`，下载到 `SubtitleCache` 后按纯文本渲染，默认简体、可切繁體 |
+| Jellyfin 进度回写与跨设备续播 | 已实现：`Sessions/Playing`、`/Progress`、`/Stopped`；无本地记录时用服务器位置起播 |
 | WebDAV 上的 MKV 直放（HEVC Main 10 / E-AC-3 5.1 / 内外挂 ASS） | **未实现**：AVPlayer 不支持 MKV，需要引入 iOS 端的 mpv/VLC 类引擎（当前工程没有） |
-| ASS 双语排版 | 外挂 ASS 解析保留 `\N` 换行并去样式标签，按纯文本显示；斜体/定位/字体回退未做 |
+| ASS 样式排版 | 外挂 ASS 解析保留 `\N` 换行并去样式标签，按纯文本显示；斜体/定位/字体回退未做 |
 
 ## 四、验收表（Mac / iPhone / iPad × WebDAV / Jellyfin）
 
 | | WebDAV | Jellyfin |
 | --- | --- | --- |
 | **Mac** | ✅ 已实测：S03E13 HEVC Main 10、内外挂 ASS、简繁切换、前中后拖动、退出回原季、续播；S01E01 E-AC-3 5.1 下混立体声 | ✅ 已实测：剧→季→集、直放、字幕切换、进度回写并恢复、退出回季、续播、自动下一集 |
-| **iPhone** | ⏳ 待真机：MP4 可播；MKV 直放缺引擎 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放，进度条 324.4/1436.6 s，音轨 `Japanese - AAC - Stereo - Default（转码 AAC）`；默认字幕是服务器标记的 English，简体/繁体需在播放器字幕菜单里切换（待真机点按验证）；进度回写待真机 */
-| **iPad** | ⏳ 待真机：同上；横竖屏/分屏待验 | ⏳ 待真机：路径同上；横竖屏/分屏待验 |
+| **iPhone** | ⏳ 待真机：MP4 可播；MKV 直放缺引擎 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放；外挂 ASS 走 Stream 回退下载后默认简体，`AUTOPLAY_SUBTITLE_INDEX=2` 切到繁體，画面分别显示「什么 我到底在怕什么 / 什麼 我到底在怕什麼」；服务器进度回写 301 s，清空本地记录后用服务器 300 s 起播，实测从 302.2 s 续播并保持简体 |
+| **iPad** | ⏳ 待真机：同上；MKV 直放缺引擎 | 🟡 模拟器播放通过（iPad Pro 13"）：同一路 HLS + 简体字幕；修复了播放器右上角对齐导致的视频缩角/字幕贴边问题，现为全屏居中；横竖屏与分屏待验（本机 Xcode 27 没有 Simulator 界面程序，无法脚本旋转） |
 
 ## 五、还差什么
 
