@@ -33,4 +33,4 @@ M5ad 让 SMB 有 contentKey，但版本仍无分辨率/HDR。本轮 SMB 扫描�
 
 ## 下一项
 
-M5af：SMB MP4/大头部/性能；全文件哈希；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+SMB MP4 解析已在 [M5af 验收](Docs/M5AF-SMB-MP4.md) 完成。剩余 M5ag：尾部/碎片 MP4、HDR colr、SMB 性能、听测/热插拔、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。

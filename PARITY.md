@@ -493,3 +493,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | SMB 元数据 | MacBook Pro M2 Pro／macOS 27.2.1 | SMB2 HDR10 MKV | Infuse 未安装 | `1080p · SMB`/HDR10/contentKey | `reports/m5ae-smb-hdr.json` | 通过 |
 | 大头部/MP4/性能 | 同上 | 更大文件 | 待采样 | 未测 | — | 待验证 |
+
+### M5af SMB MP4 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| SMB MP4 | MacBook Pro M2 Pro／macOS 27.2.1 | 1080p MP4 | Infuse 未安装 | `1080p · SMB`，contentKey | `reports/m5af-smb-mp4.json` | 通过 |
+| 尾部/碎片/HDR | 同上 | 特殊 MP4 | 待采样 | 未测 | — | 待验证 |

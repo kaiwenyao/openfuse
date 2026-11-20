@@ -1,0 +1,19 @@
+OpenFuse M5af SMB MP4 metadata evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: mobile MP4 (1920x1080 HEVC Main10) over SMB2.
+
+Implementation:
+  MP4Probe parses ISO-BMFF atoms: moov/trak/tkhd width/height (16.16),
+  colr/nclx transfer/primaries for HDR labels. SMB scanner reads head 4MB and
+  falls back to tail 8MB for MP4/MOV/M4V.
+
+Results:
+  Version "1080p · SMB", resolution=1080p, contentKey=9f999c74...
+  Unit test MP4ProbeTests passes; total 32/32.
+  Scripts/run-smb-mp4.sh PASS.
+  Five platforms/device/Mac build succeed.
+
+Not verified:
+  moov-only-at-tail real camera files, fragmented MP4, HDR colr samples,
+  real SMB3/performance; audio listening.

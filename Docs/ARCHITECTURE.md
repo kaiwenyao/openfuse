@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## SMB MP4 元数据（M5af）
+
+- MP4Probe 遍历 moov/trak/tkhd/colr；宽高 16.16，nclx HDR 标签。
+- SMB 读头 4MB，失败回退尾 8MB；实测 1080p。
+- 尾部/碎片 MP4、HDR colr、性能未验证。
+
 ## SMB MKV 元数据（M5ae）
 
 - SMB scanner 读前 2MB，MatroskaProbe 解析分辨率/HDR；contentKey 不变。

@@ -342,12 +342,31 @@ public enum SMBLibraryScanner {
             return try? client.fetch(path: path)
         }
 
-        func matroskaInfo(_ entry: SMBEntry) -> MatroskaVideoInfo? {
+        func videoInfo(_ entry: SMBEntry) -> (resolution: String?, dynamicRange: String?)? {
             let ext = (entry.name as NSString).pathExtension.lowercased()
-            guard ["mkv", "webm"].contains(ext), entry.size > 1024 else { return nil }
-            let length = Int(min(2_000_000, entry.size))
-            guard let data = try? client.read(path: entry.path, offset: 0, length: length) else { return nil }
-            return MatroskaProbe.parse(data)
+            guard entry.size > 1024 else { return nil }
+            if ["mkv", "webm"].contains(ext) {
+                let length = Int(min(2_000_000, entry.size))
+                guard let data = try? client.read(path: entry.path, offset: 0, length: length),
+                      let info = MatroskaProbe.parse(data) else { return nil }
+                return (info.resolution, info.dynamicRange)
+            }
+            if ["mp4", "m4v", "mov"].contains(ext) {
+                let headLength = Int(min(4_000_000, entry.size))
+                if let data = try? client.read(path: entry.path, offset: 0, length: headLength),
+                   let info = MP4Probe.parse(data) {
+                    return (info.resolution, info.dynamicRange)
+                }
+                if entry.size > 4_000_000 {
+                    let tailLength = Int(min(8_000_000, entry.size))
+                    if let data = try? client.read(
+                        path: entry.path, offset: entry.size - Int64(tailLength), length: tailLength
+                    ), let info = MP4Probe.parse(data) {
+                        return (info.resolution, info.dynamicRange)
+                    }
+                }
+            }
+            return nil
         }
 
         func contentFingerprint(_ entry: SMBEntry) -> String? {
@@ -452,7 +471,7 @@ public enum SMBLibraryScanner {
                 } else if let remote = posterByBase[lowerBase] ?? directoryPoster {
                     posterPath = cachePoster(remote) ?? posterPath
                 }
-                let header = matroskaInfo(entry)
+                let header = videoInfo(entry)
                 candidates.append(
                     LibraryScanner.FileCandidate(
                         relativePath: entry.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")),
