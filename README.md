@@ -103,7 +103,8 @@
 - **M4z iPhone HTTPS：完成 CA 固定验证。** 测试 CA 复制到 app Documents，iPhone HTTPS GET/POST 并 resume 11.0s。无 CA 导入 UI/公共 CA/并发未做。记录：[M4z 验收](Docs/M4Z-IOS-SYNC-HTTPS.md)。
 - **M5ao SMB >2GB：完成。** 1800s/2.4GB HEVC 文件在 Samba 上 seek 1202s，RSS≈113MB、无整文件缓存。>4GB/并发/DFS/域未测。记录：[M5ao 验收](Docs/M5AO-SAMBA-2GB.md)。
 - **M5ap SMB 并发：修复并验证。** 4 槽满时 accept 后直接 close 导致 5/8 Range 重置；改为先取信号量再 accept，8/8 返回 206，播放继续1202s。更高并发/长稳/DFS未测。记录：[M5ap 验收](Docs/M5AP-SAMBA-CONCURRENCY.md)。
-- **下一项：** M5aq/M6d：>8并发/长稳/DFS；CA 导入 UI、同步并发、CloudKit 真机；切换面板自动化；音频/HDR/visionOS。
+- **M5aq SMB 16并发：完成。** 3批×16共48个 Range 全部206、播放继续1202s、RSS 128→112MB。>16/长稳/DFS未测。记录：[M5aq 验收](Docs/M5AQ-SAMBA-CONCURRENCY-16.md)。
+- **下一项：** M5ar/M6d：>16/长稳/DFS；CA 导入 UI、同步并发、CloudKit 真机；切换面板自动化；音频/HDR/visionOS。
 
 开发入口：
 
@@ -134,7 +135,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5ap-samba-concurrency`（基于 M5ao 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5aq-samba-concurrency-16`（基于 M5ap 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

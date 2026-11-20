@@ -1,0 +1,15 @@
+OpenFuse M5aq 16-way SMB concurrency evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: Samba 4.13.7; 2.4GB file.
+
+Results:
+  3 batches x 16 concurrent 1MiB Range requests = 48 requests.
+  48/48 HTTP 206, 1048576 bytes each.
+  Playback continued at 1202/1800.
+  RSS 128MB before -> 112MB after (no growth).
+  Scripts/run-samba-concurrency-16.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  >16 concurrent, long soak/hours, DFS/domain, real NAS; audio.

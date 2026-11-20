@@ -225,6 +225,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## SMB 16 并发（M5aq）
+
+- 3×16=48 Range 全部206，播放继续1202；RSS128→112MB。
+- >16/长稳/DFS 未验证。
+
 ## SMB 并发/背压（M5ap）
 
 - accept 前取连接槽信号量，超限客户端在 kernel backlog 排队而非 reset。

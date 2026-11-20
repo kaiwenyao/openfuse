@@ -1,0 +1,80 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T12:31:47Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse concurrency16",
+      "primary" : "OpenFuse Concurrency16",
+      "sources" : [
+        "smb"
+      ],
+      "workIDs" : [
+        "smb-91739c5a400451e1"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "smb-91739c5a400451e1-main",
+          "remotePath" : "\/OpenFuse.Concurrency16.mkv",
+          "season" : 0,
+          "sourceKind" : "smb",
+          "title" : "OpenFuse Concurrency16",
+          "versions" : [
+            {
+              "contentKey" : "85126a4acca336dae952425a2da87146",
+              "dynamicRange" : "",
+              "fileURL" : "",
+              "id" : "smb-91739c5a400451e1-main-v0",
+              "mediaSourceID" : "",
+              "name" : "720p · SMB",
+              "resolution" : "720p"
+            }
+          ]
+        }
+      ],
+      "id" : "smb-91739c5a400451e1",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "bdebc1099012fbb7",
+      "sourceKind" : "smb",
+      "title" : "OpenFuse Concurrency16",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "OpenFuse Concurrency16",
+          "versions" : [
+            "SMB · 720p · SMB"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse concurrency16",
+      "sources" : [
+        "smb"
+      ],
+      "title" : "OpenFuse Concurrency16"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "SMB Samba：1 个作品",
+  "visible" : [
+    "OpenFuse Concurrency16"
+  ],
+  "works" : 1
+}
