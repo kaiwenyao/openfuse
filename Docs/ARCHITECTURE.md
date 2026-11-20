@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## iOS 远程播放实测（M4h）
+
+- 测试来源注入：`OPENFUSE_TEST_WEBDAV_*` / `OPENFUSE_TEST_JELLYFIN_*` 环境变量；启动后自动添加/扫描。
+- 自动选组：`OPENFUSE_AUTOPLAY_SOURCE=webdav|jellyfin`、`OPENFUSE_AUTOPLAY_TITLE=...`；WebDAV 走认证 loader，Jellyfin 走 PlaybackInfo+token（MP4 直连/HLS）。
+- 模拟器实测 WebDAV 7.0/20s、Jellyfin 8.0/20s；音频未听测，HLS 60s 移动截图未取得。
+- 测试环境变量含明文密码，仅本地模拟器；生产仍 UI/Keychain。
+
 ## iOS 实际运行与续播（M4g）
 
 - iOS 27.2 Simulator 实际安装/启动；iPhone 单栏、iPad 常规宽度 NavigationSplitView。

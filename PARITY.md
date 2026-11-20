@@ -169,6 +169,15 @@
 | 播放 | iPhone Simulator | 同上 | 待采样 | HUD 3.0/20.0s，画面时间码推进 | Evidence 39 | 通过 |
 | 退出/续播 | 同上 | 自动 5s 关闭后重启 | 待采样 | 保存 4.795s；重启 3s 后 HUD 12.0/20.0s | Evidence 40、`reports/m4g-ios-run.txt` | 通过（画面；音频未听测） |
 | 四平台构建 | Xcode 27.2 | 同上 | — | iOS/iPadOS/tvOS/visionOS/device 全部 BUILD SUCCEEDED | `reports/m4-ios-build.txt` | 构建通过 |
+
+### M4h 移动端远程播放执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 移动远程 | iPhone 18 Pro Simulator／iOS 27.2 | Basic Auth WebDAV + 20s MP4 | Infuse 未安装 | App 内添加/扫描/播放；服务器 HEAD/GET Range 206；HUD 11.0/20.0s | Evidence 42、`reports/m4h-mobile-remote.txt` | 通过（音频未听测） |
+| Jellyfin 移动远程 | 同上 | Jellyfin MKV 60s + HLS | 待采样 | 登录/扫描/PlaybackInfo/master.m3u8；HUD 9.0/60.0s | Evidence 43 | 通过（音频未听测） |
+| 移动 HLS 60s | 同上 | MKV→HLS 夹具 | 待采样 | Jellyfin movie-1 选中，移动端 AVPlayer HLS 9.0/60.0s | Evidence 43 | 通过 |
+| 音频/字幕/音轨 | 同上 | 素材含 E-AC-3/ASS | 待采样 | 未做人工听测/字幕/音轨切换 | — | 待验证 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 

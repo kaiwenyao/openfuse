@@ -63,6 +63,9 @@
 | `40-ios-resume.jpg` | 重启续播 HUD 12.0/20.0s | 同上 |
 | `41-ipad-split.jpg` | iPad NavigationSplitView 分栏 | 同上 |
 | `reports/m4g-ios-run.txt` | iOS 启动/播放/续播记录 | 测试脚本摘要 |
+| `42-ios-webdav-remote.jpg` | iPhone WebDAV 远程播放 7.0/20s | `simctl io screenshot` |
+| `43-ios-jellyfin-remote.jpg` | iPhone Jellyfin 远程播放 8.0/20s | 同上 |
+| `reports/m4h-mobile-remote.txt` | 移动远程测试/构建摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

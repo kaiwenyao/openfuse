@@ -47,4 +47,4 @@ iOS 27.2 Simulator runtime 安装完成。本轮首次实际启动 iPhone/iPad �
 
 ## 下一项
 
-M4h：tvOS/visionOS runtime 实际启动；移动端 WebDAV/Jellyfin 实际播放；字幕/音轨；CloudKit/Trakt；M3 画质元数据/T07 其他场景。
+移动端 WebDAV/Jellyfin（含 60s HLS）远程播放已在 [M4h 验收](M4H-MOBILE-REMOTE.md) 实际跑通。剩余 M4i：字幕/音轨/音频听测、tvOS/visionOS runtime、真实 Jellyfin/OpenList、CloudKit/Trakt；M3 画质元数据/T07。

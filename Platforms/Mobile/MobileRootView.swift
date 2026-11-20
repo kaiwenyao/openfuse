@@ -37,11 +37,27 @@ struct MobileRootView: View {
             MobileSourcesView()
                 .environmentObject(model)
         }
-        .onAppear {
-            guard model.autoplaySample, autoplayItem == nil,
-                  let work = model.groups.first?.primary,
-                  let item = model.playbackItem(for: work) else { return }
-            autoplayItem = item
+        .task {
+            await model.bootstrapTestSourcesIfRequested()
+            guard model.autoplaySample, autoplayItem == nil else { return }
+            let preferred = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SOURCE"] ?? ""
+            var candidates = model.groups.filter {
+                preferred.isEmpty ? $0.primary.sourceKind != "local" : $0.primary.sourceKind == preferred
+            }
+            if let title = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_TITLE"], !title.isEmpty {
+                candidates = candidates.filter { group in
+                    group.works.contains { $0.title.localizedCaseInsensitiveContains(title) }
+                }
+            }
+            guard let work = (candidates.first ?? model.groups.first)?.primary else { return }
+            var debugItem: MobilePlaybackItem?
+            if work.sourceKind == "jellyfin" {
+                debugItem = await model.remotePlaybackItem(for: work)
+            } else {
+                debugItem = model.playbackItem(for: work)
+            }
+            autoplayItem = debugItem
+
         }
         .fullScreenCover(item: $autoplayItem) { item in
             MobilePlayerView(item: item)

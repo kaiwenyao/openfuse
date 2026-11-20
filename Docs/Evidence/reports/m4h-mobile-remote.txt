@@ -1,0 +1,36 @@
+OpenFuse M4h mobile remote playback evidence (corrected)
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Runtime: iOS 27.2 (24B8117); iPhone 18 Pro simulator
+
+WebDAV:
+  Server: webdav_fixture.py --root build/mobile-remote-root --port 8120
+  Asset: Mobile/openfuse-mobile.mp4 (H.264/AAC, 20s)
+  App bootstrap: OPENFUSE_TEST_WEBDAV_URL/USER/PASSWORD, OPENFUSE_AUTOPLAY=1,
+    OPENFUSE_AUTOPLAY_SOURCE=webdav
+  Library: local + webdav work; selected openfuse-mobile (webdav)
+  Server log: PROPFIND 207, HEAD 200, GET Range bytes=0-1108029 -> 206
+  Screenshot: HUD 11.0 / 20.0s, video frame timecode advanced (Evidence 42)
+
+Jellyfin:
+  Server: jellyfin_fixture.py --port 8121 --mobile-sample
+  App bootstrap: OPENFUSE_TEST_JELLYFIN_URL/USER/PASSWORD, source=jellyfin
+  Library: Jellyfin OpenFuse Fixture (2026) + 示例剧; selected movie-1
+  URL: /Videos/movie-1/master.m3u8?...VideoCodec=h264...api_key=...
+  Screenshot: HUD 9.0 / 60.0s, HLS playback of MKV source (Evidence 43)
+
+Important fix:
+  Unsigned simulator Keychain writes failed, so previous auto-injected sources
+  scanned with no password and autoplay fell back to the local sample. Test
+  bootstrap now keeps credentials in-memory (ephemeral) for simulator runs;
+  production UI still writes Keychain.
+
+Builds/tests:
+  26/26 swift tests
+  iOS/iPadOS, tvOS, visionOS generic simulator: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  Audio output/listening; subtitles/audio tracks; tvOS/visionOS runtime;
+  real Jellyfin/OpenList; CloudKit/Trakt.

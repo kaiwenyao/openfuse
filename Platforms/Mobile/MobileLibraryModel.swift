@@ -33,6 +33,8 @@ final class MobileLibraryModel: ObservableObject {
     private let playbackStore: PlaybackStore
     private let sourceStore: SourceStore
     private let jellyfinStore: JellyfinSourceStore
+    private var ephemeralPasswords: [String: String] = [:]
+    private var ephemeralTokens: [String: String] = [:]
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -166,10 +168,11 @@ final class MobileLibraryModel: ObservableObject {
                 remoteURL: nil
             )
         }
+
         if episode.sourceKind == "webdav",
            let path = episode.remotePath,
            let source = webdavSources.first(where: { $0.id == work.sourceID }),
-           let password = CredentialStore.load(account: source.id) {
+           let password = ephemeralPasswords[source.id] ?? CredentialStore.load(account: source.id) {
             let client = WebDAVClient(source: source, password: password)
             let url = client.url(for: path)
             let key = "webdav://\(source.id)/\(path)"
@@ -208,6 +211,34 @@ final class MobileLibraryModel: ObservableObject {
         recent = playbackStore.recentlyPlayed(limit: 12)
     }
 
+    func bootstrapTestSourcesIfRequested() async {
+        let env = ProcessInfo.processInfo.environment
+        if let urlText = env["OPENFUSE_TEST_WEBDAV_URL"],
+           let user = env["OPENFUSE_TEST_WEBDAV_USER"],
+           let password = env["OPENFUSE_TEST_WEBDAV_PASSWORD"],
+           let url = URL(string: urlText) {
+            let source = WebDAVSource(name: "测试 WebDAV", baseURL: url, username: user)
+            ephemeralPasswords[source.id] = password
+            try? sourceStore.upsert(source)
+            webdavSources = sourceStore.sources
+            try? await scanWebDAV(source)
+        }
+        if let urlText = env["OPENFUSE_TEST_JELLYFIN_URL"],
+           let user = env["OPENFUSE_TEST_JELLYFIN_USER"],
+           let password = env["OPENFUSE_TEST_JELLYFIN_PASSWORD"],
+           let url = URL(string: urlText) {
+            var source = JellyfinSource(name: "测试 Jellyfin", baseURL: url, username: user)
+            if let session = try? await JellyfinClient.authenticate(source: source, password: password) {
+                source.userID = session.userID
+                source.serverID = session.serverID
+                ephemeralTokens[source.id] = session.accessToken
+                try? jellyfinStore.upsert(source)
+                jellyfinSources = jellyfinStore.sources
+                try? await scanJellyfin(source)
+            }
+        }
+    }
+
     func posterURL(for work: LibraryWork) -> URL? {
         guard let parsed = PosterRef.parse(work.poster), parsed.kind == "jellyfin" else { return nil }
         let parts = parsed.value.split(separator: "|", maxSplits: 1).map(String.init)
@@ -243,7 +274,7 @@ final class MobileLibraryModel: ObservableObject {
     }
 
     func scanWebDAV(_ source: WebDAVSource) async throws {
-        guard let password = CredentialStore.load(account: source.id) else {
+        guard let password = ephemeralPasswords[source.id] ?? CredentialStore.load(account: source.id) else {
             status = "WebDAV 缺少 Keychain 密码"
             return
         }
@@ -312,7 +343,7 @@ final class MobileLibraryModel: ObservableObject {
     }
 
     func jellyfinToken(for source: JellyfinSource) -> String? {
-        CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
+        ephemeralTokens[source.id] ?? CredentialStore.load(account: source.id, service: "com.openfuse.jellyfin")
     }
 
     func importVideo(from url: URL) {
