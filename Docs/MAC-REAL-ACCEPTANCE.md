@@ -69,6 +69,7 @@ swift test
 - 电视剧：`百度网盘电视剧 → 进击的巨人 → 第 3 季 → S03E13 初始的街道`，详情页 →「播放」。直连（Direct）播放同一 MKV：HEVC Main 10、AAC 2.0、外挂简体/繁體 ASS + 内嵌英文 ASS，默认简体，切繁體后 305 s 画面与 ASS cue 一致。
 - 退出：回到 `第 3 季` 的剧集网格，不回首页。
 - 进度回写：播放前服务器 `UserData.PlaybackPositionTicks=0, Played=false`；退出后为 `3264930000`（5:26），`Played=false`，`LastPlayedDate` 更新。验收结束后用 `POST /Users/{uid}/Items/{id}/UserData` 恢复为 `0 / 未看`，原有观看记录未被改动。
+- 继续观看：首页卡片显示 `初始的街道 05:12 / 23:57`；点开后从 322.9 s 继续，并保持繁體字幕（`jellyfin-sub:…:1`）。随后再次把服务器进度恢复为 `0 / 未看`。
 - 电影库：`百度网盘电影 → 海边的曼彻斯特` 详情页正常打开（封面、标题、年份、播放按钮）。
 
 证据：`01-jellyfin-libraries.jpg`、`02-jellyfin-season3.jpg`、`03-jellyfin-movie-detail.jpg`、`04-jellyfin-zh-hant-305s.jpg`。
