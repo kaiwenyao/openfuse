@@ -5,6 +5,7 @@
 更新：2026-11-20。基线 Infuse 8.5.10。
 
 0.4.0：默认明亮主题并可在设置中切换；Trakt 同步已完全移除（含历史/授权/CLI/脚本与旧凭据清理）。
+M7（2026-11-20）：播放器控制栏在明亮主题下可见、WebDAV 路径不再重复、播放管线按 IINA 重写（CAOpenGLLayer + CVDisplayLink + display-resample）。记录：[M7 播放器管线](M7-PLAYER-PIPELINE.md)。
 
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
@@ -15,6 +16,7 @@
 | M4 家庭设备与同步 | 部分完成：M4a–M5ac | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；E-AC-3 5.1 PCM+stereo 验证；CoreAudio 设备选择。真实账号/自动同步、扬声器听测/热插拔未做。 |
 | M5 其余来源与高级播放 | 部分完成：M5a–M5ao | Plex 全链路；Emby；Jellyfin+Emby 去重；SMB SMB3/2.4GB seek；HDR10/EDR 直通。未公证/仅 arm64；SMB >4GB/DFS/域、HDR 测量、AirPlay 实机、CloudKit 未做。 |
 | M6 Vision Pro | 部分完成：M6a–M6c | `.full` 沉浸实际出画；星点环境、3D 播放/关闭球、进度条；窗口切换；自动关闭写回进度；空间音频 intended experience。真机手势/空间音频/HDR 待验证。 |
+| M7 播放器修复与管线重写 | 完成（Mac 本机） | 控制栏在明亮/深色均可见；WebDAV 连点不再重复路径；`MPVController`/`MPVVideoLayer`/`MPVVideoView` 按 IINA 重写，60 s 连播 p99 12.2 ms、淡出停帧 12.3 ms（旧 ~100 ms）。Infuse 同机对照、HDR 实测仍待。 |
 
 ## 阶段快照分支（历史）
 

@@ -482,11 +482,13 @@ final class AppModel: ObservableObject {
 
     func webdavPath(for source: WebDAVSource) -> [String] {
         let path = webdavPaths[source.id] ?? [""]
-        return path.isEmpty ? [""] : path
+        return RemotePathState.canonical(path.isEmpty ? [""] : path)
     }
 
     func setWebDAVPath(_ path: [String], for source: WebDAVSource) {
-        webdavPaths[source.id] = path.isEmpty ? [""] : path
+        // Persisted stacks from earlier builds may contain the same path
+        // several times (a click during loading used to append it again).
+        webdavPaths[source.id] = RemotePathState.canonical(path.isEmpty ? [""] : path)
     }
 
     func jellyfinPath(for source: JellyfinSource) -> [JellyfinItem] {
@@ -2040,6 +2042,9 @@ final class AppModel: ObservableObject {
                 "engineID": track.engineID ?? -1,
             ]
         }
+        for (key, value) in player.engine.renderStats {
+            report[key] = value
+        }
         if let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: url)
             print("[OpenFuse] wrote report to \(url.path)")
@@ -2056,8 +2061,13 @@ final class PlayerModel: ObservableObject {
     private let store: PlaybackStore
     private let initialPosition: Double
 
-    @Published var position: Double = 0
+    /// Raw mpv playhead for resume/reporting. Deliberately not `@Published`:
+    /// UI updates go through `clock` at 10 Hz so the control bar is not
+    /// re-laid out 20 times a second.
+    private(set) var position: Double = 0
     @Published var duration: Double = 0
+    /// Playhead published to the scrubber at a UI-friendly rate.
+    let clock = PlaybackClock()
     @Published var isPaused = true
     @Published var subtitleTracks: [SubtitleTrack] = []
     @Published var audioTracks: [AudioTrack] = []
@@ -2070,6 +2080,8 @@ final class PlayerModel: ObservableObject {
     @Published var isScrubbing = false
     @Published var statusMessage: String?
     @Published var logs: [String] = []
+    /// Set from `paused-for-cache`; shown in the control bar while buffering.
+    @Published var isBuffering = false
 
     var onClose: (() -> Void)?
     var onFinished: (() -> Void)?
@@ -2168,9 +2180,13 @@ final class PlayerModel: ObservableObject {
         engine.onRenderContextReady = nil
         engine.load(url: item.playbackURL, startAt: initialPosition)
         engine.play()
+        clock.reset(position: initialPosition)
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.saveProgress() }
+            Task { @MainActor in
+                self?.debugTimeline("progress timer")
+                self?.saveProgress()
+            }
         }
     }
 
@@ -2186,6 +2202,7 @@ final class PlayerModel: ObservableObject {
                     self.seekIssuedAt = nil
                     self.seekRetryCount = 0
                     self.position = value
+                    self.clock.update(position: value)
                     return
                 }
                 if !self.isPaused,
@@ -2199,6 +2216,7 @@ final class PlayerModel: ObservableObject {
                 return
             }
             self.position = value
+            self.clock.update(position: value)
         }
         engine.onDurationChanged = { [weak self] value in
             guard let self else { return }
@@ -2211,6 +2229,7 @@ final class PlayerModel: ObservableObject {
                 self.queuedSeek = nil
                 self.engine.seek(to: queued)
                 self.position = queued
+                self.clock.update(position: queued, force: true)
             }
         }
         engine.onPauseChanged = { [weak self] paused in
@@ -2231,6 +2250,12 @@ final class PlayerModel: ObservableObject {
         engine.onEOFReached = { [weak self] in
             self?.finishPlaybackIfNeeded()
         }
+        engine.onCacheChanged = { [weak self] buffered in
+            self?.clock.update(buffered: buffered)
+        }
+        engine.onBufferingChanged = { [weak self] buffering in
+            self?.isBuffering = buffering
+        }
         engine.onLog = { [weak self] message in
             guard let self else { return }
             FileHandle.standardError.write("[mpv] \(message)\n".data(using: .utf8)!)
@@ -2245,7 +2270,16 @@ final class PlayerModel: ObservableObject {
         }
     }
 
+    /// `OPENFUSE_DEBUG_TIMELINE=1` stamps player state transitions with the
+    /// monotonic clock so they can be lined up against `[gl] draw` gaps.
+    private func debugTimeline(_ message: String) {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMELINE"] == "1" else { return }
+        let stamp = DispatchTime.now().uptimeNanoseconds
+        FileHandle.standardError.write("[timeline] \(stamp) \(message)\n".data(using: .utf8)!)
+    }
+
     private func handleFileLoaded() {
+        debugTimeline("file-loaded catalog=\(catalog.count)")
         debugSelection("file loaded, catalog=\(catalog.count)")
         fileLoaded = true
         reportJellyfinStart()
@@ -2322,6 +2356,7 @@ final class PlayerModel: ObservableObject {
             if mpv.isSelected { selectedSubtitleID = track.id }
         }
         subtitleTracks = subtitleResult
+        debugTimeline("tracks subs=\(subtitleResult.count) audio=\(mpvTracks.filter { $0.type == "audio" }.count)")
         debugSelection("tracks: subs=\(subtitleResult.map { "\($0.id)#\($0.engineID ?? -1)" }) applied=\(didApplyInitialSelection) attempts=\(selectionAttempts)")
 
         var audioResult: [AudioTrack] = []
@@ -2375,6 +2410,7 @@ final class PlayerModel: ObservableObject {
             return
         }
         applyInitialSelection()
+        debugTimeline("initial-selection applied")
         debugSelection("applied selected=\(selectedSubtitleID ?? "nil")")
         didApplyInitialSelection = true
         selectionWorkItem?.cancel()
@@ -2476,11 +2512,13 @@ final class PlayerModel: ObservableObject {
             // a command mpv will reject.
             queuedSeek = target
             position = target
+            clock.update(position: target, force: true)
             showControlsTemporarily()
             return
         }
         let clamped = max(0, min(duration - 0.25, target))
         position = clamped
+        clock.update(position: clamped, force: true)
         seekTarget = clamped
         seekIssuedAt = Date()
         seekRetryCount = 0
@@ -2743,6 +2781,7 @@ final class PlayerModel: ObservableObject {
     }
 
     func showControlsTemporarily() {
+        debugTimeline("controls shown")
         showControls = true
         scheduleControlsHide()
     }
@@ -2764,6 +2803,7 @@ final class PlayerModel: ObservableObject {
         controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.2, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self, !self.isPaused, !self.isScrubbing else { return }
+                self.debugTimeline("controls hidden")
                 self.showControls = false
             }
         }

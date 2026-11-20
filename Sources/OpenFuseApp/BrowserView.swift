@@ -6,13 +6,17 @@ struct WebDAVBrowserView: View {
     @EnvironmentObject private var model: AppModel
     let source: WebDAVSource
 
-    @State private var pathStack: [String] = [""]
+    @State private var nav = RemotePathState()
     @State private var entries: [RemoteEntry] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var opening: String?
+    /// Identifies the in-flight listing so a slow response for a directory the
+    /// user already left cannot overwrite the newer one.
+    @State private var loadToken = UUID()
 
-    private var currentPath: String { pathStack.last ?? "" }
+    private var pathStack: [String] { nav.stack }
+    private var currentPath: String { nav.path }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,9 +26,10 @@ struct WebDAVBrowserView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .onAppear {
-            pathStack = model.webdavPath(for: source)
+            nav = RemotePathState(stack: model.webdavPath(for: source))
+            model.setWebDAVPath(nav.stack, for: source)
         }
-        .onChange(of: pathStack) { _, newValue in
+        .onChange(of: nav.stack) { _, newValue in
             model.setWebDAVPath(newValue, for: source)
         }
         .task(id: currentPath) {
@@ -35,13 +40,14 @@ struct WebDAVBrowserView: View {
     private var header: some View {
         HStack(spacing: 14) {
             Button {
-                if pathStack.count > 1 {
-                    pathStack.removeLast()
-                } else {
+                // Going back only shrinks the canonical stack, so it is always
+                // safe even while a listing loads; `.task(id:)` cancels the old
+                // request and the load token discards a late response.
+                if !nav.up() {
                     model.route = .home
                 }
             } label: {
-                Image(systemName: pathStack.count > 1 ? "chevron.left" : "xmark")
+                Image(systemName: nav.isRoot ? "xmark" : "chevron.left")
                     .font(.system(size: 13, weight: .bold))
                     .frame(width: 30, height: 30)
                     .background(Theme.elevated, in: Circle())
@@ -60,9 +66,15 @@ struct WebDAVBrowserView: View {
 
             Spacer()
 
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 16, height: 16)
+            }
+
             HStack(spacing: 6) {
                 Button {
-                    pathStack = [""]
+                    nav.reset()
                 } label: {
                     Text(source.name)
                         .font(.system(size: 12, weight: .medium))
@@ -73,9 +85,9 @@ struct WebDAVBrowserView: View {
                 ForEach(Array(pathStack.indices.dropFirst()), id: \.self) { index in
                     Text("/").foregroundStyle(Theme.secondary.opacity(0.6))
                     Button {
-                        pathStack = Array(pathStack.prefix(through: index))
+                        nav.jump(to: index)
                     } label: {
-                        Text((pathStack[index] as NSString).lastPathComponent)
+                        Text(RemotePath.displayName(pathStack[index]))
                             .font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.plain)
@@ -86,8 +98,11 @@ struct WebDAVBrowserView: View {
             .padding(.vertical, 6)
             .background(Theme.panel, in: Capsule())
             .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
 
             Button {
+                guard !isLoading else { return }
                 Task { await load(path: currentPath) }
             } label: {
                 Image(systemName: "arrow.clockwise")
@@ -147,7 +162,7 @@ struct WebDAVBrowserView: View {
     private func row(_ entry: RemoteEntry) -> some View {
         Button {
             if entry.isDirectory {
-                pathStack.append(entry.path)
+                openFolder(entry)
             } else if entry.isPlayableVideo {
                 opening = entry.path
                 Task {
@@ -196,7 +211,16 @@ struct WebDAVBrowserView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!entry.isDirectory && !entry.isPlayableVideo)
+        .disabled(isLoading || (!entry.isDirectory && !entry.isPlayableVideo))
+        .opacity(isLoading && entry.isDirectory ? 0.55 : 1)
+    }
+
+    /// Entering a folder is a single canonical transition. Clicks that land
+    /// while the previous PROPFIND is still running are dropped, and repeating
+    /// the same path is a no-op, so the breadcrumb can never accumulate
+    /// duplicate segments.
+    private func openFolder(_ entry: RemoteEntry) {
+        guard nav.enter(entry.path, busy: isLoading || opening != nil) else { return }
     }
 
     private func byteString(_ size: Int64) -> String {
@@ -204,14 +228,20 @@ struct WebDAVBrowserView: View {
     }
 
     private func load(path: String) async {
+        let token = UUID()
+        loadToken = token
         isLoading = true
         errorMessage = nil
         do {
-            entries = try await model.loadDirectory(source: source, path: path)
+            let listing = try await model.loadDirectory(source: source, path: path)
+            guard loadToken == token else { return }
+            entries = listing
         } catch {
+            guard loadToken == token else { return }
             errorMessage = error.localizedDescription
             entries = []
         }
+        guard loadToken == token else { return }
         isLoading = false
     }
 }

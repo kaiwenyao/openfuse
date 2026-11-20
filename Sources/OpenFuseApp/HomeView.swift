@@ -458,6 +458,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 if browseOnly {
+                    // Acceptance hook: start the browser deep in the tree so a
+                    // screenshot can prove the breadcrumb only ever shows one
+                    // segment per path element.
+                    if let startPath = self.value(after: "--webdav-browse-path", in: arguments) {
+                        model.setWebDAVPath(RemotePath.stack(startPath), for: source)
+                    }
                     model.browse(source)
                 } else if let remotePath {
                     await model.openRemote(source: source, path: remotePath)

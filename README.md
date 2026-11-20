@@ -13,11 +13,13 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.4.0（2026-11-20）
+## 当前版本 0.5.0（2026-11-20）
 
-- **默认明亮主题，可在应用内切换。** 设置 → 外观支持「明亮 / 深色 / 跟随系统」，选择持久化；播放器保留深色背景以便观影。
-- **完全移除 Trakt 同步。** 删除设备码授权、scrobble、历史导入、设置项、菜单、CLI 与测试脚本；升级时清理旧 Trakt 偏好与 Keychain 凭据。WebDAV / Jellyfin / Plex / Emby / SMB / 本地播放不受影响。
-- 本轮只验证 macOS：54 个单元测试通过，M1 播放验收脚本通过，亮/暗主题与设置页已截图验收。记录：[0.4.0 验收](Docs/M7-THEME-AND-TRAKT-REMOVAL.md)。
+- **播放器控制栏可见性修复。** 0.4.0 默认明亮主题后，字幕、音轨、倍速三个菜单和返回/日志图标在黑色播放器上变成黑底黑字。播放器挂载期间窗口切到深色外观、退出时恢复用户主题；进度条改为自绘，未播放段与已缓冲段可见。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
+- **播放管线按 IINA 重写。** 视频由 `CAOpenGLLayer` 在专用 GL 队列渲染，`CVDisplayLink` 上报 swap 并把实测刷新率写入 `display-fps`；播放头以 10 Hz 独立发布。60 s 连播帧间隔 p50 8.35 ms / p99 12.2 ms、控制栏淡出停帧 12 ms（旧实现 ~100 ms）。默认 `video-sync=display-resample`，需要回退用 `OPENFUSE_VIDEO_SYNC=audio`。
+- **WebDAV 浏览路径不再重复。** 导航改用规范化状态机，加载中连点被丢弃；旧版本已持久化的重复路径会自动迁移。Jellyfin 浏览同步加固。
+- （0.4.0 起）默认明亮主题，可在设置里切换「明亮 / 深色 / 跟随系统」；Trakt 同步已完全移除，升级时清理旧偏好与 Keychain 凭据。
+- 本轮 macOS 验证：69 个单元测试、M1 播放验收脚本，以及新增的控制栏、播放管线、WebDAV 浏览三个验收脚本全部通过。
 
 # OpenFuse 开发计划
 

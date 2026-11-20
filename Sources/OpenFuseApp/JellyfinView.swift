@@ -148,6 +148,7 @@ struct JellyfinBrowserView: View {
     private func card(_ entry: JellyfinItem) -> some View {
         Button {
             if entry.isFolder {
+                guard !isLoading, path.last?.id != entry.id else { return }
                 path.append(entry)
             } else if entry.isPlayable {
                 selectedItem = entry

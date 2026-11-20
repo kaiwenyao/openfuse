@@ -749,3 +749,17 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | tvOS 播放 | Apple TV 模拟器／tvOS 27.2 | bundled sample | Infuse 未安装 | 1.79s/19s；控制栏可见；YAVG47.8 | Evidence 120/121、`reports/m6i-*` | 通过 |
 | 遥控/远程来源/真机 | 同上 | 同上 | 待采样 | 未测 | — | 待验证 |
+
+### M7 播放器管线执行记录（2026-11-20）
+
+本轮修的是播放器本身：控制栏在明亮主题下的可见性、WebDAV 加载中连点导致的路径重复、以及按 IINA 结构重写的播放管线。详细根因、IINA 对照表与选项取舍见 [M7 播放器记录](Docs/M7-PLAYER-PIPELINE.md)。
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 控制栏可见性（明亮/深色） | MacBook Pro M2 Pro／macOS 27.2.1／自建 | 60 s 夹具／本地／控制栏常显 | Infuse 未安装 | 三种主题下字幕/音轨/倍速菜单与返回、日志图标均可见；菜单条 YAVG 16 → 46 | `build/player-ui/light.png`、`dark.png` | 通过（本机） |
+| 退出播放器后的外观恢复 | 同上 | 同上，`--reopen-test` | 待采样 | 回到首页时窗口恢复用户主题（背景 YAVG 153） | `build/player-ui/restore.png` | 通过（本机） |
+| 帧间隔与控制栏淡出 | 同上 | 同上，控制栏自动隐藏，60 s 连播 | 待采样 | p50 8.35 ms、p99 12.2 ms、max 15.8 ms；淡出瞬间 12.3 ms（旧实现 ~100 ms） | `build/player-pipeline/report.json`、`draw.log` | 通过（本机） |
+| 丢帧计数 | 同上 | 同上 | 待采样 | 启动预热后稳态 0；`frame-drop-count` 0–1、`mistimed-frame-count=3`，在 12 s 与 50 s 读数相同 | `build/player-pipeline/report.json` | 通过（本机） |
+| WebDAV 深路径浏览 | 同上 | `Scripts/webdav_fixture.py` 两级目录 | 待采样 | 只请求一次 `/dav/Shows/Season%201/`；面包屑 `Fixture / Shows / Season 1`；加载中重复点击由 `RemotePathState` 丢弃 | `build/webdav-browser/breadcrumb.png`、`server.log` | 通过（夹具） |
+| 全屏 / 暂停恢复 / 关闭重开 | 同上 | 同上 | 待采样 | 全屏 `isFullScreen=true` 抓帧正常；暂停 4 s 后显示链路停止、空格恢复继续前进；关闭重开无崩溃 | `build/player-pipeline/`、运行日志 | 通过（本机） |
+| Infuse 同机对照 | — | — | Infuse 未安装 | — | — | 待采样 |
