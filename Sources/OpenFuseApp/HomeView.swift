@@ -8,11 +8,20 @@ struct OpenFuseApp: App {
     @StateObject private var model = AppModel.shared
     @AppStorage(AppTheme.storageKey) private var appearance = AppTheme.light.rawValue
 
+    /// The player is always dark: it draws on black and its AppKit menus,
+    /// symbol buttons and the window titlebar all follow this appearance.
+    /// Keeping it at the scene level is what makes the titlebar match the
+    /// player in the (default) light theme.
+    private var preferredColorScheme: ColorScheme? {
+        if case .player = model.route { return .dark }
+        return AppTheme(rawValue: appearance)?.colorScheme
+    }
+
     var body: some Scene {
         WindowGroup("OpenFuse") {
             RootView()
                 .environmentObject(model)
-                .preferredColorScheme(AppTheme(rawValue: appearance)?.colorScheme)
+                .preferredColorScheme(preferredColorScheme)
                 .onAppear { AppTheme(rawValue: appearance)?.apply() }
                 .onChange(of: appearance) { _, newValue in
                     AppTheme(rawValue: newValue)?.apply()

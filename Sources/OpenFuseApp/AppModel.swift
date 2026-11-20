@@ -2004,6 +2004,7 @@ final class AppModel: ObservableObject {
             "currentAO": player.engine.getPropertyString("current-ao") ?? "",
             "currentVO": player.engine.getPropertyString("current-vo") ?? "",
             "isFullScreen": NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false,
+            "windowAppearance": NSApp.keyWindow?.appearance?.name.rawValue ?? "system",
             "windowFrame": NSStringFromRect(NSApp.keyWindow?.frame ?? .zero),
             "videoOutParams": player.engine.getPropertyString("video-out-params") ?? "",
             "toneMapping": player.engine.getPropertyString("tone-mapping") ?? "",
@@ -2076,12 +2077,21 @@ final class PlayerModel: ObservableObject {
     @Published var audioDevices: [AudioDeviceInfo] = []
     @Published var selectedAudioDeviceID = "auto"
     @Published var speed: Double = 1.0
-    @Published var showControls = true
+    @Published var showControls = true {
+        didSet {
+            guard oldValue != showControls else { return }
+            applySubtitleLift()
+        }
+    }
     @Published var isScrubbing = false
     @Published var statusMessage: String?
     @Published var logs: [String] = []
     /// Set from `paused-for-cache`; shown in the control bar while buffering.
     @Published var isBuffering = false
+    /// Height of the bottom control bar in points, reported by `PlayerChrome`.
+    var controlBarHeight: CGFloat = 110
+    private var subtitleLift: Double = 0
+    private var subtitleLiftGeneration = 0
 
     var onClose: (() -> Void)?
     var onFinished: (() -> Void)?
@@ -2181,6 +2191,7 @@ final class PlayerModel: ObservableObject {
         engine.load(url: item.playbackURL, startAt: initialPosition)
         engine.play()
         clock.reset(position: initialPosition)
+        applySubtitleLift(animated: false)
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -2778,6 +2789,38 @@ final class PlayerModel: ObservableObject {
 
     func captureScreenshot(to path: URL) {
         engine.screenshot(to: path)
+    }
+
+    /// Keeps dialogue clear of the control bar. The subtitle position is
+    /// animated over ~150 ms so showing/hiding the bar does not make the text
+    /// jump; mpv re-renders only the subtitle layer.
+    func updateControlBarHeight(_ height: CGFloat) {
+        guard height > 40 else { return }
+        controlBarHeight = height
+        if showControls {
+            applySubtitleLift(animated: false)
+        }
+    }
+
+    private func applySubtitleLift(animated: Bool = true) {
+        let windowHeight = NSApp.keyWindow?.contentView?.bounds.height ?? 730
+        let fraction = min(0.22, max(0, Double(controlBarHeight) / Double(max(windowHeight, 320))))
+        let target = showControls ? fraction * 100 : 0
+        guard abs(target - subtitleLift) > 0.05 || !animated else { return }
+
+        subtitleLiftGeneration += 1
+        let generation = subtitleLiftGeneration
+        let start = subtitleLift
+        let steps = animated ? 6 : 1
+        subtitleLift = target
+        for step in 1...steps {
+            let delay = animated ? Double(step) * 0.025 : 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self, self.subtitleLiftGeneration == generation else { return }
+                let value = start + (target - start) * Double(step) / Double(steps)
+                self.engine.setSubtitleLift(percent: value)
+            }
+        }
     }
 
     func showControlsTemporarily() {

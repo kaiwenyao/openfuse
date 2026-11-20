@@ -763,3 +763,6 @@
 | WebDAV 深路径浏览 | 同上 | `Scripts/webdav_fixture.py` 两级目录 | 待采样 | 只请求一次 `/dav/Shows/Season%201/`；面包屑 `Fixture / Shows / Season 1`；加载中重复点击由 `RemotePathState` 丢弃 | `build/webdav-browser/breadcrumb.png`、`server.log` | 通过（夹具） |
 | 全屏 / 暂停恢复 / 关闭重开 | 同上 | 同上 | 待采样 | 全屏 `isFullScreen=true` 抓帧正常；暂停 4 s 后显示链路停止、空格恢复继续前进；关闭重开无崩溃 | `build/player-pipeline/`、运行日志 | 通过（本机） |
 | Infuse 同机对照 | — | — | Infuse 未安装 | — | — | 待采样 |
+
+| 字幕与控制栏 | 同上 | 60 s 夹具，ASS 字幕 2.5–6.2 s | 待采样 | 控制栏可见时字幕行 1162–1207，隐藏后回到 1279–1324；纯文本字幕留在画面内 | `Docs/M7-PLAYER-PIPELINE.md` §9 | 通过（本机） |
+| 播放器标题栏外观 | 同上 | 明亮主题，进入/退出播放器 | 待采样 | 播放器内 `windowAppearance=DarkAqua`；回首页背景 YAVG 154.7（明亮） | `Scripts/run-player-ui.sh` | 通过（本机） |

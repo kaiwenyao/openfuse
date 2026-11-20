@@ -144,3 +144,31 @@ PASS: frozen ~9.9 s frames, zh-Hans/zh-Hant selection, 6ch E-AC-3, libmpv output
 ## 8. 回滚
 
 改动分三段：A 控制栏外观、B WebDAV 路径、C 播放管线。C 是独立的一组文件（`MPVController`/`MPVVideoLayer`/`MPVVideoView` + `MPVEngine` 门面），回滚该提交即可恢复旧 `MPVGLView` 路径；A、B 可单独保留。
+
+## 9. 0.5.1 追加：字幕安全区与标题栏
+
+用户反馈的截图里，字幕在控制栏出现时被压在底部黑色渐变下，只露出上半截；播放器窗口的标题栏仍然是明亮模式的白底，与黑色播放器不一致。两处都已修：
+
+### 9.1 字幕随控制栏上移
+
+- 控制栏可见时，`PlayerModel` 把控制栏高度（由 `PlayerChrome` 用 `PreferenceKey` 上报，约 110 pt）换算成画面比例，设置 mpv `sub-pos = 100 − 比例×100`，约 150 ms 分 6 步过渡；控制栏隐藏后回到 100。mpv 默认 `sub-ass-override=scale`，所以 ASS 与外挂 SRT 都适用。
+- 纯文本字幕改为 `sub-use-margins=no`，留在画面内，不再被推进底部黑边（也就是控制栏所在的位置）。
+- 底部渐变从 240 pt / 0.82 收到 200 pt / 0.72，过渡期间字幕仍然可读。
+- 实测（60 s 夹具，字幕在 2.5–6.2 s）：控制栏可见时字幕行 **1162–1207**，隐藏时回到 **1279–1324**；`Scripts/run-player-pipeline.sh` 的帧节拍与淡出停帧不受影响（p99 12.7 ms，淡出 10.3 ms）。
+
+### 9.2 标题栏跟随播放器
+
+上一版用 1×1 的 `NSViewRepresentable` 设置 `window.appearance`，会被场景级 `.preferredColorScheme` 覆盖，标题栏仍是亮色。现在颜色方案按路由决定：
+
+```swift
+private var preferredColorScheme: ColorScheme? {
+    if case .player = model.route { return .dark }
+    return AppTheme(rawValue: appearance)?.colorScheme
+}
+```
+
+`--report` 里的 `windowAppearance` 在播放器内为 `NSAppearanceNameDarkAqua`，回到首页后恢复（`Scripts/run-player-ui.sh` 的背景 YAVG 154.7 通过）。`PlayerChromeHost` 保留作 AppKit 兜底。
+
+### 9.3 诊断
+
+`OPENFUSE_DEBUG_GL=1` 现在还会打印 view/window/layer 的几何与窗口外观（去重后只在变化时输出），`--report` 增加 `windowAppearance`，便于下次排查“画面被裁”“外观不跟随”这类问题。

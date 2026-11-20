@@ -38,11 +38,12 @@ capture_player light --appearance light
 capture_player dark --appearance dark
 
 # Leave the player (--reopen-test closes after 4 s) and screenshot the home
-# view at 5 s, before it reopens at 5.5 s.
+# view at 5.3 s: the scene-level colour scheme is reapplied on the next view
+# update, so an exactly-at-5.0 s capture can still show the dark player theme.
 mkdir -p "$OUT/support-restore"
 OPENFUSE_SUPPORT_DIR="$OUT/support-restore" \
   "$APP" --appearance light --open "$FIXTURE" --reopen-test \
-  --capture-ui "$OUT/restore.png" --ui-after 5 --quit-after 9 \
+  --capture-ui "$OUT/restore.png" --ui-after 5.3 --quit-after 9 \
   >"$OUT/restore.log" 2>&1 || true
 
 luma() {

@@ -13,13 +13,15 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.5.0（2026-11-20）
+## 当前版本 0.5.1（2026-11-20）
 
-- **播放器控制栏可见性修复。** 0.4.0 默认明亮主题后，字幕、音轨、倍速三个菜单和返回/日志图标在黑色播放器上变成黑底黑字。播放器挂载期间窗口切到深色外观、退出时恢复用户主题；进度条改为自绘，未播放段与已缓冲段可见。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
-- **播放管线按 IINA 重写。** 视频由 `CAOpenGLLayer` 在专用 GL 队列渲染，`CVDisplayLink` 上报 swap 并把实测刷新率写入 `display-fps`；播放头以 10 Hz 独立发布。60 s 连播帧间隔 p50 8.35 ms / p99 12.2 ms、控制栏淡出停帧 12 ms（旧实现 ~100 ms）。默认 `video-sync=display-resample`，需要回退用 `OPENFUSE_VIDEO_SYNC=audio`。
-- **WebDAV 浏览路径不再重复。** 导航改用规范化状态机，加载中连点被丢弃；旧版本已持久化的重复路径会自动迁移。Jellyfin 浏览同步加固。
-- （0.4.0 起）默认明亮主题，可在设置里切换「明亮 / 深色 / 跟随系统」；Trakt 同步已完全移除，升级时清理旧偏好与 Keychain 凭据。
-- 本轮 macOS 验证：69 个单元测试、M1 播放验收脚本，以及新增的控制栏、播放管线、WebDAV 浏览三个验收脚本全部通过。
+- **字幕不再被控制栏挡住。** 控制栏出现时字幕自动上移（mpv `sub-pos`，ASS 与外挂 SRT 都适用），约 150 ms 滑回原位；控制栏渐变从 240 pt/0.82 收窄到 200 pt/0.72。纯文本字幕改为留在画面内（`sub-use-margins=no`），不再被挤进底部黑边。
+- **播放器标题栏跟随深色。** 窗口外观按路由切换：进入播放器时整个窗口（含标题栏、菜单）为深色，回到首页恢复用户选择的明亮/深色/跟随系统。
+- **0.5.0：播放器控制栏可见性修复。** 明亮主题下字幕、音轨、倍速菜单和返回/日志图标曾黑底黑字；播放器改用深色外观，进度条改为自绘（未播放段与缓冲段可见）。
+- **0.5.0：播放管线按 IINA 重写。** `CAOpenGLLayer` + 专用 GL 队列 + `CVDisplayLink` + `display-fps`；播放头 10 Hz 独立发布；60 s 连播 p99 12.2 ms，控制栏淡出停帧 12 ms（旧 ~100 ms）；默认 `video-sync=display-resample`（`OPENFUSE_VIDEO_SYNC=audio` 可回退）。
+- **0.5.0：WebDAV 浏览路径不再重复。** 导航改为规范化状态机，加载中连点被丢弃，旧重复路径自动迁移；Jellyfin 浏览同步加固。
+- （0.4.0 起）默认明亮主题，可在设置切换；Trakt 同步已完全移除。
+- 本轮 macOS 验证：69 个单元测试、M1 播放验收，以及控制栏、播放管线、WebDAV 浏览三个验收脚本全部通过。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
 
 # OpenFuse 开发计划
 

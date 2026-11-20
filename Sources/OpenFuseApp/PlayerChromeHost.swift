@@ -24,12 +24,22 @@ private final class AppearanceView: NSView {
         super.viewDidMoveToWindow()
         guard let window else { return }
         hostWindow = window
+        // SwiftUI's window-level `preferredColorScheme` from the root view wins
+        // over a nested preference, so the player drives the app appearance
+        // directly. This is what turns the titlebar dark as well; the menus and
+        // symbol buttons are AppKit-drawn and follow it.
+        NSApp.appearance = NSAppearance(named: .darkAqua)
         window.appearance = NSAppearance(named: .darkAqua)
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_GL"] != nil {
+            FileHandle.standardError.write(Data("[gl] chrome host attached, window appearance=\(window.appearance?.name.rawValue ?? "nil") nsapp=\(NSApp.appearance?.name.rawValue ?? "nil")\n".utf8))
+        }
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
-        if newWindow == nil, let window = hostWindow ?? self.window {
-            window.appearance = AppTheme.stored.appearance
+        if newWindow == nil {
+            let theme = AppTheme.stored
+            NSApp.appearance = theme.appearance
+            (hostWindow ?? self.window)?.appearance = theme.appearance
         }
         super.viewWillMove(toWindow: newWindow)
     }

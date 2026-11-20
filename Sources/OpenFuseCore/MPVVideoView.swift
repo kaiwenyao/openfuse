@@ -58,6 +58,7 @@ public final class MPVVideoView: NSView {
 
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        debugGeometry("viewDidMoveToWindow")
         guard window != nil else {
             stopDisplayLink()
             return
@@ -79,6 +80,28 @@ public final class MPVVideoView: NSView {
         super.viewDidChangeBackingProperties()
         videoLayer.contentsScale = window?.backingScaleFactor ?? 2
         videoLayer.update(force: true)
+        debugGeometry("backingChanged")
+    }
+
+    public override func layout() {
+        super.layout()
+        debugGeometry("layout")
+    }
+
+    private var lastGeometryLog: String?
+
+    /// `OPENFUSE_DEBUG_GL=1` prints the view/window/layer geometry once per
+    /// change so a mismatch between the CA drawable and the visible content
+    /// area (which crops the bottom of the video and its subtitles) is visible.
+    private func debugGeometry(_ reason: String) {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_GL"] != nil, let window else { return }
+        let line = "geom[\(reason)] view=\(frame) bounds=\(bounds) layer=\(videoLayer.bounds) "
+            + "content=\(window.contentView?.bounds ?? .zero) layoutRect=\(window.contentLayoutRect) "
+            + "window=\(window.frame) scale=\(window.backingScaleFactor) "
+            + "appearance=\(window.appearance?.name.rawValue ?? "nil")"
+        guard line != lastGeometryLog else { return }
+        lastGeometryLog = line
+        FileHandle.standardError.write(Data("[gl] \(line)\n".utf8))
     }
 
     public override func setFrameSize(_ newSize: NSSize) {

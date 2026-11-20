@@ -197,6 +197,16 @@ public final class MPVEngine: @unchecked Sendable {
         controller.setProperty("audio-channels", layout)
     }
 
+    /// Moves subtitles up by `percent` of the frame height (0 = the default
+    /// bottom position, 25 = a quarter of the picture up). Used while the
+    /// control bar is on screen so dialogue is not hidden behind it.
+    /// mpv's default `sub-ass-override=scale` makes this apply to ASS tracks as
+    /// well as to plain-text SRT tracks.
+    public func setSubtitleLift(percent: Double) {
+        let clamped = min(max(percent, 0), 25)
+        controller.setProperty("sub-pos", String(format: "%.2f", 100 - clamped))
+    }
+
     public func setSpeed(_ speed: Double) {
         controller.setProperty("speed", String(format: "%.2f", speed))
     }

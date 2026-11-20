@@ -164,6 +164,9 @@ public final class MPVController: @unchecked Sendable {
         setOption("audio-file-auto", "no")
         setOption("sub-ass", "yes")
         setOption("sub-scale-with-window", "yes")
+        // Keep plain-text/SRT subtitles inside the video rectangle instead of
+        // pushing them into the bottom letterbox (where the control bar sits).
+        setOption("sub-use-margins", "no")
 
         let pcmOutput = ProcessInfo.processInfo.environment["OPENFUSE_AO_PCM"] ?? ""
         setOption("ao", headless ? "null" : (pcmOutput.isEmpty ? "coreaudio" : "pcm"))
