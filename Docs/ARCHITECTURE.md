@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 远程 WebDAV 字幕画面修复（M4l）
+
+- 时长从 `player.currentItem.asset`（认证 loader asset）读取，避免新建无认证 AVURLAsset 得到 0。
+- `waitUntilReady` 再播放/seek；seek 后 500ms 再暂停。
+- `OPENFUSE_AUTOPLAY_PAUSE_AT`：ticker 播放时间跨过 N 秒自动暂停，用于字幕截图。
+- 实测远程 HUD 4.6/20.0s 显示第一句字幕；远程 seek 同步仍不稳。
+
 ## WebDAV 远程字幕（M4k）
 
 - `playbackItemAsync`：WebDAV 播放前列视频目录，`WebDAVClient.subtitleTracks` 匹配同名字幕，Basic Auth GET 下载到 `SubtitleCache`，转换成 `SubtitleTrack(.downloaded)`。

@@ -37,4 +37,4 @@ M4j 只支持本地侧载字幕。本轮在移动端播放 WebDAV 视频时，�
 
 ## 下一项
 
-M4l：修远程播放时间/暂停与远程字幕截图；Jellyfin 外挂字幕；音频听测；visionOS runtime；CloudKit/Trakt；M3 T07/WebDAV MKV 分辨率。
+远程 WebDAV 字幕画面已在 [M4l 验收](M4L-REMOTE-SUBTITLE-FIX.md) 修复并截图。剩余 M4m：远程 seek/字幕同步、Jellyfin 外挂字幕、音频听测、visionOS runtime、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。

@@ -34,7 +34,8 @@
 - **M4i 移动轨道与 tvOS：完成构建/运行验证。** 移动样本升级为 HEVC Main10 + E-AC-3 5.1 + AAC + 简繁 mov_text；播放器有音轨/字幕菜单，HUD 实测 E-AC-3/简体选中。tvOS 27.2 runtime 安装后 Apple TV 模拟器实际启动、焦点网格与全屏播放（帧 5.625s）。字幕文字与音频输出未确认。记录：[M4i 验收](Docs/M4I-TRACKS-TVOS.md)。
 - **M4j 移动字幕自绘：完成。** SRT/ASS 解析 + 0.25s ticker 叠加字幕；简体 seek 4.5s 显示第一句，繁体 seek 10s 显示第二句，简繁切换与 seek 同步实测；修复 HUD 时间停在 0。音轨仍为 E-AC-3 选中但未听测。记录：[M4j 字幕验收](Docs/M4J-SUBTITLES.md)。
 - **M4k WebDAV 远程字幕：下载链路完成。** 播放时列 WebDAV 目录、匹配并带认证下载简/繁 SRT 到本地缓存，菜单显示「中文（简体）(SRT)」；远程画面截取因 AVPlayer 时间跳变未取得，本地字幕已由 M4j 验证。记录：[M4k 远程字幕验收](Docs/M4K-REMOTE-SUBTITLES.md)。
-- **下一项：** M4l：修远程播放时间/暂停与远程字幕截图；Jellyfin 外挂字幕；音频听测；visionOS runtime；CloudKit/Trakt；M3 T07/WebDAV MKV 分辨率。
+- **M4l 远程字幕修复：完成。** 远程时长从播放器当前 asset 读取（20.0s），播放前等待 ready，新增 pause-at 钩子；WebDAV 远程字幕在 4.6/20.0s 实际显示第一句。远程 seek 同步仍不稳。记录：[M4l 验收](Docs/M4L-REMOTE-SUBTITLE-FIX.md)。
+- **下一项：** M4m：远程 seek/字幕同步、Jellyfin 外挂字幕、音频听测、visionOS runtime、CloudKit/Trakt、M3 T07/WebDAV MKV 分辨率。
 
 开发入口：
 
@@ -64,7 +65,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4k-remote-subs`（基于 M4j 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4l-remote-fix`（基于 M4k 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

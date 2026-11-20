@@ -1,0 +1,29 @@
+OpenFuse M4l remote WebDAV subtitle display evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2
+
+Fix:
+  Duration read from player.currentItem.asset (custom loader asset), not a
+  fresh AVURLAsset without auth. waitUntilReady before play. Added
+  OPENFUSE_AUTOPLAY_PAUSE_AT test hook (pause when playback time crosses N).
+
+Run:
+  WebDAV root has MP4 + zh-Hans/zh-Hant SRT.
+  App bootstrap: WEBDAV URL/user/password, source=webdav, subtitle index=1,
+  pause_at=4.5.
+
+Result:
+  Server: PROPFIND 207, GET subtitles 200, HEAD/GET video 200/206.
+  Screenshot: HUD 4.6/20.0s, frame time 9.583 (source +5s), subtitle
+  "最初の字幕。タイミングは 2.5 秒。/ 第一句：画面 2.5 秒，字幕准时出现。"
+  Menu: 字幕：中文（简体）(SRT).
+
+Builds/tests:
+  27/27 swift tests
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+  visionOS runtime download ~53.3% (7.65GB), not installed.
+
+Not verified:
+  Audio output/listening; Jellyfin external subtitles; visionOS runtime;
+  real services; CloudKit/Trakt.

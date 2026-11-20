@@ -30,6 +30,7 @@ struct MobilePlayerView: View {
     @State private var selectedSidecarIndex: Int?
     @State private var cues: [SubtitleCue] = []
     @State private var subtitleText = ""
+    @State private var didPauseAtTarget = false
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -235,6 +236,12 @@ struct MobilePlayerView: View {
         } else if !cues.isEmpty {
             subtitleText = ""
         }
+        if !didPauseAtTarget,
+           let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_PAUSE_AT"],
+           let target = Double(raw), time >= target {
+            didPauseAtTarget = true
+            player.pause()
+        }
     }
 
     private func selectAudio(_ index: Int) {
@@ -294,20 +301,26 @@ struct MobilePlayerView: View {
         }
 
         Task {
-            let asset = AVURLAsset(url: item.url)
+            let asset = player.currentItem?.asset ?? AVURLAsset(url: item.url)
             if let loaded = try? await asset.load(.duration) {
                 duration = loaded.seconds
             }
-            if let resume = item.resumePosition, resume > 0 {
-                await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
-            }
-            player.play()
+            await waitUntilReady(player)
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SEEK"],
                let seconds = Double(raw) {
                 await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
+                try? await Task.sleep(nanoseconds: 500_000_000)
                 if ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_PAUSE"] == "1" {
                     player.pause()
+                } else {
+                    player.play()
                 }
+                tick()
+            } else {
+                if let resume = item.resumePosition, resume > 0 {
+                    await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
+                }
+                player.play()
             }
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SUBTITLE_INDEX"],
                let number = Int(raw) {
@@ -323,6 +336,13 @@ struct MobilePlayerView: View {
                 saveProgress()
                 dismiss()
             }
+        }
+    }
+
+    private func waitUntilReady(_ player: AVPlayer) async {
+        for _ in 0..<40 {
+            if player.currentItem?.status == .readyToPlay { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
         }
     }
 
