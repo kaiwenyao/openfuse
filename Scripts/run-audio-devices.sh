@@ -10,7 +10,7 @@ Scripts/build-app.sh >/dev/null
 swift build --product openfuse-probe >/dev/null
 swift test >/dev/null
 "$PROBE" audio-devices unused >"$OUT/devices.json"
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_AUDIO_DEVICE=coreaudio/BuiltInSpeakerDevice \
   "$APP" --open Fixtures/generated/openfuse-fixture.mkv --freeze-at 2 \
   --report "$OUT/play.json" --capture-after 5 --quit-after 7 >"$OUT/app.log" 2>&1 || true

@@ -6,12 +6,17 @@ import SwiftUI
 struct OpenFuseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = AppModel.shared
+    @AppStorage(AppTheme.storageKey) private var appearance = AppTheme.light.rawValue
 
     var body: some Scene {
         WindowGroup("OpenFuse") {
             RootView()
                 .environmentObject(model)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(AppTheme(rawValue: appearance)?.colorScheme)
+                .onAppear { AppTheme(rawValue: appearance)?.apply() }
+                .onChange(of: appearance) { _, newValue in
+                    AppTheme(rawValue: newValue)?.apply()
+                }
                 .frame(minWidth: 980, minHeight: 620)
         }
         .windowResizability(.contentMinSize)
@@ -115,7 +120,8 @@ struct OpenFuseApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.appearance = NSAppearance(named: .darkAqua)
+        AppTheme.stored.apply()
+        purgeLegacyTraktState()
         if let window = NSApp.windows.first {
             window.setContentSize(NSSize(width: 1180, height: 760))
             window.center()
@@ -132,13 +138,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppModel.shared.saveForTermination()
     }
 
+    /// Trakt 同步已完全移除；升级后清掉旧版本留下的偏好与 Keychain 凭据。
+    private func purgeLegacyTraktState() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: "openfuse.trakt.purged") else { return }
+        defaults.removeObject(forKey: "openfuse.trakt.clientID")
+        defaults.removeObject(forKey: "openfuse.trakt.baseURL")
+        CredentialStore.delete(account: "trakt-token", service: "com.openfuse.trakt")
+        CredentialStore.delete(account: "trakt-secret", service: "com.openfuse.trakt")
+        defaults.set(true, forKey: "openfuse.trakt.purged")
+    }
+
     private func handleLaunchArguments() {
         let arguments = CommandLine.arguments
         let model = AppModel.shared
+        if let rawTheme = value(after: "--appearance", in: arguments),
+           let theme = AppTheme(rawValue: rawTheme) {
+            AppTheme.persist(theme)
+        }
         if let captureUI = value(after: "--capture-ui", in: arguments) {
-            let delay = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                model.captureUI(to: URL(fileURLWithPath: captureUI))
+            let delayed = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
+            let preferKey = arguments.contains("--capture-sheet")
+            DispatchQueue.main.asyncAfter(deadline: .now() + delayed) {
+                model.captureUI(to: URL(fileURLWithPath: captureUI), preferKeyWindow: preferKey)
             }
         }
 
@@ -149,29 +171,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 model.showSettings = true
             }
-        }
-        if arguments.contains("--trakt-auto-auth") {
-            model.traktBaseURL = self.value(after: "--trakt-base", in: arguments) ?? "http://127.0.0.1:8123"
-            model.traktClientID = self.value(after: "--trakt-client", in: arguments) ?? "test-client"
-            model.traktClientSecret = self.value(after: "--trakt-secret", in: arguments) ?? "test-secret"
-            Task { @MainActor in
-                await model.beginTraktDeviceCode()
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-                print(model.traktMessage ?? "trakt auth finished")
-                self.scheduleQuitOnly(arguments: arguments)
-            }
-            return
-        }
-        if arguments.contains("--sync-trakt") {
-            Task { @MainActor in
-                _ = await model.syncTraktHistory()
-                print(model.statusMessage ?? "trakt history synced")
-                if let report = self.value(after: "--library-report", in: arguments) {
-                    model.writeLibraryReport(to: URL(fileURLWithPath: report))
-                }
-                self.scheduleQuitOnly(arguments: arguments)
-            }
-            return
         }
         if arguments.contains("--sync-progress") {
             Task { @MainActor in
@@ -629,17 +628,6 @@ struct SeekPromptSheet: View {
     }
 }
 
-enum Theme {
-    static let background = Color(red: 0.043, green: 0.051, blue: 0.067)
-    static let panel = Color(red: 0.082, green: 0.094, blue: 0.118)
-    static let elevated = Color(red: 0.114, green: 0.129, blue: 0.157)
-    static let accent = Color(red: 0.36, green: 0.78, blue: 0.98)
-    static let warm = Color(red: 0.98, green: 0.72, blue: 0.25)
-    static let text = Color(red: 0.93, green: 0.95, blue: 0.98)
-    static let secondary = Color(red: 0.58, green: 0.63, blue: 0.70)
-    static let stroke = Color.white.opacity(0.08)
-}
-
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
     @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
@@ -653,7 +641,7 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Theme.background, Color(red: 0.055, green: 0.07, blue: 0.10)],
+                colors: [Theme.background, Theme.backgroundAlt],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -765,12 +753,6 @@ struct HomeView: View {
                             model.startJellyfinScan(source)
                         }
                     }
-                }
-                if model.traktConfigured {
-                    Button("同步 Trakt 历史") {
-                        Task { _ = await model.syncTraktHistory() }
-                    }
-                    Divider()
                 }
                 if !model.plexSources.isEmpty {
                     ForEach(model.plexSources) { source in

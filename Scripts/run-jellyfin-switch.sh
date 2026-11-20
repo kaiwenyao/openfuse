@@ -31,12 +31,12 @@ USER2=$(echo "$A2" | python3 -c 'import json,sys;print(json.load(sys.stdin)["Use
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 pkill -f "OpenFuse.app/Contents/MacOS/OpenFuse" 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN1" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test --jellyfin-pass test \
   --jellyfin-name Jellyfin --jellyfin-scan --library-report "$OUT/before.json" \
   --quit-after 8 >"$OUT/before.log" 2>&1 || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_TOKEN="$TOKEN1" OPENFUSE_JELLYFIN_PASSWORD=test2 \
   "$APP" --jellyfin-switch-user test2 --jellyfin-switch-password test2 \
   --library-report "$OUT/after.json" --quit-after 12 >"$OUT/after.log" 2>&1 || true
@@ -46,7 +46,7 @@ data = json.load(open(f"{sys.argv[1]}/after.json"))
 print(next(i["episodes"][0]["id"] for i in data["items"] if i["title"] == "OpenFuse Jellyfin"))
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" OPENFUSE_JELLYFIN_PASSWORD=test2 \
   "$APP" --library-play "$EPISODE" --seek 10 --freeze-at 11 \
   --report "$OUT/play.json" --capture-after 8 --quit-after 12 >"$OUT/play.log" 2>&1 || true

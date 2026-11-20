@@ -12,7 +12,7 @@ xcrun simctl bootstatus "$SIM" -b >/dev/null 2>&1 || true
 xcrun simctl terminate "$SIM" "$BUNDLE" 2>/dev/null || true
 xcrun simctl uninstall "$SIM" "$BUNDLE" 2>/dev/null || true
 xcrun simctl install "$SIM" "$OUT/build/Build/Products/Debug-iphonesimulator/OpenFuse.app"
-SIMCTL_CHILD_OPENFUSE_TRAKT_TOKEN=test SIMCTL_CHILD_OPENFUSE_JELLYFIN_TOKEN=test \
+SIMCTL_CHILD_SIMCTL_CHILD_OPENFUSE_JELLYFIN_TOKEN=test \
   xcrun simctl launch --console "$SIM" "$BUNDLE" >"$OUT/launch.log" 2>&1 &
 sleep 15
 xcrun simctl io "$SIM" screenshot "$OUT/layout.png" >/dev/null 2>&1

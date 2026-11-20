@@ -15,7 +15,7 @@ for _ in {1..40}; do
   if curl -sS --max-time 1 -u test:test http://127.0.0.1:8122/dav/ >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_MKV_HEADER=1 OPENFUSE_WEBDAV_USER=test OPENFUSE_WEBDAV_PASSWORD=test \
   "$APP" --webdav-url http://127.0.0.1:8122/dav/ --webdav-user test --webdav-pass test \
   --webdav-name WebDAV --webdav-scan --library-report "$OUT/library.json" \

@@ -46,7 +46,7 @@ for _ in {1..40}; do
 done
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test --jellyfin-pass test \
   --jellyfin-name Jellyfin --jellyfin-scan --library-report "$OUT/library.json" \
@@ -58,7 +58,7 @@ data = json.load(open(f"{sys.argv[1]}/library.json"))
 print(data["items"][0]["episodes"][0]["id"])
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN" \
   "$APP" --library-play "$EPISODE" --seek 10 --freeze-at 11 \
   --capture "$OUT/play.png" --capture-after 8 --report "$OUT/play.json" \

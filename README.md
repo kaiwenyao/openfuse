@@ -13,6 +13,12 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
+## 当前版本 0.4.0（2026-11-20）
+
+- **默认明亮主题，可在应用内切换。** 设置 → 外观支持「明亮 / 深色 / 跟随系统」，选择持久化；播放器保留深色背景以便观影。
+- **完全移除 Trakt 同步。** 删除设备码授权、scrobble、历史导入、设置项、菜单、CLI 与测试脚本；升级时清理旧 Trakt 偏好与 Keychain 凭据。WebDAV / Jellyfin / Plex / Emby / SMB / 本地播放不受影响。
+- 本轮只验证 macOS：54 个单元测试通过，M1 播放验收脚本通过，亮/暗主题与设置页已截图验收。记录：[0.4.0 验收](Docs/M7-THEME-AND-TRAKT-REMOVAL.md)。
+
 # OpenFuse 开发计划
 
 **当前先完成 macOS，只做 WebDAV 与 Jellyfin 两种来源。** 以 Infuse 8.5.10 Mac 的找片、播放、选轨、返回和续播行为作为参照，采用 OpenFuse 原创界面。本机构建结果、源码中发现的问题和下一轮验收见[当前 Mac 交付任务](Docs/MAC-FIRST.md)。
@@ -20,6 +26,8 @@ iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.
 下列全平台记录与最初路线保留作历史参考。旧版测试环境与产物见[阶段快照](Docs/STAGE-2026-11-20.md)，既有功能和测试编号见[验收矩阵](PARITY.md)。
 
 ## 当前进度（2026-11-19）
+
+> 注：以下 M4q–M5v 中的 Trakt 条目是历史验收记录；Trakt 同步功能已在 0.4.0 完全移除。
 
 - **M0 引擎与素材：完成。** AVPlayer 无法打开 Matroska（0 轨、0 s、无首帧）；libmpv 0.42.0 可播放、可定位，应用内启用 VideoToolbox 硬解。测试片由脚本生成：HEVC Main 10、E-AC-3 5.1、中日双语 ASS，文件级 24/24 声道报号校验通过。记录：[引擎选型](Docs/ENGINE-DECISION.md)、[测试素材](Docs/TEST-MEDIA.md)。
 - **M1 Mac 本地播放：首个可用版本。** 可打开 MKV、出画面/出声、切换外挂简繁 ASS、缺字体回退、拖动、全屏、退出后从上次位置续播，关闭播放器再打开可重建会话。构建与实测见 [M1 验收记录](Docs/M1-ACCEPTANCE.md)。

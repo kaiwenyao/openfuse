@@ -18,13 +18,13 @@ for _ in {1..40}; do
      && curl -sS --max-time 1 -u test:test http://127.0.0.1:8122/dav/ >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support-jf" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support-jf" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN=jf-test-token \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test --jellyfin-pass test \
   --jellyfin-name Jellyfin --jellyfin-scan --library-report "$OUT/jf.json" \
   --quit-after 8 >"$OUT/jf-app.log" 2>&1 || true
 sleep 0.5
-OPENFUSE_SUPPORT_DIR="$OUT/support-webdav" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support-webdav" \
 OPENFUSE_WEBDAV_USER=test OPENFUSE_WEBDAV_PASSWORD=test \
   "$APP" --webdav-url http://127.0.0.1:8122/dav/ --webdav-user test --webdav-pass test \
   --webdav-name WebDAV --webdav-scan --library-report "$OUT/webdav.json" \

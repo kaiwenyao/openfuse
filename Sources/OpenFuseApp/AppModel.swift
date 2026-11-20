@@ -103,14 +103,6 @@ final class AppModel: ObservableObject {
     @Published var syncTokenInput = ""
     @Published var syncCAPath: String?
     @Published var syncBusy = false
-    @Published var traktClientID = ""
-    @Published var traktClientSecret = ""
-    @Published var traktBaseURL = "https://api.trakt.tv"
-    @Published var traktUserCode: String?
-    @Published var traktVerificationURL: String?
-    @Published var traktDeviceCode: String?
-    @Published var traktMessage: String?
-    @Published var traktBusy = false
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
@@ -139,7 +131,6 @@ final class AppModel: ObservableObject {
     private var sessionJellyfinTokens: [String: String] = [:]
     private var sessionPlexTokens: [String: String] = [:]
     private var sessionSMBPasswords: [String: String] = [:]
-    private var traktPollTask: Task<Void, Never>?
     private var playerMenuObservation: AnyCancellable?
     /// Set when the item being played has a following episode/file. Cleared when
     /// a new player starts; consumed by the end-of-playback handler.
@@ -183,156 +174,8 @@ final class AppModel: ObservableObject {
             credentialMigrationSummary = report.summary
             statusMessage = report.summary
         }
-        loadTraktConfiguration()
         refreshRecent()
         reloadLibrary()
-    }
-
-    var traktConfigured: Bool { TraktService.shared.isConfigured }
-
-    private func loadTraktConfiguration() {
-        let environment = ProcessInfo.processInfo.environment
-        let envBase = environment["OPENFUSE_TRAKT_BASE_URL"]
-        let envClient = environment["OPENFUSE_TRAKT_CLIENT_ID"]
-        let envToken = environment["OPENFUSE_TRAKT_TOKEN"]
-        let defaults = UserDefaults.standard
-        let storedClient = defaults.string(forKey: "openfuse.trakt.clientID") ?? ""
-        let storedBase = defaults.string(forKey: "openfuse.trakt.baseURL") ?? "https://api.trakt.tv"
-        traktClientID = envClient ?? storedClient
-        traktBaseURL = envBase ?? storedBase
-        guard !traktClientID.isEmpty || envToken != nil else {
-            traktMessage = "Trakt 未连接"
-            return
-        }
-        let storedSecret = envToken == nil
-            ? CredentialStore.load(account: "trakt-secret", service: "com.openfuse.trakt") ?? ""
-            : ""
-        let storedToken = envToken == nil
-            ? CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
-            : nil
-        traktClientSecret = storedSecret
-        let token = envToken ?? storedToken
-        guard let client = Optional(traktClientID), !client.isEmpty,
-              let base = URL(string: traktBaseURL), token != nil else {
-            traktMessage = "Trakt 未配置完成"
-            return
-        }
-        TraktService.shared.configure(
-            baseURL: base,
-            clientID: client,
-            clientSecret: traktClientSecret,
-            token: token
-        )
-        traktMessage = envToken != nil ? "Trakt 已连接（环境变量）" : "Trakt 已连接"
-    }
-
-    @discardableResult
-    func saveTraktSettings() -> Bool {
-        let client = traktClientID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !client.isEmpty, let base = URL(string: traktBaseURL) else {
-            traktMessage = "请填写 Client ID 与有效 API 地址"
-            return false
-        }
-        UserDefaults.standard.set(client, forKey: "openfuse.trakt.clientID")
-        UserDefaults.standard.set(base.absoluteString, forKey: "openfuse.trakt.baseURL")
-        if !traktClientSecret.isEmpty {
-            try? CredentialStore.save(
-                password: traktClientSecret,
-                account: "trakt-secret",
-                service: "com.openfuse.trakt"
-            )
-        }
-        let token = CredentialStore.load(account: "trakt-token", service: "com.openfuse.trakt")
-        TraktService.shared.configure(
-            baseURL: base,
-            clientID: client,
-            clientSecret: traktClientSecret,
-            token: token
-        )
-        traktMessage = token == nil ? "配置已保存，请完成设备授权" : "Trakt 配置已更新"
-        return true
-    }
-
-    func beginTraktDeviceCode() async {
-        guard saveTraktSettings() else { return }
-        traktBusy = true
-        do {
-            let code = try await TraktService.shared.requestDeviceCode()
-            traktDeviceCode = code.deviceCode
-            traktUserCode = code.userCode
-            traktVerificationURL = code.verificationURL
-            traktMessage = "在浏览器打开 \(code.verificationURL) 输入 \(code.userCode)"
-            startTraktPolling(deviceCode: code.deviceCode, interval: code.interval, expiresIn: code.expiresIn)
-        } catch {
-            traktBusy = false
-            traktMessage = "获取设备码失败：\(error.localizedDescription)"
-        }
-    }
-
-    func cancelTraktPolling() {
-        traktPollTask?.cancel()
-        traktPollTask = nil
-        traktBusy = false
-    }
-
-    private func startTraktPolling(deviceCode: String, interval: Int, expiresIn: Int) {
-        traktPollTask?.cancel()
-        traktPollTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            let interval = max(1, interval)
-            let attempts = max(1, expiresIn / interval)
-            for _ in 0..<attempts {
-                try? await Task.sleep(nanoseconds: UInt64(interval) * 1_000_000_000)
-                if Task.isCancelled { return }
-                do {
-                    let token = try await TraktService.shared.pollDeviceToken(code: deviceCode)
-                    self.saveTraktToken(token.accessToken)
-                    return
-                } catch TraktError.pending {
-                    continue
-                } catch {
-                    self.traktBusy = false
-                    self.traktMessage = "自动授权失败：\(error.localizedDescription)"
-                    return
-                }
-            }
-            self.traktBusy = false
-            self.traktMessage = "设备码已过期，请重新获取"
-        }
-    }
-
-    private func saveTraktToken(_ token: String) {
-        if ProcessInfo.processInfo.environment["OPENFUSE_TRAKT_SKIP_KEYCHAIN"] != "1" {
-            try? CredentialStore.save(
-                password: token,
-                account: "trakt-token",
-                service: "com.openfuse.trakt"
-            )
-        }
-        traktBusy = false
-        traktMessage = "Trakt 授权成功"
-        traktDeviceCode = nil
-        traktUserCode = nil
-        traktVerificationURL = nil
-    }
-
-    func pollTraktToken() async {
-        guard let code = traktDeviceCode else {
-            traktMessage = "请先获取设备码"
-            return
-        }
-        cancelTraktPolling()
-        traktBusy = true
-        do {
-            let token = try await TraktService.shared.pollDeviceToken(code: code)
-            saveTraktToken(token.accessToken)
-        } catch TraktError.pending {
-            traktBusy = false
-            traktMessage = "尚未授权，请完成网页授权后再检查"
-        } catch {
-            traktBusy = false
-            traktMessage = "授权失败：\(error.localizedDescription)"
-        }
     }
 
     static func defaultSupportDirectory() -> URL {
@@ -923,86 +766,6 @@ final class AppModel: ObservableObject {
         return PlexClient(source: source, token: token).imageURL(
             thumb: "/library/metadata/\(itemID)/thumb/1"
         )
-    }
-
-    func syncTraktHistory() async -> Int {
-        let history = await TraktService.shared.history()
-        guard !history.isEmpty else {
-            statusMessage = "Trakt 历史为空或未配置"
-            return 0
-        }
-        var marked = 0
-        for item in history {
-            let target = libraryWorks.first {
-                normalizedTraktTitle($0.title) == normalizedTraktTitle(item.title)
-            }
-            guard let work = target else { continue }
-            let episodes: [LibraryEpisode]
-            if item.kind == .movie {
-                episodes = libraryEpisodes(workID: work.id).filter { $0.seasonNumber == 0 }
-            } else {
-                episodes = libraryEpisodes(workID: work.id).filter {
-                    $0.seasonNumber == (item.season ?? 1) && $0.episodeNumber == (item.episode ?? 1)
-                }
-            }
-            for episode in episodes {
-                var didMark = false
-                for key in playbackKeys(work: work, episode: episode) {
-                    store.update(
-                        fingerprint: MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil),
-                        duration: max(episode.runtime, 1),
-                        position: 0,
-                        displayTitle: episode.title,
-                        finished: true,
-                        sourceKind: work.sourceKind,
-                        sourceID: work.sourceID,
-                        remotePath: episode.remotePath
-                    )
-                    didMark = true
-                }
-                if didMark { marked += 1 }
-            }
-        }
-        refreshRecent()
-        statusMessage = "Trakt 历史：匹配 \(marked) 集"
-        return marked
-    }
-
-    private func playbackKeys(work: LibraryWork, episode: LibraryEpisode) -> [String] {
-        if let fileURL = episode.fileURL, !fileURL.isEmpty {
-            let path = URL(string: fileURL)?.path ?? fileURL
-            return [path]
-        }
-        let versions = libraryVersions(itemID: episode.id)
-        if versions.isEmpty {
-            return []
-        }
-        return versions.compactMap { version in
-            switch work.sourceKind {
-            case "jellyfin", "emby":
-                let itemID = episode.serverID ?? version.remotePath ?? episode.remotePath ?? episode.id
-                return "\(version.sourceKind)://\(work.sourceID)/\(itemID)/\(version.mediaSourceID ?? "")"
-            case "webdav":
-                guard let path = version.remotePath ?? episode.remotePath else { return nil }
-                return "webdav://\(work.sourceID)/\(path)"
-            case "smb":
-                guard let path = version.remotePath ?? episode.remotePath else { return nil }
-                return "smb://\(work.sourceID)/\(path)"
-            case "plex":
-                guard let path = version.remotePath else { return nil }
-                return "plex://\(work.sourceID)/\(path)"
-            default:
-                return nil
-            }
-        }
-    }
-
-    private func normalizedTraktTitle(_ title: String) -> String {
-        var value = title
-        value = value.replacingOccurrences(of: #"\(\d{4}\)"#, with: "", options: .regularExpression)
-        value = value.replacingOccurrences(of: #"\[\d{4}\]"#, with: "", options: .regularExpression)
-        value = value.replacingOccurrences(of: #"[^0-9A-Za-z\p{Han}]"#, with: "", options: .regularExpression)
-        return value.lowercased()
     }
 
     @discardableResult
@@ -2068,21 +1831,6 @@ final class AppModel: ObservableObject {
 
     func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {
         let version = version ?? libraryVersions(itemID: episode.id).first
-        if work.kind == .series {
-            TraktService.shared.prepare(
-                TraktQuery(
-                    title: work.title,
-                    year: work.year,
-                    kind: .show,
-                    season: episode.seasonNumber,
-                    episode: episode.episodeNumber
-                )
-            )
-        } else {
-            TraktService.shared.prepare(
-                TraktQuery(title: work.title, year: work.year, kind: .movie)
-            )
-        }
         switch work.sourceKind {
         case "jellyfin", "emby":
             guard let source = jellyfinSources.first(where: { $0.id == work.sourceID }) else {
@@ -2213,9 +1961,10 @@ final class AppModel: ObservableObject {
         return url
     }
 
-    func captureUI(to url: URL) {
+    func captureUI(to url: URL, preferKeyWindow: Bool = false) {
         let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
-        let window = visible.max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
+        let window = (preferKeyWindow ? NSApp.keyWindow : nil)
+            ?? visible.max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
             ?? NSApp.keyWindow ?? NSApp.windows.first
         guard let window, let view = window.contentView else { return }
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
@@ -2501,10 +2250,6 @@ final class PlayerModel: ObservableObject {
         fileLoaded = true
         reportJellyfinStart()
         reportPlexStart()
-        TraktService.shared.start(
-            title: title,
-            progress: duration > 0 ? position / duration * 100 : 0
-        )
         guard !didAddExternalSubtitles else { return }
         didAddExternalSubtitles = true
         for track in catalog where track.url != nil {
@@ -2815,16 +2560,6 @@ final class PlayerModel: ObservableObject {
         )
         if resolvedFinished {
             reportPlexStop()
-            TraktService.shared.stop(
-                title: title,
-                progress: duration > 0 ? min(100, position / duration * 100) : 0
-            )
-        } else {
-            TraktService.shared.update(
-                title: title,
-                progress: duration > 0 ? min(100, position / duration * 100) : 0,
-                isPaused: isPaused
-            )
         }
     }
 
@@ -2838,10 +2573,6 @@ final class PlayerModel: ObservableObject {
         saveProgress(finished: true)
         reportJellyfinStop(wait: false)
         reportPlexStop()
-        TraktService.shared.stop(
-            title: title,
-            progress: duration > 0 ? min(100, position / duration * 100) : 0
-        )
         onFinished?()
         showControls = true
     }

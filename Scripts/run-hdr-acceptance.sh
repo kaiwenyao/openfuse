@@ -19,8 +19,7 @@ if [[ ! -f "$SAMPLE" ]]; then
     -color_trc smpte2084 -color_primaries bt2020 -colorspace bt2020nc "$SAMPLE"
 fi
 cp "$SAMPLE" "$ROOT/Movies/OpenFuse HDR (2026).mkv"
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_BASE_URL=http://127.0.0.1:8123 \
-OPENFUSE_TRAKT_CLIENT_ID=test OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
   "$APP" --scan-local "$ROOT" --library-report "$OUT/library.json" \
   --capture-ui "$OUT/library.png" --ui-after 6 --quit-after 8 >"$OUT/app.log" 2>&1 || true
 sleep 0.5

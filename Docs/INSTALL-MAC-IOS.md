@@ -1,6 +1,6 @@
 # OpenFuse 安装与续签（macOS / iPhone / iPad）
 
-版本：0.3.0 · 提交 `d12a0c9`（仓库公开，安装/发布与 anypaste 对齐）
+版本：0.4.0（仓库公开，安装/发布与 anypaste 对齐）
 日期：2026-11-20
 
 ## 一、macOS：一条命令安装与升级
@@ -14,7 +14,7 @@ curl -fL --proto '=https' --proto-redir '=https' \
   && bash install-openfuse-macos.sh
 
 # 或从私有仓库取（需 gh 已登录）：
-# gh release download v0.3.0 -R kaiwenyao/openfuse \
+# gh release download v0.4.0 -R kaiwenyao/openfuse \
 #   -p install-openfuse-macos.sh -O /tmp/install-openfuse-macos.sh
 # bash /tmp/install-openfuse-macos.sh
 ```
@@ -22,7 +22,7 @@ curl -fL --proto '=https' --proto-redir '=https' \
 我已在本机跑过这条命令（`--no-launch`），安装到 `/Applications/OpenFuse.app`：
 
 ```
-Installed 0.3.0 (d12a0c9) at /Applications/OpenFuse.app
+Installed 0.4.0 at /Applications/OpenFuse.app
 User data kept: 1 sources, 8 Keychain credential(s), playback history present.
 ```
 
@@ -57,7 +57,7 @@ bash install-openfuse-macos.sh --app OpenFuse-macOS-0.2.0-af2f28d.zip
 | `build/OpenFuse-macos.zip` | 自包含 .app（含 50 个 dylib），资产名与 anypaste 一致 |
 | `build/OpenFuse-macos.zip.sha256` | `78eab65c…8d83fc` |
 | `build/install-openfuse-macos.sh` | 安装脚本 |
-| GitHub Release | `v0.3.0`（公开仓库 `kaiwenyao/openfuse`；资产为 `OpenFuse-macos.zip`、`.sha256`、安装脚本） |
+| GitHub Release | `v0.4.0`（公开仓库 `kaiwenyao/openfuse`；资产为 `OpenFuse-macos.zip`、`.sha256`、安装脚本） |
 | 安装入口 | 与 anypaste 相同：`releases/latest/download/install-openfuse-macos.sh`，无需登录 |
 
 ## 二、iPhone / iPad：数据线安装与 7 天续签

@@ -350,6 +350,11 @@ Docs/                   决策、素材、验收、证据
 - 实测 1080p HDR10；实际 HDR 输出、WebDAV/Jellyfin HDR、DV/HDR10+ 未验证。
 - Trakt 初始化改为未配置时不读 Keychain，避免授权弹窗阻塞。
 
+## Trakt 移除（0.4.0）
+
+- 删除 TraktClient/TraktService、设置页 Trakt 区块、首页菜单、`--trakt-auto-auth` / `--sync-trakt` 与 probe 的 Trakt 命令。
+- 首次启动清理 UserDefaults/Keychain 中的旧 Trakt 凭据；下文的 Trakt 章节仅作历史实现记录。
+
 ## Trakt 自动轮询（M5v）
 
 - 设备码后 Task 按 interval 轮询 token；pending 继续，成功保存并停止；失败/过期结束。

@@ -25,7 +25,7 @@ curl -sS -X POST http://127.0.0.1:5244/api/admin/storage/create \
   >"$OUT/storage.json"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_WEBDAV_USER=admin OPENFUSE_WEBDAV_PASSWORD=test \
   "$APP" --webdav-url http://127.0.0.1:5244/dav/ --webdav-user admin --webdav-pass test \
   --webdav-name OpenList --webdav-scan --library-report "$OUT/library.json" \
@@ -37,7 +37,7 @@ data = json.load(open(f"{sys.argv[1]}/library.json"))
 print(data["items"][0]["episodes"][0]["id"])
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_WEBDAV_USER=admin OPENFUSE_WEBDAV_PASSWORD=test \
   "$APP" --library-play "$EPISODE" --seek 10 --freeze-at 11 \
   --capture "$OUT/play.png" --capture-after 8 --report "$OUT/play.json" \

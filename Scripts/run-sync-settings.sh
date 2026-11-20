@@ -25,11 +25,11 @@ defaults write com.openfuse.app openfuse.sync.ca "$TLS/ca.pem"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 pkill -x OpenFuse 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_JELLYFIN_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_JELLYFIN_TOKEN=test \
 OPENFUSE_SYNC_TOKEN=sync-test "$APP" --sync-progress --quit-after 6 \
   >"$OUT/sync-app.log" 2>&1 || true
 pkill -x OpenFuse 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_JELLYFIN_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_JELLYFIN_TOKEN=test \
   timeout 10 "$APP" --show-settings --capture-ui "$OUT/settings.png" --ui-after 2 --quit-after 5 \
   >"$OUT/settings.log" 2>&1 || true
 python3 - "$OUT" <<'PY'

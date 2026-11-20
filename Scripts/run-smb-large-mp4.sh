@@ -31,7 +31,7 @@ for _ in {1..40}; do
   if nc -z 127.0.0.1 1445 >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test \
   "$APP" --smb-server 127.0.0.1 --smb-port 1445 --smb-share SHARE --smb-user test \
   --smb-pass test --smb-name SMB --smb-scan --library-report "$OUT/library.json" \
   --quit-after 10 >"$OUT/app.log" 2>&1 || true

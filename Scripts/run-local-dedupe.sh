@@ -9,10 +9,10 @@ cp Fixtures/generated/openfuse-fixture.mkv "$OUT/root-a/Movies/Dup Movie (2026).
 cp Fixtures/generated/openfuse-fixture.mkv "$OUT/root-b/Movies/Dup Movie (2026).mkv"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test "$APP" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" \
   --scan-local "$OUT/root-a" --library-report "$OUT/a.json" --quit-after 4 >"$OUT/a.log" 2>&1 || true
 sleep 0.5
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test "$APP" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" \
   --scan-local "$OUT/root-b" --library-report "$OUT/b.json" --quit-after 4 >"$OUT/b.log" 2>&1 || true
 sleep 0.5
 python3 - "$OUT" <<'PY'

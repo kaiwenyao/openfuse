@@ -43,7 +43,7 @@ curl -sS -o /dev/null -X DELETE "http://127.0.0.1:8096/Users/$USER1/PlayedItems/
   -H "Authorization: MediaBrowser Token=\"$TOKEN1\""
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
-OPENFUSE_SUPPORT_DIR="$OUT/support2" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support2" \
 OPENFUSE_JELLYFIN_PASSWORD=test2 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test2 --jellyfin-pass test2 \
   --jellyfin-name Jellyfin2 --jellyfin-scan --library-report "$OUT/library.json" \
@@ -55,7 +55,7 @@ data = json.load(open(f"{sys.argv[1]}/library.json"))
 print(next(i["episodes"][0]["id"] for i in data["items"] if i["title"] == "OpenFuse Jellyfin"))
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/support2" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support2" \
 OPENFUSE_JELLYFIN_PASSWORD=test2 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" \
   "$APP" --library-play "$EPISODE" --seek 10 --freeze-at 11 \
   --report "$OUT/play.json" --capture-after 8 --quit-after 12 >"$OUT/play.log" 2>&1 || true

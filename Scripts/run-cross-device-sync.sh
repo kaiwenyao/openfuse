@@ -31,7 +31,7 @@ TOKEN=$(curl -sS -X POST http://127.0.0.1:8096/Users/AuthenticateByName -H "$H" 
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 pkill -f "OpenFuse.app/Contents/MacOS/OpenFuse" 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/mac-support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/mac-support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test --jellyfin-pass test \
   --jellyfin-name Jellyfin --jellyfin-scan --library-report "$OUT/mac-library.json" \
@@ -42,12 +42,12 @@ data = json.load(open(f"{sys.argv[1]}/mac-library.json"))
 print(next(i["episodes"][0]["id"] for i in data["items"] if i["title"] == "OpenFuse Jellyfin"))
 PY
 )
-OPENFUSE_SUPPORT_DIR="$OUT/mac-support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/mac-support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN" \
   "$APP" --library-play "$EPISODE" --seek 10 --freeze-at 11 \
   --report "$OUT/mac-play.json" --capture-after 8 --quit-after 12 \
   >"$OUT/mac-play.log" 2>&1 || true
-OPENFUSE_SUPPORT_DIR="$OUT/mac-support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/mac-support" \
 OPENFUSE_JELLYFIN_TOKEN="$TOKEN" OPENFUSE_SYNC_URL=http://127.0.0.1:8130/progress \
 OPENFUSE_SYNC_TOKEN=sync-test "$APP" --sync-progress --quit-after 5 >"$OUT/mac-sync.log" 2>&1 || true
 Scripts/build-ios.sh "platform=iOS Simulator,id=$SIM" "$OUT/ios-build" Debug >/dev/null

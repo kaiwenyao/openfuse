@@ -40,12 +40,12 @@ TOKEN=$(curl -sS -X POST http://127.0.0.1:8096/Users/AuthenticateByName -H "$H" 
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 pkill -f "OpenFuse.app/Contents/MacOS/OpenFuse" 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_PASSWORD=test OPENFUSE_JELLYFIN_TOKEN="$TOKEN" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test --jellyfin-pass test \
   --jellyfin-name Jellyfin --jellyfin-scan --library-report "$OUT/library.json" \
   --quit-after 8 >"$OUT/scan.log" 2>&1 || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_JELLYFIN_TOKEN="$TOKEN" OPENFUSE_SYNC_URL=https://127.0.0.1:8131/progress \
 OPENFUSE_SYNC_TOKEN=sync-test OPENFUSE_SYNC_CA="$TLS/ca.pem" \
   "$APP" --sync-progress --quit-after 6 >"$OUT/sync-app.log" 2>&1 || true

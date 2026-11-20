@@ -7,7 +7,7 @@ OUT="$PWD/build/hdr-passthrough"
 rm -rf "$OUT"; mkdir -p "$OUT"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test "$APP" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" "$APP" \
   --open Fixtures/generated/openfuse-hdr.mkv --freeze-at 1.5 \
   --capture "$OUT/play.png" --capture-after 8 --report "$OUT/play.json" \
   --quit-after 10 >"$OUT/app.log" 2>&1 || true

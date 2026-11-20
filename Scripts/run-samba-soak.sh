@@ -25,7 +25,7 @@ sleep 2
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 pkill -x OpenFuse 2>/dev/null || true
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test \
   "$APP" --smb-server 127.0.0.1 --smb-port 1445 --smb-share SHARE --smb-user test \
   --smb-pass test --smb-name Samba --smb-scan --library-report "$OUT/library.json" \
   --quit-after 12 >"$OUT/scan.log" 2>&1 || true
@@ -36,7 +36,7 @@ print(data["items"][0]["episodes"][0]["id"])
 PY
 )
 rm -f "$OUT/play.json"
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test \
   "$APP" --library-play "$EPISODE" --seek 600 --capture "$OUT/play.png" \
   --capture-after 8 --report "$OUT/play.json" --quit-after 210 >"$OUT/play.log" 2>&1 &
 APPPID=$!

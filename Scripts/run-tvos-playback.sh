@@ -14,7 +14,7 @@ xcrun simctl bootstatus "$SIM" -b >/dev/null 2>&1 || true
 xcrun simctl terminate "$SIM" com.openfuse.tv 2>/dev/null || true
 xcrun simctl uninstall "$SIM" com.openfuse.tv 2>/dev/null || true
 xcrun simctl install "$SIM" "$APP"
-SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 SIMCTL_CHILD_OPENFUSE_TRAKT_TOKEN=test \
+SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1 SIMCTL_CHILD_\
 SIMCTL_CHILD_OPENFUSE_JELLYFIN_TOKEN=test \
   xcrun simctl launch --console "$SIM" com.openfuse.tv >"$OUT/launch.log" 2>&1 &
 sleep 10

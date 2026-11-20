@@ -355,38 +355,6 @@ case "audio-devices":
     let payload = devices.map { ["id": $0.id, "name": $0.name, "channels": String($0.outputChannels)] }
     let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
     print(String(decoding: data, as: UTF8.self))
-case "trakt-device":
-    guard arguments.count >= 4, let base = URL(string: arguments[2]) else {
-        print("usage: openfuse-probe trakt-device BASE_URL CLIENT_ID [SECRET]")
-        exit(2)
-    }
-    do {
-        let client = TraktClient(config: TraktConfig(
-            baseURL: base, clientID: arguments[3], clientSecret: arguments.count > 4 ? arguments[4] : ""
-        ))
-        let code = try await client.deviceCode()
-        let data = try JSONEncoder().encode(code)
-        print(String(decoding: data, as: UTF8.self))
-    } catch {
-        print("error: \(error.localizedDescription)")
-        exit(1)
-    }
-case "trakt-poll":
-    guard arguments.count >= 6, let base = URL(string: arguments[2]) else {
-        print("usage: openfuse-probe trakt-poll BASE_URL CLIENT_ID SECRET DEVICE_CODE")
-        exit(2)
-    }
-    do {
-        let client = TraktClient(config: TraktConfig(
-            baseURL: base, clientID: arguments[3], clientSecret: arguments[4]
-        ))
-        let token = try await client.pollToken(deviceCode: arguments[5])
-        let data = try JSONEncoder().encode(token)
-        print(String(decoding: data, as: UTF8.self))
-    } catch {
-        print("error: \(error.localizedDescription)")
-        exit(1)
-    }
 case "smb-list":
     guard arguments.count >= 7,
           let port = Int(arguments[3]) else {

@@ -22,13 +22,13 @@ for _ in {1..40}; do
      && nc -z 127.0.0.1 1445 >/dev/null 2>&1; then break; fi
   sleep 0.25
 done
-OPENFUSE_SUPPORT_DIR="$OUT/support-webdav" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support-webdav" \
 OPENFUSE_WEBDAV_USER=test OPENFUSE_WEBDAV_PASSWORD=test \
   "$APP" --webdav-url http://127.0.0.1:8122/dav/ --webdav-user test --webdav-pass test \
   --webdav-name WebDAV --webdav-scan --library-report "$OUT/webdav.json" --quit-after 8 \
   >"$OUT/webdav-app.log" 2>&1 || true
 sleep 0.5
-OPENFUSE_SUPPORT_DIR="$OUT/support-smb" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_SMB_PASSWORD=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support-smb" OPENFUSE_SMB_PASSWORD=test \
   "$APP" --smb-server 127.0.0.1 --smb-port 1445 --smb-share SHARE --smb-user test \
   --smb-pass test --smb-name SMB --smb-scan --library-report "$OUT/smb.json" --quit-after 8 \
   >"$OUT/smb-app.log" 2>&1 || true

@@ -45,7 +45,7 @@ TOKEN2=$(login2)
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 rm -rf "$OUT/restricted-support" "$OUT/allowed-support"; mkdir -p "$OUT/restricted-support" "$OUT/allowed-support"
-OPENFUSE_SUPPORT_DIR="$OUT/restricted-support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/restricted-support" \
 OPENFUSE_JELLYFIN_PASSWORD=test2 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test2 --jellyfin-pass test2 \
   --jellyfin-name Jellyfin2 --jellyfin-scan --library-report "$OUT/restricted.json" \
@@ -53,7 +53,7 @@ OPENFUSE_JELLYFIN_PASSWORD=test2 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" \
 curl -sS -o /dev/null -X POST "http://127.0.0.1:8096/Users/$USER2/Policy" -H "$TH" \
   -H 'Content-Type: application/json' --data @"$OUT/allowed.json"
 TOKEN2=$(login2)
-OPENFUSE_SUPPORT_DIR="$OUT/allowed-support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/allowed-support" \
 OPENFUSE_JELLYFIN_PASSWORD=test2 OPENFUSE_JELLYFIN_TOKEN="$TOKEN2" \
   "$APP" --jellyfin-url http://127.0.0.1:8096 --jellyfin-user test2 --jellyfin-pass test2 \
   --jellyfin-name Jellyfin2 --jellyfin-scan --library-report "$OUT/allowed.json" \

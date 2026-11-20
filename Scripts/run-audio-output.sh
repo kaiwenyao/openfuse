@@ -20,7 +20,7 @@ pkill -f "OpenFuse.app/Contents/MacOS/OpenFuse" 2>/dev/null || true
 (/opt/homebrew/bin/ffmpeg -hide_banner -loglevel error -y -f avfoundation -i ":0" -t 14 -ac 2 -ar 48000 "$OUT/virtual.wav" >"$OUT/virtual-rec.log" 2>&1) &
 RECPID=$!
 sleep 1
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_AUDIO_DEVICE="$DEVICE" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_AUDIO_DEVICE="$DEVICE" \
   "$APP" --open Fixtures/generated/openfuse-fixture.mkv --report "$OUT/virtual-play.json" \
   --quit-after 12 >"$OUT/virtual-play.log" 2>&1 || true
 wait "$RECPID"
@@ -28,7 +28,7 @@ pkill -f "OpenFuse.app/Contents/MacOS/OpenFuse" 2>/dev/null || true
 (/opt/homebrew/bin/ffmpeg -hide_banner -loglevel error -y -f avfoundation -i ":0" -t 10 -ac 2 -ar 48000 "$OUT/speaker.wav" >"$OUT/speaker-rec.log" 2>&1) &
 RECPID=$!
 sleep 1
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test OPENFUSE_AUDIO_DEVICE="coreaudio/BuiltInSpeakerDevice" \
+OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_AUDIO_DEVICE="coreaudio/BuiltInSpeakerDevice" \
   "$APP" --open Fixtures/generated/openfuse-fixture.mkv --quit-after 9 >"$OUT/speaker-play.log" 2>&1 || true
 wait "$RECPID"
 mean() {

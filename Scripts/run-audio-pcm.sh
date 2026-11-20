@@ -8,7 +8,7 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 WAV="$OUT/audio.wav"
-OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_AO_PCM="$WAV" \
   "$APP" --open Fixtures/generated/openfuse-fixture.mkv --freeze-at 16 \
   --report "$OUT/play.json" --capture-after 17 --quit-after 19 \
@@ -18,7 +18,7 @@ ffprobe -v error -show_entries stream=codec_name,channels,channel_layout,sample_
   -of json "$WAV" >"$OUT/probe.json"
 ffmpeg -hide_banner -i "$WAV" -af "astats=metadata=1:reset=0" -f null - 2>"$OUT/astats.txt" || true
 STEREO="$OUT/stereo.wav"
-OPENFUSE_SUPPORT_DIR="$OUT/support-stereo" OPENFUSE_TRAKT_TOKEN=test \
+OPENFUSE_SUPPORT_DIR="$OUT/support-stereo" \
 OPENFUSE_AO_PCM="$STEREO" OPENFUSE_AO_CHANNELS=stereo \
   "$APP" --open Fixtures/generated/openfuse-fixture.mkv --freeze-at 16 \
   --report "$OUT/stereo.json" --capture-after 17 --quit-after 19 \
