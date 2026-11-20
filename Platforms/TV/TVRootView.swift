@@ -62,10 +62,15 @@ struct TVRootView: View {
         }
         .task {
             guard ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1",
-                  selectedItem == nil,
-                  let work = model.groups.first?.primary,
-                  let item = model.playbackItem(for: work) else { return }
-            selectedItem = item
+                  selectedItem == nil else { return }
+            for _ in 0..<25 {
+                if let work = model.groups.first?.primary,
+                   let item = model.playbackItem(for: work) {
+                    selectedItem = item
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
         }
     }
 }

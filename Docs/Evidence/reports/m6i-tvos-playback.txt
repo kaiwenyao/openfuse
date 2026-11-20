@@ -1,0 +1,17 @@
+OpenFuse M6i tvOS playback evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro; Apple TV simulator 4DD8F41F..., tvOS 27.2.
+
+Bug: TVRootView autoplay task returned before MobileLibraryModel groups loaded.
+Fix: wait/retry up to 5s for groups/playbackItem before presenting.
+
+Results:
+  Library: single sample poster grid.
+  Player: bundled HEVC Main10/E-AC-3 sample at 1.79s/19s; controls visible.
+  Autoplay screenshot YAVG 47.8, 1.03MB.
+  Scripts/run-tvos-playback.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  tvOS remote navigation/click-to-play, remote sources/sync/subtitles settings,
+  real Apple TV; audio listening.

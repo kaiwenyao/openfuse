@@ -111,7 +111,8 @@
 - **M5at SMB 长稳：完成。** 2.4GB 播放期间12轮×8 Range共96请求全部206，RSS188→83MB。小时级/DFS未测。记录：[M5at 验收](Docs/M5AT-SAMBA-SOAK.md)。
 - **M6g iPhone 同步设置：完成。** 移动端 Sources 增加 URL/token/CA；URL/CA 存 UserDefaults、Token 存 Keychain；无 env URL/CA 时从设置 HTTPS 同步并 resume11.0s。UI 点击/公共 CA/并发未测。记录：[M6g 验收](Docs/M6G-IOS-SYNC-SETTINGS.md)。
 - **M6h iPad 布局：完成冒烟验证。** iPad 常规宽度显示 NavigationSplitView（侧栏+详情），截图 YAVG24.6；冷启动约15s、点击播放/横屏/多任务未测。记录：[M6h 验收](Docs/M6H-IPAD-LAYOUT.md)。
-- **下一项：** M6i/M5au：iPad 点击播放/横屏/多任务；物理5.1/HDMI；HDR测量；小时级/DFS；CloudKit/visionOS。
+- **M6i tvOS 播放：完成。** 修复 autoplay 对 groups 的等待；Apple TV 模拟器实际播放样片1.79s/19s，控制栏可见。遥控导航/远程来源/真机未测。记录：[M6i 验收](Docs/M6I-TVOS.md)。
+- **下一项：** M6j/M5au：tvOS 遥控导航/远程来源；物理5.1/HDMI；HDR测量；小时级/DFS；CloudKit/visionOS。
 
 开发入口：
 
@@ -142,7 +143,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m6h-ipad-layout`（基于 M6g 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m6i-tvos`（基于 M6h 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

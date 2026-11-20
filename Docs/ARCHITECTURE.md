@@ -225,6 +225,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## tvOS 播放（M6i）
+
+- autoplay 等待 groups/playbackItem；样片1.79s/19s出画。
+- 遥控/远程来源/真机未验证。
+
 ## iPad 常规布局（M6h）
 
 - regular width 使用 NavigationSplitView；截图 YAVG24.6。
