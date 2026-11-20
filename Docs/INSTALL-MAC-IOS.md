@@ -8,9 +8,15 @@
 私有仓库，先用已登录的 `gh` 取安装脚本，再运行：
 
 ```bash
-gh release download v0.2.2-63af6e2 -R kaiwenyao/openfuse \
-  -p install-openfuse-macos.sh -O /tmp/install-openfuse-macos.sh
-bash /tmp/install-openfuse-macos.sh
+curl -fL --proto '=https' --proto-redir '=https' \
+  -o install-openfuse-macos.sh \
+  https://github.com/kaiwenyao/openfuse-install/releases/latest/download/install-openfuse-macos.sh \
+  && bash install-openfuse-macos.sh
+
+# 或从私有仓库取（需 gh 已登录）：
+# gh release download v0.2.2-63af6e2 -R kaiwenyao/openfuse \
+#   -p install-openfuse-macos.sh -O /tmp/install-openfuse-macos.sh
+# bash /tmp/install-openfuse-macos.sh
 ```
 
 我已在本机跑过这条命令（`--no-launch`），安装到 `/Applications/OpenFuse.app`：
@@ -51,7 +57,8 @@ bash install-openfuse-macos.sh --app OpenFuse-macOS-0.2.0-af2f28d.zip
 | `build/OpenFuse-macos.zip` | 自包含 .app（含 50 个 dylib），资产名与 anypaste 一致 |
 | `build/OpenFuse-macos.zip.sha256` | `78eab65c…8d83fc` |
 | `build/install-openfuse-macos.sh` | 安装脚本 |
-| GitHub Release | `v0.2.2-63af6e2`（私有仓库，需登录 gh；资产为 `OpenFuse-macos.zip`、`.sha256`、安装脚本） |
+| GitHub Release | `v0.2.2-63af6e2`（私有仓库 `kaiwenyao/openfuse`，需登录 gh；资产为 `OpenFuse-macos.zip`、`.sha256`、安装脚本） |
+| 公开安装入口 | `kaiwenyao/openfuse-install` 的 Release 只放安装脚本，供上面的 `curl` 一行命令使用；应用包仍从私有仓库凭 gh 下载 |
 
 ## 二、iPhone / iPad：数据线安装与 7 天续签
 
