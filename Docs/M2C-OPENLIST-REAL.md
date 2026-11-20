@@ -39,4 +39,4 @@
 
 ## 下一项
 
-M2d/M6d：百度网盘账号/OpenList 云跳转；移动 OpenList；真机 visionOS；音频听测；HDR 测量；真实 SMB3/Trakt；CloudKit。
+iPhone 真实 OpenList 已在 [M2d 验收](Docs/M2D-IOS-OPENLIST.md) 完成。剩余 M2e/M6d：百度网盘/云跳转、iPad/真机 OpenList、音频听测、HDR 测量、真实 Jellyfin/SMB/Trakt、CloudKit、visionOS 真机。

@@ -1,0 +1,19 @@
+{
+  "records" : {
+    "webdav:\/\/7bfe8b6b9a242836\/local\/Movies\/OpenFuse OpenList.mp4" : {
+      "displayTitle" : "OpenFuse OpenList",
+      "duration" : 20.105,
+      "fileSize" : 0,
+      "isFinished" : false,
+      "lastPlayedAt" : "2026-11-20T08:47:05.908Z",
+      "mediaPath" : "webdav:\/\/7bfe8b6b9a242836\/local\/Movies\/OpenFuse OpenList.mp4",
+      "playCount" : 0,
+      "position" : 12.210343884,
+      "remotePath" : "local\/Movies\/OpenFuse OpenList.mp4",
+      "remoteURL" : "http:\/\/127.0.0.1:5244\/dav\/local\/Movies\/OpenFuse%20OpenList.mp4",
+      "sourceID" : "7bfe8b6b9a242836",
+      "sourceKind" : "webdav"
+    }
+  },
+  "version" : 1
+}

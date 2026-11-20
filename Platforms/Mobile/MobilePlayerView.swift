@@ -248,6 +248,7 @@ struct MobilePlayerView: View {
            let target = Double(raw), time >= target {
             didPauseAtTarget = true
             player.pause()
+            saveProgress()
         }
     }
 

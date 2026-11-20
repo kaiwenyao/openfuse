@@ -103,10 +103,10 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
-## 真实 OpenList 验证（M2c）
+## 真实 OpenList 验证（M2c/M2d）
 
-- Docker OpenList `/dav` + Local 存储；扫描/播放/seek/Range/远程字幕通过。
-- 百度网盘账号、云跳转、HTTPS/反代、移动端未验证。
+- Docker OpenList `/dav` + Local 存储；Mac 与 iPhone 模拟器扫描/播放/seek/Range/远程字幕/进度通过。
+- 移动端暂停时保存进度；百度网盘账号、云跳转、HTTPS/反代、真机未验证。
 
 ## 远程损坏签名过滤（M3s）
 

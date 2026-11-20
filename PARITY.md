@@ -556,3 +556,10 @@
 | OpenList WebDAV | MacBook Pro M2 Pro／macOS 27.2.1 | OpenList Docker + Local | Infuse 未安装 | 1 作品/1080p；seek 11.022s；Range 206；远程 SRT | Evidence 95、`reports/m2c-openlist-*` | 通过（Docker） |
 | 百度网盘/云跳转 | 同上 | 真实账号 | 待账号 | 未测 | — | 待验证 |
 | 移动 OpenList | 同上 | iPhone/iPad | 待采样 | 未跑 | — | 待验证 |
+
+### M2d iPhone OpenList 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| iPhone OpenList | iPhone 18 Pro 模拟器／iOS 27.2 | OpenList Docker Local | Infuse 未安装 | 15.958s；E-AC-3/简中 SRT；进度 12.061s | Evidence 96、`reports/m2d-ios-openlist-playback.json` | 通过（模拟器） |
+| 百度网盘/真机 | 同上 | 真实账号/设备 | 待采样 | 未测 | — | 待验证 |

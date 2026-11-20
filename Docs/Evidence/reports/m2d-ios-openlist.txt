@@ -1,0 +1,20 @@
+OpenFuse M2d iPhone real OpenList evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2.
+Server: OpenList Docker /dav + Local storage, admin/test.
+
+Flow:
+  Build/install/launch with SIMCTL_CHILD_OPENFUSE_TEST_WEBDAV_*,
+  autoplay source webdav/title OpenFuse OpenList, seek 10, subtitle index 1,
+  pause at 12, stop_after 18.
+  Screenshot at t=15.958s: HUD 12.1/20.1, E-AC-3 5.1, 中文（简体）(SRT),
+  bilingual subtitle text visible.
+  playback.json: sourceKind webdav, remoteURL 5244/dav/local/Movies,
+  position 12.061s, duration 20.105s.
+  Mobile pause-at now calls saveProgress (product fix).
+  Scripts/run-ios-openlist.sh PASS.
+  swift test 36/36; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real Baidu pan/OpenList cloud redirects, real iPhone device, audio listening,
+  iPad OpenList run (same code), mobile HDR.
