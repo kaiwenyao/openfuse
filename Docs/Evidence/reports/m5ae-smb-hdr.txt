@@ -1,0 +1,17 @@
+OpenFuse M5ae SMB HDR metadata evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: impacket SMB2 share with 1080p HDR10 MKV.
+
+Implementation:
+  SMB scanner reads first 2MB (bounded by file size) and applies MatroskaProbe;
+  candidate/version gets resolution and dynamicRange; contentKey unchanged.
+
+Results:
+  Version: "1080p · SMB", resolution=1080p, dynamicRange=HDR10,
+  contentKey=3b02310a2a04f4eb68fc527b4312f56d.
+  Scripts/run-smb-hdr.sh PASS.
+  swift test 31/31; five platforms/device/Mac build succeed.
+
+Not verified:
+  Real SMB3/DFS, >2MB headers, SMB performance with many files; audio listening.

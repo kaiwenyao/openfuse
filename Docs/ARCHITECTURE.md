@@ -103,6 +103,11 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## SMB MKV 元数据（M5ae）
+
+- SMB scanner 读前 2MB，MatroskaProbe 解析分辨率/HDR；contentKey 不变。
+- 实测 1080p/SMB/HDR10；>2MB 头部、MP4、性能未验证。
+
 ## 跨来源内容指纹（M5ad）
 
 - ContentFingerprint size+首尾64KB SHA-256；local/WebDAV Range/SMB pread 共用。

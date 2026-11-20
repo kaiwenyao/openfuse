@@ -342,6 +342,14 @@ public enum SMBLibraryScanner {
             return try? client.fetch(path: path)
         }
 
+        func matroskaInfo(_ entry: SMBEntry) -> MatroskaVideoInfo? {
+            let ext = (entry.name as NSString).pathExtension.lowercased()
+            guard ["mkv", "webm"].contains(ext), entry.size > 1024 else { return nil }
+            let length = Int(min(2_000_000, entry.size))
+            guard let data = try? client.read(path: entry.path, offset: 0, length: length) else { return nil }
+            return MatroskaProbe.parse(data)
+        }
+
         func contentFingerprint(_ entry: SMBEntry) -> String? {
             guard entry.size > 0 else { return nil }
             let chunk = Int64(ContentFingerprint.chunkSize)
@@ -444,6 +452,7 @@ public enum SMBLibraryScanner {
                 } else if let remote = posterByBase[lowerBase] ?? directoryPoster {
                     posterPath = cachePoster(remote) ?? posterPath
                 }
+                let header = matroskaInfo(entry)
                 candidates.append(
                     LibraryScanner.FileCandidate(
                         relativePath: entry.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")),
@@ -455,7 +464,8 @@ public enum SMBLibraryScanner {
                         nfo: nfo,
                         showNFO: effectiveShowNFO,
                         modifiedAt: entry.modifiedAt,
-                        resolution: nil,
+                        resolution: header?.resolution,
+                        dynamicRange: header?.dynamicRange,
                         contentKey: contentFingerprint(entry)
                     )
                 )

@@ -37,4 +37,4 @@ M3p 只对本地版本生成 contentKey。本轮抽出共享 `ContentFingerprint
 
 ## 下一项
 
-M5ae：全文件/可配置哈希；SMB HDR 探测；远程指纹性能；听测/热插拔；HDR 测量；真实 SMB3/Trakt；CloudKit；真实 OpenList。
+SMB 分辨率/HDR 探测已在 [M5ae 验收](Docs/M5AE-SMB-HDR.md) 完成。剩余 M5af：SMB MP4/大头部/性能、全文件哈希、听测/热插拔、HDR 测量、真实 SMB3/Trakt、CloudKit、真实 OpenList。
