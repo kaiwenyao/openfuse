@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Trakt 远程历史回填（M4t）
+
+- playbackKeys 生成播放器一致的 fingerprint：jellyfin/emby、webdav、smb、plex、本地。
+- Trakt history 匹配后对每个版本键写 finished；Jellyfin 远程 watched 验收。
+- WebDAV/SMB/Plex 代码已接未逐一验收；真实账号/Trakt ID 严格匹配未做。
+
 ## Trakt 历史导入（M4s）
 
 - TraktClient.history 拉取 movies/shows；AppModel 规范化标题匹配库，按本地 fileURL 标记 finished。

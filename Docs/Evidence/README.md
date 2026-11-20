@@ -163,6 +163,9 @@
 | `reports/m4s-trakt-history.jsonl` | history 请求日志 | 夹具日志 |
 | `reports/m4s-trakt-watched.json` | watched 筛选报告 | 应用报告 |
 | `reports/m4s-trakt-history.txt` | 历史导入摘要 | 运行记录 |
+| `85-trakt-remote-history.jpg` | Jellyfin 远程 watched 库 | 应用内窗口快照 |
+| `reports/m4t-trakt-watched.json` | 远程历史 watched 报告 | 应用报告 |
+| `reports/m4t-trakt-remote-history.txt` | 远程历史摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

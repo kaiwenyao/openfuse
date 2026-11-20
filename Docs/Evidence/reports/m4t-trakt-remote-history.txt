@@ -1,0 +1,20 @@
+OpenFuse M4t Trakt remote history evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixtures: trakt 8123, Jellyfin 8096.
+
+Implementation:
+  playbackKeys(work,episode) builds player-compatible fingerprints:
+  jellyfin/emby://source/item/mediaSource, webdav://, smb://, plex://;
+  local fileURL path falls back. Trakt history marks every version key finished.
+
+Results:
+  Jellyfin fixture scanned; Trakt history matched 3 episodes.
+  --library-watch watched visible:
+    ["OpenFuse Fixture (2026)", "示例剧"] (remote sourceKind jellyfin).
+  Scripts/run-trakt-remote-history.sh PASS.
+  swift test 29/29; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Trakt; WebDAV/SMB/Plex history key paths (code only); title collisions;
+  OAuth UI/Keychain; audio.

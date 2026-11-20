@@ -357,3 +357,12 @@
 | history 导入 | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt 夹具 | Infuse 未安装 | movies/shows 请求；匹配 3 集 | `reports/m4s-trakt-history.jsonl` | 通过 |
 | watched 筛选 | 同上 | 本地夹具 | 待采样 | visible 电影+剧集 | Evidence 84、`reports/m4s-trakt-watched.json` | 通过 |
 | 真实 Trakt/远程来源 | 同上 | 真实账号/服务器 | 待采样 | 未测；仅本地 fileURL | — | 待验证 |
+
+### M4t Trakt 远程历史执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jellyfin history | MacBook Pro M2 Pro／macOS 27.2.1 | Trakt+Jellyfin 夹具 | Infuse 未安装 | 匹配 3 集；watched 电影+剧集 | Evidence 85、`reports/m4t-trakt-watched.json` | 通过 |
+| 远程 fingerprint | 同上 | Jellyfin | 待采样 | 播放键 jellyfin://source/item/media 标记 | 同上 | 通过 |
+| WebDAV/SMB/Plex | 同上 | 对应来源 | 待采样 | 代码已接，未逐一验收 | — | 待验证 |
+| 真实 Trakt | 同上 | 真实账号 | 待采样 | 未测 | — | 待验证 |

@@ -1,0 +1,176 @@
+{
+  "episodes": 3,
+  "generatedAt": "2026-11-20T05:59:47Z",
+  "groups": [
+    {
+      "key": "movie|openfuse fixture",
+      "primary": "OpenFuse Fixture (2026)",
+      "sources": [
+        "jellyfin"
+      ],
+      "workIDs": [
+        "jf:c135dd80bab7e30f:movie-1"
+      ]
+    },
+    {
+      "key": "series|示例剧",
+      "primary": "示例剧",
+      "sources": [
+        "jellyfin"
+      ],
+      "workIDs": [
+        "jf:c135dd80bab7e30f:series-1"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "jf:c135dd80bab7e30f:movie-1-main",
+          "remotePath": "movie-1",
+          "season": 0,
+          "sourceKind": "jellyfin",
+          "title": "OpenFuse Fixture (2026)",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:c135dd80bab7e30f:movie-1-main-v0",
+              "mediaSourceID": "ms-movie-1080",
+              "name": "1080p HEVC 5.1",
+              "resolution": "1080p"
+            },
+            {
+              "fileURL": "",
+              "id": "jf:c135dd80bab7e30f:movie-1-main-v1",
+              "mediaSourceID": "ms-movie-compact",
+              "name": "720p 压缩版",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "jf:c135dd80bab7e30f:movie-1",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "OpenFuse 自制的 HEVC Main 10、E-AC-3 5.1 与中日双语 ASS 测试片。",
+      "poster": "jellyfin:movie-1|movie",
+      "seasons": [],
+      "sourceID": "c135dd80bab7e30f",
+      "sourceKind": "jellyfin",
+      "title": "OpenFuse Fixture (2026)",
+      "year": 2026
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "jf:c135dd80bab7e30f:ep-1",
+          "remotePath": "ep-1",
+          "season": 1,
+          "sourceKind": "jellyfin",
+          "title": "第 1 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:c135dd80bab7e30f:ep-1-v0",
+              "mediaSourceID": "",
+              "name": "服务器版本",
+              "resolution": "1080p"
+            }
+          ]
+        },
+        {
+          "episode": 2,
+          "fileURL": "",
+          "id": "jf:c135dd80bab7e30f:ep-2",
+          "remotePath": "ep-2",
+          "season": 1,
+          "sourceKind": "jellyfin",
+          "title": "第 2 集",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "jf:c135dd80bab7e30f:ep-2-v0",
+              "mediaSourceID": "",
+              "name": "服务器版本",
+              "resolution": "1080p"
+            }
+          ]
+        }
+      ],
+      "id": "jf:c135dd80bab7e30f:series-1",
+      "kind": "series",
+      "overridden": false,
+      "overview": "用于验证季/集层级、字幕与续播的测试剧。",
+      "poster": "jellyfin:series-1|series",
+      "seasons": [
+        {
+          "id": "season-1",
+          "number": 1,
+          "title": "第 1 季"
+        }
+      ],
+      "sourceID": "c135dd80bab7e30f",
+      "sourceKind": "jellyfin",
+      "title": "示例剧",
+      "year": 0
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "OpenFuse Fixture (2026)",
+          "versions": [
+            "Jellyfin · 1080p HEVC 5.1",
+            "Jellyfin · 720p 压缩版"
+          ]
+        }
+      ],
+      "key": "movie|openfuse fixture",
+      "sources": [
+        "jellyfin"
+      ],
+      "title": "OpenFuse Fixture (2026)"
+    },
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 1,
+          "title": "第 1 集",
+          "versions": [
+            "Jellyfin · 服务器版本"
+          ]
+        },
+        {
+          "episode": 2,
+          "season": 1,
+          "title": "第 2 集",
+          "versions": [
+            "Jellyfin · 服务器版本"
+          ]
+        }
+      ],
+      "key": "series|示例剧",
+      "sources": [
+        "jellyfin"
+      ],
+      "title": "示例剧"
+    }
+  ],
+  "rawEpisodes": 3,
+  "rawWorks": 2,
+  "status": "",
+  "visible": [
+    "OpenFuse Fixture (2026)",
+    "示例剧"
+  ],
+  "works": 2
+}

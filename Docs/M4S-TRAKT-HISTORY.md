@@ -41,4 +41,4 @@ M4r 只会向外 scrobble。现在拉取 Trakt `/sync/history/movies|shows`，�
 
 ## 下一项
 
-M5t：Trakt 真实账号/OAuth UI/远程来源历史标记；音频听测；SMB3/并发；HDR/AirPlay 实机；CloudKit；M3 多根/损坏过滤。
+远程 Jellyfin 历史回填已在 [M4t 验收](Docs/M4T-TRAKT-REMOTE-HISTORY.md) 完成。剩余 M5t：真实账号/OAuth UI、WebDAV/SMB/Plex 历史、音频听测、SMB3/并发、HDR/AirPlay 实机、CloudKit、M3 多根/损坏过滤。

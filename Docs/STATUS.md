@@ -8,13 +8,13 @@
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
 | M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3m | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07 扫描中播放/损坏单文件；WebDAV MKV 分辨率（macOS ffprobe）与 1080p 筛选通过。多根本地库策略、损坏过滤、iOS 远程 MKV 探测仍待。 |
-| M4 家庭设备与同步 | 部分完成：M4a–M4s | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；Trakt 设备码/电影/剧集 scrobble + 历史导入夹具验证。真实账号/OAuth UI/远程来源历史、自动同步/离线队列、音频听测、ASS 样式、沉浸式交互未做。 |
+| M4 家庭设备与同步 | 部分完成：M4a–M4t | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；Trakt 设备码/电影/剧集/历史（本地+Jellyfin 远程）夹具验证。真实账号/OAuth UI、WebDAV/SMB/Plex 历史、自动同步/离线队列、音频听测未做。 |
 | M5 其余来源与高级播放 | 部分完成：M5a–M5p | Plex 全链路；macOS 自包含 app；Emby；Jellyfin+Emby 作品/版本级去重与 progress；AirPlay 入口；SMB 边下边播 + NFO/海报/字幕 + 跨季/重连。未公证/仅 arm64；真实 SMB3/大文件/并发、音频轨去重、HDR/AirPlay 实机、CloudKit/Trakt、音频未做。 |
 | M6 Vision Pro | 未开始 | |
 
 ## 当前分支
 
-`m4s-trakt-history`（基于 M4r 提交）。M5t 从该分支继续。
+`m4t-trakt-remote-history`（基于 M4s 提交）。M5t 从该分支继续。
 
 ## 下一批可执行工作
 

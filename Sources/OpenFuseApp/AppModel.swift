@@ -578,24 +578,55 @@ final class AppModel: ObservableObject {
                 }
             }
             for episode in episodes {
-                guard let fileURL = episode.fileURL else { continue }
-                let path = URL(string: fileURL)?.path ?? fileURL
-                store.update(
-                    fingerprint: MediaFingerprint(path: path, fileSize: 0, modifiedAt: nil),
-                    duration: max(episode.runtime, 1),
-                    position: 0,
-                    displayTitle: episode.title,
-                    finished: true,
-                    sourceKind: work.sourceKind,
-                    sourceID: work.sourceID,
-                    remotePath: episode.remotePath
-                )
-                marked += 1
+                var didMark = false
+                for key in playbackKeys(work: work, episode: episode) {
+                    store.update(
+                        fingerprint: MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil),
+                        duration: max(episode.runtime, 1),
+                        position: 0,
+                        displayTitle: episode.title,
+                        finished: true,
+                        sourceKind: work.sourceKind,
+                        sourceID: work.sourceID,
+                        remotePath: episode.remotePath
+                    )
+                    didMark = true
+                }
+                if didMark { marked += 1 }
             }
         }
         refreshRecent()
         statusMessage = "Trakt 历史：匹配 \(marked) 集"
         return marked
+    }
+
+    private func playbackKeys(work: LibraryWork, episode: LibraryEpisode) -> [String] {
+        if let fileURL = episode.fileURL, !fileURL.isEmpty {
+            let path = URL(string: fileURL)?.path ?? fileURL
+            return [path]
+        }
+        let versions = libraryVersions(itemID: episode.id)
+        if versions.isEmpty {
+            return []
+        }
+        return versions.compactMap { version in
+            switch work.sourceKind {
+            case "jellyfin", "emby":
+                let itemID = episode.serverID ?? version.remotePath ?? episode.remotePath ?? episode.id
+                return "\(version.sourceKind)://\(work.sourceID)/\(itemID)/\(version.mediaSourceID ?? "")"
+            case "webdav":
+                guard let path = version.remotePath ?? episode.remotePath else { return nil }
+                return "webdav://\(work.sourceID)/\(path)"
+            case "smb":
+                guard let path = version.remotePath ?? episode.remotePath else { return nil }
+                return "smb://\(work.sourceID)/\(path)"
+            case "plex":
+                guard let path = version.remotePath else { return nil }
+                return "plex://\(work.sourceID)/\(path)"
+            default:
+                return nil
+            }
+        }
     }
 
     private func normalizedTraktTitle(_ title: String) -> String {
