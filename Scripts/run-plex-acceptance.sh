@@ -31,7 +31,7 @@ for item in data["items"]:
 PY
 )
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
-  --library-play "$EPISODE" --freeze-at 9.9 --capture "$OUT/play.png" \
+  --library-play "$EPISODE" --subtitle zh-Hans --freeze-at 9.9 --capture "$OUT/play.png" \
   --capture-after 14 --report "$OUT/play.json" --quit-after 16 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_PLEX_TOKEN="$TOKEN" "$APP" \
@@ -52,6 +52,10 @@ if not any(item["poster"].startswith("plex:") for item in library["items"]):
 play = json.load(open(os.path.join(out, "play.json")))
 if play.get("sourceKind") != "plex" or not 9.8 <= play.get("position", 0) <= 10.1:
     errors.append(f"play {play.get('sourceKind')} {play.get('position')}")
+if not any("Plex 外挂简体" in item.get("name", "") for item in play.get("subtitles", [])):
+    errors.append("Plex external subtitle not loaded")
+if not str(play.get("selectedSubtitle", "")).startswith("mpv:"):
+    errors.append(f"subtitle not selected: {play.get('selectedSubtitle')}")
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")
@@ -60,6 +64,8 @@ if "/:/timeline" not in log or "state=playing" not in log:
     errors.append("Plex timeline playing not reported")
 if "state=paused" not in log:
     errors.append("Plex timeline paused not reported")
+if "/library/streams/401-srt" not in log:
+    errors.append("Plex subtitle stream not downloaded")
 if "/:/scrobble" not in log:
     errors.append("Plex scrobble not reported")
 if "state=stopped" not in log:

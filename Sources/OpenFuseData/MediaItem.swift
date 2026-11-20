@@ -97,7 +97,8 @@ public struct MediaItem: Sendable {
         size: Int64,
         duration: Double,
         token: String,
-        url: URL
+        url: URL,
+        subtitles: [SubtitleTrack] = []
     ) -> MediaItem {
         let key = "plex://\(source.id)/\(partKey)"
         let context = PlexPlaybackContext(
@@ -112,7 +113,7 @@ public struct MediaItem: Sendable {
             title: title,
             playbackURL: url,
             fingerprint: MediaFingerprint(path: key, fileSize: size, modifiedAt: nil),
-            subtitles: [],
+            subtitles: subtitles,
             httpHeaders: [],
             origin: .plex(sourceID: source.id, partKey: partKey, url: url),
             sourceName: source.name,

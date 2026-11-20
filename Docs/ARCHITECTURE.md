@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Plex 外挂字幕（M5d）
+
+- PlexPart.Stream 解码；metadata(ratingKey) + subtitleData(streamKey) 带 token。
+- PlexSubtitle.tracks 归一化语言/格式，缓存并生成 SubtitleTrack；MediaItem.plex 携带。
+- 实测 `Plex 外挂简体|zh-Hans` 下载、mpv:1 选中、9.958s 中文字幕。
+- 未做直连浏览、Plex 音轨/版本、真实 Plex。
+
 ## Plex scrobble（M5c）
 
 - `saveProgress` 在 ResumePolicy 判定已看完时调用 `reportPlexStop`（幂等），补发 timeline `stopped` 与 `/:/scrobble`。

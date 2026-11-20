@@ -32,10 +32,25 @@ public struct PlexSection: Codable, Hashable, Identifiable, Sendable {
     public var id: String { key }
 }
 
+public struct PlexStream: Codable, Hashable, Sendable {
+    public var streamType: Int?
+    public var key: String?
+    public var codec: String?
+    public var languageCode: String?
+    public var displayTitle: String?
+    public var forced: Bool?
+}
+
 public struct PlexPart: Codable, Hashable, Sendable {
     public var key: String
     public var file: String?
     public var size: Int64?
+    public var streams: [PlexStream]?
+
+    enum CodingKeys: String, CodingKey {
+        case key, file, size
+        case streams = "Stream"
+    }
 }
 
 public struct PlexMedia: Codable, Hashable, Sendable {
@@ -122,6 +137,29 @@ public actor PlexClient {
     public func items(sectionKey: String) async throws -> [PlexMetadata] {
         let response: PlexEnvelope<PlexMetadataContainer> = try await get("library/sections/\(sectionKey)/all")
         return response.mediaContainer.metadata ?? []
+    }
+
+    public func metadata(ratingKey: String) async throws -> PlexMetadata? {
+        let response: PlexEnvelope<PlexMetadataContainer> = try await get("library/metadata/\(ratingKey)")
+        return response.mediaContainer.metadata?.first
+    }
+
+    public func subtitleData(streamKey: String) async throws -> Data {
+        var components = URLComponents(
+            url: URL(string: streamKey, relativeTo: source.normalizedBaseURL)?.absoluteURL ?? source.normalizedBaseURL,
+            resolvingAgainstBaseURL: false
+        )
+        var query = components?.queryItems ?? []
+        query.append(URLQueryItem(name: "X-Plex-Token", value: token))
+        components?.queryItems = query
+        guard let url = components?.url else { throw PlexError.invalidURL(streamKey) }
+        var request = URLRequest(url: url)
+        request.setValue("application/x-subrip", forHTTPHeaderField: "Accept")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw PlexError.httpStatus((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        return data
     }
 
     public func children(ratingKey: String) async throws -> [PlexMetadata] {
@@ -408,5 +446,68 @@ public enum PlexLibraryScanner {
         if value.lowercased().contains("1080") { return "1080p" }
         if value.lowercased().contains("720") { return "720p" }
         return value
+    }
+}
+
+
+public enum PlexSubtitle {
+    public static func tracks(
+        for metadata: PlexMetadata,
+        partKey: String,
+        client: PlexClient,
+        cacheDirectory: URL
+    ) async -> [SubtitleTrack] {
+        guard let part = metadata.media?
+            .flatMap({ $0.parts ?? [] })
+            .first(where: { $0.key == partKey }) else { return [] }
+        var tracks: [SubtitleTrack] = []
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        for (index, stream) in (part.streams ?? []).enumerated() where stream.streamType == 3 {
+            guard let key = stream.key, !key.isEmpty else { continue }
+            let codec = (stream.codec ?? "srt").lowercased()
+            let fileExtension: String
+            switch codec {
+            case "ass", "ssa": fileExtension = "ass"
+            case "vtt": fileExtension = "vtt"
+            case "subrip", "srt": fileExtension = "srt"
+            default: fileExtension = "srt"
+            }
+            guard let data = try? await client.subtitleData(streamKey: key), !data.isEmpty else { continue }
+            let target = cacheDirectory.appendingPathComponent(
+                LibraryID.hash("\(metadata.ratingKey)|\(key)|\(index)") + "." + fileExtension
+            )
+            guard (try? data.write(to: target, options: .atomic)) != nil else { continue }
+            let language = normalizeLanguage(stream.languageCode)
+            let format = SubtitleFormat(fileExtension: fileExtension)
+            let name = stream.displayTitle ?? SubtitleLabel.make(
+                language: language,
+                format: format,
+                forced: stream.forced ?? false,
+                includeFormat: true
+            )
+            tracks.append(
+                SubtitleTrack(
+                    id: "plex-stream:\(metadata.ratingKey):\(index)",
+                    displayName: name,
+                    language: language,
+                    format: format,
+                    source: .downloaded,
+                    url: target,
+                    isForced: stream.forced ?? false
+                )
+            )
+        }
+        return tracks
+    }
+
+    private static func normalizeLanguage(_ code: String?) -> String? {
+        guard let code, !code.isEmpty else { return nil }
+        switch code.lowercased() {
+        case "chi", "zho", "zh", "chs": return "zh-Hans"
+        case "cht": return "zh-Hant"
+        case "jpn", "ja": return "ja"
+        case "eng", "en": return "en"
+        default: return code.lowercased()
+        }
     }
 }

@@ -1,0 +1,23 @@
+OpenFuse M5d Plex external subtitle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/plex_fixture.py, 60s episode, port 32400
+
+Flow:
+  Plex metadata(ratingKey=401) -> Media[].Part[].Stream[] with streamType=3,
+  key=/library/streams/401-srt, codec=srt, languageCode=chi.
+  PlexSubtitle.tracks downloads with X-Plex-Token into SubtitleCache, builds
+  SubtitleTrack(language=zh-Hans, displayName=Plex 外挂简体).
+  MediaItem.plex subtitles -> libmpv external subtitle track.
+
+Results:
+  Plex source scan 2 works/3 episodes.
+  Playback: sourceKind=plex, position 9.958s.
+  Subtitle tracks: "Plex 外挂简体|zh-Hans", "中文（简体） · 中日双语|zh".
+  Selected subtitle mpv:1; screenshot shows Chinese line at 9.9s.
+  Server GET /library/streams/401-srt 200.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Plex subtitle auth/format; direct browse; audio track selection;
+  Emby/SMB/HDR/AirPlay/packaging; CloudKit/Trakt; audio.

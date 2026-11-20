@@ -31,4 +31,4 @@ M5b 只在 `finishPlayback` 触发 `/:/scrobble`，而实际暂停在 59.967s �
 
 ## 下一项
 
-M5d：Plex 直连浏览/字幕；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 尾项。
+Plex 外挂字幕已在 [M5d 验收](Docs/M5D-PLEX-SUBTITLES.md) 完成。剩余 M5e：Plex 直连浏览/音轨/版本；Emby；SMB；HDR/AirPlay；自包含打包；CloudKit/Trakt；音频听测；M3 尾项。

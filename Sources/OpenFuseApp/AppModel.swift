@@ -1178,6 +1178,47 @@ final class AppModel: ObservableObject {
         playLibrary(work: version.work, episode: version.episode, version: version.version)
     }
 
+    private func openPlexItem(
+        source: PlexSource,
+        token: String,
+        ratingKey: String,
+        partKey: String,
+        title: String,
+        duration: Double
+    ) async {
+        guard !ratingKey.isEmpty,
+              let url = PlexClient(source: source, token: token).streamURL(partKey: partKey) else {
+            libraryStatus = "Plex 条目地址无效"
+            return
+        }
+        let client = PlexClient(source: source, token: token)
+        let metadata = try? await client.metadata(ratingKey: ratingKey)
+        let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
+        let subtitles: [SubtitleTrack]
+        if let metadata {
+            subtitles = await PlexSubtitle.tracks(
+                for: metadata,
+                partKey: partKey,
+                client: client,
+                cacheDirectory: cache
+            )
+        } else {
+            subtitles = []
+        }
+        let media = MediaItem.plex(
+            source: source,
+            title: title,
+            ratingKey: ratingKey,
+            partKey: partKey,
+            size: 0,
+            duration: duration,
+            token: token,
+            url: url,
+            subtitles: subtitles
+        )
+        startPlayer(with: media)
+    }
+
     func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {
         let version = version ?? libraryVersions(itemID: episode.id).first
         switch work.sourceKind {
@@ -1203,18 +1244,16 @@ final class AppModel: ObservableObject {
                 libraryStatus = "Plex 来源或 token 已失效"
                 return
             }
-            let size = Int64(0)
-            let media = MediaItem.plex(
-                source: source,
-                title: episode.title,
-                ratingKey: episode.serverID ?? "",
-                partKey: partKey,
-                size: size,
-                duration: episode.runtime,
-                token: token,
-                url: url
-            )
-            startPlayer(with: media)
+            Task {
+                await openPlexItem(
+                    source: source,
+                    token: token,
+                    ratingKey: episode.serverID ?? "",
+                    partKey: partKey,
+                    title: episode.title,
+                    duration: episode.runtime
+                )
+            }
         case "webdav":
             guard let source = sources.first(where: { $0.id == work.sourceID }),
                   let path = episode.remotePath ?? version?.remotePath

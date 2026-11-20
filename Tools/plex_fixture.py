@@ -33,6 +33,14 @@ def media(part_id):
             "key": f"/library/parts/{part_id}/file.mkv",
             "file": f"/media/{part_id}/file.mkv",
             "size": os.path.getsize(FIXTURE) if os.path.exists(FIXTURE) else 0,
+            "Stream": [{
+                "streamType": 3,
+                "key": f"/library/streams/{part_id}-srt",
+                "codec": "srt",
+                "languageCode": "chi",
+                "displayTitle": "Plex 外挂简体",
+                "forced": False,
+            }],
         }],
     }]
 
@@ -190,6 +198,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == f"/library/metadata/{SHOW_ID}/children":
             self._json({"Metadata": [season()], "size": 1})
+            return
+        if path == "/library/metadata/401":
+            entry = episodes()[0]
+            self._json({"Metadata": [entry], "size": 1})
+            return
+        if path.startswith("/library/streams/") and path.endswith("-srt"):
+            subtitle = os.path.abspath("Fixtures/mobile/openfuse-mobile.zh-Hans.srt")
+            if not os.path.exists(subtitle):
+                self.send_error(404)
+                return
+            with open(subtitle, "rb") as handle:
+                data = handle.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-subrip; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            self._record(200, {"subtitle": path})
             return
         if path == f"/library/metadata/{SEASON_ID}/children":
             entries = episodes()
