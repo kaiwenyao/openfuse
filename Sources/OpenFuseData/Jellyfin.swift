@@ -8,6 +8,8 @@ public struct JellyfinSource: Codable, Hashable, Identifiable, Sendable {
     public var username: String
     public var userID: String?
     public var serverID: String?
+    /// "jellyfin" (default) or "emby". Emby exposes the same HTTP API.
+    public var serverKind: String?
 
     public init(
         id: String? = nil,
@@ -15,18 +17,22 @@ public struct JellyfinSource: Codable, Hashable, Identifiable, Sendable {
         baseURL: URL,
         username: String,
         userID: String? = nil,
-        serverID: String? = nil
+        serverID: String? = nil,
+        serverKind: String? = nil
     ) {
-        self.id = id ?? Self.makeID(baseURL: baseURL, username: username)
+        self.id = id ?? Self.makeID(baseURL: baseURL, username: username, serverKind: serverKind)
         self.name = name
         self.baseURL = baseURL
         self.username = username
         self.userID = userID
         self.serverID = serverID
+        self.serverKind = serverKind
     }
 
-    public static func makeID(baseURL: URL, username: String) -> String {
-        let material = "jellyfin|\(username)@\(baseURL.absoluteString)"
+    public var kind: String { serverKind ?? "jellyfin" }
+
+    public static func makeID(baseURL: URL, username: String, serverKind: String? = nil) -> String {
+        let material = "\(serverKind ?? "jellyfin")|\(username)@\(baseURL.absoluteString)"
         let digest = SHA256.hash(data: Data(material.utf8))
         let hex = digest.map { String(format: "%02x", $0) }.joined()
         return String(hex.prefix(16))

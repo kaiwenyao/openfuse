@@ -118,6 +118,7 @@ public enum LibraryAggregation {
     public static func sourceLabel(_ kind: String) -> String {
         switch kind {
         case "jellyfin": return "Jellyfin"
+        case "emby": return "Emby"
         case "webdav": return "WebDAV"
         case "plex": return "Plex"
         default: return "本地"

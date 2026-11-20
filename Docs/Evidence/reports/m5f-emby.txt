@@ -1,0 +1,20 @@
+OpenFuse M5f Emby acceptance evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: Tools/jellyfin_fixture.py (Jellyfin-compatible Emby API), port 8097
+
+Implementation:
+  JellyfinSource.serverKind = "emby"; scanner sourceKind follows kind;
+  MediaItem.sourceKind from playback context; playLibrary handles jellyfin/emby;
+  AddJellyfinSheet has Jellyfin/Emby picker; browser label Emby Direct;
+  CLI --emby-url/--emby-user/--emby-pass/--emby-scan.
+
+Results:
+  Scan 2 works / 3 episodes; all sourceKind=emby.
+  Library playback: sourceKind=emby, title 第 1 集, position 9.917s.
+  Emby Direct browser rendered movie/series libraries.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real Emby server/auth/version differences; Emby progress write-back; direct
+  playback quirks; audio; CloudKit/Trakt; HDR/AirPlay.

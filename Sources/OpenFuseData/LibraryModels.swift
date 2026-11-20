@@ -58,6 +58,7 @@ public struct LibraryGroup: Identifiable, Sendable {
         sourceKinds.map { kind in
             switch kind {
             case "jellyfin": return "Jellyfin"
+            case "emby": return "Emby"
             case "webdav": return "WebDAV"
             case "plex": return "Plex"
             default: return "本地"

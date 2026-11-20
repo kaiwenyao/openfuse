@@ -33,7 +33,8 @@ public struct MediaItem: Sendable {
         switch origin {
         case .local: return "local"
         case .webdav: return "webdav"
-        case .jellyfin: return "jellyfin"
+        case .jellyfin:
+            return jellyfinContext?.serverKind ?? "jellyfin"
         case .plex: return "plex"
         }
     }
@@ -167,6 +168,7 @@ public enum DisplayTitle {
 
 public struct JellyfinPlaybackContext: Sendable {
     public var sourceID: String
+    public var serverKind: String
     public var baseURL: URL
     public var userID: String
     public var token: String
@@ -180,6 +182,7 @@ public struct JellyfinPlaybackContext: Sendable {
 
     public init(
         sourceID: String,
+        serverKind: String = "jellyfin",
         baseURL: URL,
         userID: String,
         token: String,
@@ -192,6 +195,7 @@ public struct JellyfinPlaybackContext: Sendable {
         mediaStreams: [JellyfinMediaStream] = []
     ) {
         self.sourceID = sourceID
+        self.serverKind = serverKind
         self.baseURL = baseURL
         self.userID = userID
         self.token = token
@@ -221,6 +225,7 @@ public extension MediaItem {
         let start = JellyfinTicks.seconds(item.userData?.playbackPositionTicks)
         let context = JellyfinPlaybackContext(
             sourceID: source.id,
+            serverKind: source.kind,
             baseURL: source.normalizedBaseURL,
             userID: source.userID ?? "",
             token: token,
@@ -233,7 +238,7 @@ public extension MediaItem {
             mediaStreams: mediaSource.mediaStreams ?? []
         )
         let fingerprint = MediaFingerprint(
-            path: "jellyfin://\(source.id)/\(item.id)/\(mediaSource.id)",
+            path: "\(source.kind)://\(source.id)/\(item.id)/\(mediaSource.id)",
             fileSize: 0,
             modifiedAt: nil
         )

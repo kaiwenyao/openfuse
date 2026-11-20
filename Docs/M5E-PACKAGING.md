@@ -37,4 +37,4 @@
 
 ## 下一项
 
-M5f：Developer ID/公证、Universal；Plex 直连浏览/音轨/版本；Emby；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3 尾项。
+Emby 来源已在 [M5f 验收](M5F-EMBY.md) 完成（兼容夹具）。剩余 M5g：真实 Emby/Jellyfin、公证/Universal、Plex 直连/音轨/版本、SMB/HDR/AirPlay、CloudKit/Trakt、音频、M3 尾项。

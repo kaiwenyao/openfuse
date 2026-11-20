@@ -429,7 +429,7 @@ public enum LibraryScanner {
                     year: movie.productionYear,
                     overview: movie.overview,
                     poster: poster,
-                    sourceKind: "jellyfin",
+                    sourceKind: source.kind,
                     sourceID: source.id,
                     serverID: movie.id,
                     addedAt: Self.jellyfinDate(movie.dateCreated),
@@ -522,7 +522,7 @@ public enum LibraryScanner {
                     year: seriesItem.productionYear,
                     overview: seriesItem.overview,
                     poster: poster,
-                    sourceKind: "jellyfin",
+                    sourceKind: source.kind,
                     sourceID: source.id,
                     serverID: seriesID,
                     addedAt: Self.jellyfinDate(seriesItem.dateCreated),
@@ -533,7 +533,7 @@ public enum LibraryScanner {
         }
 
         return ScannedLibrary(
-            sourceKind: "jellyfin",
+            sourceKind: source.kind,
             sourceID: source.id,
             sourceName: source.name,
             works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending }

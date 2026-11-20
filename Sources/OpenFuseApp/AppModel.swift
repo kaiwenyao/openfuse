@@ -334,7 +334,7 @@ final class AppModel: ObservableObject {
     }
 
     func resume(_ record: PlaybackRecord) {
-        if record.sourceKind == "jellyfin",
+        if record.sourceKind == "jellyfin" || record.sourceKind == "emby",
            let sourceID = record.sourceID,
            let source = jellyfinSources.first(where: { $0.id == sourceID }) {
             let parts = (record.remotePath ?? "").split(separator: "|", maxSplits: 1).map(String.init)
@@ -365,7 +365,12 @@ final class AppModel: ObservableObject {
     // MARK: - Jellyfin
 
     func jellyfinToken(for source: JellyfinSource) -> String? {
-        if let override = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_TOKEN"], !override.isEmpty {
+        let environment = ProcessInfo.processInfo.environment
+        if let override = environment[source.kind == "emby" ? "OPENFUSE_EMBY_TOKEN" : "OPENFUSE_JELLYFIN_TOKEN"],
+           !override.isEmpty {
+            return override
+        }
+        if let override = environment["OPENFUSE_JELLYFIN_TOKEN"], !override.isEmpty {
             return override
         }
         if let cached = sessionJellyfinTokens[source.id] { return cached }
@@ -443,14 +448,26 @@ final class AppModel: ObservableObject {
         reloadLibrary()
     }
 
-    func addJellyfinSource(name: String, urlText: String, username: String, password: String) async -> JellyfinSource? {
+    func addJellyfinSource(
+        name: String,
+        urlText: String,
+        username: String,
+        password: String,
+        serverKind: String = "jellyfin"
+    ) async -> JellyfinSource? {
         guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https"
         else {
             statusMessage = "服务器地址需要是 http:// 或 https://"
             return nil
         }
-        var source = JellyfinSource(name: name.isEmpty ? url.host ?? "Jellyfin" : name, baseURL: url, username: username)
+        let fallbackName = serverKind == "emby" ? "Emby" : "Jellyfin"
+        var source = JellyfinSource(
+            name: name.isEmpty ? url.host ?? fallbackName : name,
+            baseURL: url,
+            username: username,
+            serverKind: serverKind
+        )
         do {
             let session = try await JellyfinClient.authenticate(source: source, password: password)
             source.userID = session.userID
@@ -465,7 +482,7 @@ final class AppModel: ObservableObject {
             }
             try jellyfinStore.upsert(source)
             jellyfinSources = jellyfinStore.sources
-            statusMessage = "已添加 \(source.name)，共 \(views.count) 个媒体库"
+            statusMessage = "已添加 \(source.name)（\(serverKind == "emby" ? "Emby" : "Jellyfin")），共 \(views.count) 个媒体库"
             return source
         } catch {
             statusMessage = error.localizedDescription
@@ -784,7 +801,7 @@ final class AppModel: ObservableObject {
 
     private func preference(_ work: LibraryWork) -> Int {
         switch work.sourceKind {
-        case "jellyfin": return 3
+        case "jellyfin", "emby": return 3
         case "local": return 2
         case "webdav": return 1
         default: return 0
@@ -927,9 +944,9 @@ final class AppModel: ObservableObject {
                 let key = "webdav://\(version.sourceID)/\(path)"
                 if let record = records[key] { return record }
             }
-            if version.sourceKind == "jellyfin" {
+            if version.sourceKind == "jellyfin" || version.sourceKind == "emby" {
                 let itemID = episode.serverID ?? version.remotePath ?? episode.remotePath ?? ""
-                let prefix = "jellyfin://\(version.sourceID)/\(itemID)/"
+                let prefix = "\(version.sourceKind)://\(version.sourceID)/\(itemID)/"
                 if let record = records.first(where: { $0.key.hasPrefix(prefix) })?.value {
                     return record
                 }
@@ -1222,7 +1239,7 @@ final class AppModel: ObservableObject {
     func playLibrary(work: LibraryWork, episode: LibraryEpisode, version: LibraryVersion? = nil) {
         let version = version ?? libraryVersions(itemID: episode.id).first
         switch work.sourceKind {
-        case "jellyfin":
+        case "jellyfin", "emby":
             guard let source = jellyfinSources.first(where: { $0.id == work.sourceID }) else {
                 libraryStatus = "Jellyfin 来源已被移除"
                 return

@@ -51,7 +51,7 @@ struct JellyfinBrowserView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 HStack(spacing: 6) {
-                    Text("Jellyfin Direct")
+                    Text(source.kind == "emby" ? "Emby Direct" : "Jellyfin Direct")
                     Text("·")
                     Text(source.baseURL.absoluteString)
                 }
@@ -375,6 +375,7 @@ struct AddJellyfinSheet: View {
     @State private var url = ""
     @State private var username = ""
     @State private var password = ""
+    @State private var serverKind = "jellyfin"
     @State private var isBusy = false
     @State private var errorMessage: String?
 
@@ -382,7 +383,7 @@ struct AddJellyfinSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("添加 Jellyfin")
+                    Text(serverKind == "emby" ? "添加 Emby" : "添加 Jellyfin")
                         .font(.system(size: 18, weight: .semibold))
                     Text("使用独立测试账号。登录令牌保存在本机 Keychain。")
                         .font(.system(size: 11.5))
@@ -393,7 +394,12 @@ struct AddJellyfinSheet: View {
             }
 
             Form {
-                TextField("名称", text: $name, prompt: Text("例如：家里 Jellyfin"))
+                Picker("类型", selection: $serverKind) {
+                    Text("Jellyfin").tag("jellyfin")
+                    Text("Emby").tag("emby")
+                }
+                .pickerStyle(.segmented)
+                TextField("名称", text: $name, prompt: Text(serverKind == "emby" ? "例如：家里 Emby" : "例如：家里 Jellyfin"))
                 TextField("服务器地址", text: $url, prompt: Text("http://192.168.1.10:8096"))
                     .textContentType(.URL)
                 TextField("用户名", text: $username)
@@ -429,7 +435,13 @@ struct AddJellyfinSheet: View {
     private func submit() async {
         isBusy = true
         errorMessage = nil
-        let source = await model.addJellyfinSource(name: name, urlText: url, username: username, password: password)
+        let source = await model.addJellyfinSource(
+            name: name,
+            urlText: url,
+            username: username,
+            password: password,
+            serverKind: serverKind
+        )
         isBusy = false
         if source != nil {
             dismiss()

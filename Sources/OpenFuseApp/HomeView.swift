@@ -93,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let hasRemoteOrLocalLaunch = arguments.contains("--jellyfin-url")
             || arguments.contains("--webdav-url") || arguments.contains("--plex-url")
+            || arguments.contains("--emby-url")
             || arguments.contains("--open")
         if !hasRemoteOrLocalLaunch,
            arguments.contains("--library-work") || arguments.contains("--library-report")
@@ -185,22 +186,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-        if let jellyfinURL = value(after: "--jellyfin-url", in: arguments), let baseURL = URL(string: jellyfinURL) {
+        let embyURL = value(after: "--emby-url", in: arguments)
+        if let jellyfinURL = value(after: "--jellyfin-url", in: arguments) ?? embyURL,
+           let baseURL = URL(string: jellyfinURL) {
+            let isEmby = embyURL != nil && self.value(after: "--jellyfin-url", in: arguments) == nil
+            let serverKind = isEmby ? "emby" : "jellyfin"
             let user = self.value(after: "--jellyfin-user", in: arguments)
-                ?? ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_USER"] ?? ""
-            let password = ProcessInfo.processInfo.environment["OPENFUSE_JELLYFIN_PASSWORD"]
-                ?? self.value(after: "--jellyfin-pass", in: arguments) ?? ""
-            let name = self.value(after: "--jellyfin-name", in: arguments) ?? "Jellyfin"
+                ?? self.value(after: "--emby-user", in: arguments)
+                ?? ProcessInfo.processInfo.environment[isEmby ? "OPENFUSE_EMBY_USER" : "OPENFUSE_JELLYFIN_USER"] ?? ""
+            let password = ProcessInfo.processInfo.environment[isEmby ? "OPENFUSE_EMBY_PASSWORD" : "OPENFUSE_JELLYFIN_PASSWORD"]
+                ?? self.value(after: "--jellyfin-pass", in: arguments)
+                ?? self.value(after: "--emby-pass", in: arguments) ?? ""
+            let name = self.value(after: "--jellyfin-name", in: arguments)
+                ?? self.value(after: "--emby-name", in: arguments)
+                ?? (isEmby ? "Emby" : "Jellyfin")
             let itemID = self.value(after: "--jellyfin-item", in: arguments)
             let mediaID = self.value(after: "--jellyfin-media", in: arguments)
             Task { @MainActor in
                 guard let source = await model.addJellyfinSource(
-                    name: name, urlText: baseURL.absoluteString, username: user, password: password
+                    name: name,
+                    urlText: baseURL.absoluteString,
+                    username: user,
+                    password: password,
+                    serverKind: serverKind
                 ) else {
                     self.scheduleQuitOnly(arguments: arguments)
                     return
                 }
-                if arguments.contains("--jellyfin-scan") {
+                if arguments.contains("--jellyfin-scan") || arguments.contains("--emby-scan") {
                     await model.scanJellyfinSource(source)
                     self.finishLibraryLaunch(model: model, arguments: arguments)
                     return

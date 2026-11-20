@@ -44,7 +44,8 @@
 - **M5c Plex scrobble：完成。** saveProgress 判定 95% 看完时幂等上报 stopped + `/:/scrobble`，夹具实测收到 scrobble。真实 Plex 未验证。记录：[M5c 验收](Docs/M5C-PLEX-SCROBBLE.md)。
 - **M5d Plex 外挂字幕：完成。** metadata Stream 带 token 下载到缓存，生成 `Plex 外挂简体|zh-Hans`；`--subtitle zh-Hans` 选中 mpv:1，9.958s 画面显示中文字幕。记录：[M5d 验收](Docs/M5D-PLEX-SUBTITLES.md)。
 - **M5e macOS 自包含打包：完成。** libmpv + 49 个非系统依赖复制到 `Contents/Frameworks` 并改 `@rpath`；lsof 确认 libmpv/libavcodec/libass 全部从 app 加载，`/opt/homebrew` 依赖 0；打包 app 67MB、zip 27MB，实际播放 MKV/HEVC/EAC3 成功。未公证、仅 arm64。记录：[M5e 验收](Docs/M5E-PACKAGING.md)。
-- **下一项：** M5f：Developer ID/公证、Universal；Plex 直连浏览/音轨/版本；Emby；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3 T07/WebDAV MKV 分辨率。
+- **M5f Emby 来源：完成本地验证。** 复用 Jellyfin 兼容 API，来源 `serverKind=emby`；UI 类型选择、Emby Direct 浏览、CLI `--emby-*`；扫描 2 作品/3 集、sourceKind=emby、播放 9.917s。真实 Emby 待验证。记录：[M5f 验收](Docs/M5F-EMBY.md)。
+- **下一项：** M5g：真实 Emby/Jellyfin、聚合去重；Plex 直连/音轨/版本；SMB；HDR/AirPlay；CloudKit/Trakt；音频听测；M3 尾项。
 
 开发入口：
 
@@ -74,7 +75,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5e-self-contained`（基于 M5d 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5f-emby`（基于 M5e 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

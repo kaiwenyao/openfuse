@@ -91,6 +91,12 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## Emby 来源（M5f）
+
+- JellyfinSource.serverKind=jellyfin/emby；扫描 sourceKind 跟随 kind；MediaItem sourceKind 来自 playback context。
+- UI 类型选择、Emby Direct 浏览；CLI --emby-*；续播键 emby://。
+- 兼容夹具实测 2 作品/3 集、9.917s；真实 Emby/Jellyfin 与聚合去重未验证。
+
 ## macOS 自包含打包（M5e）
 
 - Tools/bundle_runtime.py 递归复制 libmpv 与非系统 dylib（50 个）到 Contents/Frameworks，解析绝对与 @rpath 依赖，改 install name，加 @executable_path/../Frameworks。
