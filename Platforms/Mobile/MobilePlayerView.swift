@@ -32,6 +32,8 @@ struct MobilePlayerView: View {
     @State private var subtitleText = ""
     @State private var didPauseAtTarget = false
     @State private var seekError: String?
+    @State private var didReportStart = false
+    @State private var lastReportedAt: TimeInterval = -100
     private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -157,6 +159,7 @@ struct MobilePlayerView: View {
         .onAppear { setupPlayer() }
         .onDisappear {
             saveProgress()
+            model.reportPlaybackStopped(item, position: lastPosition)
             player?.pause()
             if let timeObserver, let player {
                 player.removeTimeObserver(timeObserver)
@@ -175,6 +178,12 @@ struct MobilePlayerView: View {
     private var showsHUD: Bool {
         ProcessInfo.processInfo.arguments.contains("--autoplay-sample")
             || ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY"] == "1"
+    }
+
+    private func startReportingIfNeeded(_ player: AVPlayer) {
+        guard !didReportStart else { return }
+        didReportStart = true
+        model.reportPlaybackStart(item, position: player.currentTime().seconds)
     }
 
     private func configureTracks(_ player: AVPlayer) {
@@ -263,6 +272,10 @@ struct MobilePlayerView: View {
         if time.isFinite {
             currentTime = max(0, time)
         }
+        if time.isFinite, abs(time - lastReportedAt) >= 10 {
+            lastReportedAt = time
+            model.reportPlaybackProgress(item, position: time, isPaused: player.rate == 0)
+        }
         if let cue = cues.first(where: { time >= $0.start && time < $0.end }) {
             subtitleText = cue.text
         } else if !cues.isEmpty {
@@ -319,6 +332,7 @@ struct MobilePlayerView: View {
         self.resourceLoader = loader
         player.appliesMediaSelectionCriteriaAutomatically = false
         configureTracks(player)
+        startReportingIfNeeded(player)
         duration = 0
         lastPosition = 0
         timeObserver = player.addPeriodicTimeObserver(

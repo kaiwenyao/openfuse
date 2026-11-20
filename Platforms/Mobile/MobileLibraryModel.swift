@@ -204,6 +204,15 @@ final class MobileLibraryModel: ObservableObject {
             await syncProgress(force: true)
         }
         let record = playbackStore.record(forPath: key)
+        // Cross-device resume: a fresh install (or another device) has no local
+        // record, so fall back to the position Jellyfin already knows.
+        var resumeFromServer: TimeInterval?
+        if record == nil,
+           let detail = try? await client.item(id: itemID),
+           let ticks = detail.userData?.playbackPositionTicks,
+           ticks > 0 {
+            resumeFromServer = Double(ticks) / 10_000_000
+        }
         if ProcessInfo.processInfo.environment["OPENFUSE_REPORT_RESUME"] == "1" {
             let report: [String: Any] = [
                 "key": key,
@@ -231,7 +240,7 @@ final class MobileLibraryModel: ObservableObject {
             title: work.title,
             subtitle: episode.episodeLabel,
             fingerprint: fingerprint,
-            resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
+            resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)) ?? resumeFromServer,
             sourceKind: "jellyfin",
             sourceID: source.id,
             remotePath: "\(itemID)|\(media.id)",
@@ -452,6 +461,37 @@ final class MobileLibraryModel: ObservableObject {
                 try? await scanJellyfin(source)
             }
         }
+    }
+
+    // MARK: - Jellyfin playback reporting
+
+    /// Builds a client for the item being played and reports start/progress/stop
+    /// so the server keeps the same resume position the Mac app writes.
+    private func jellyfinPlaybackContext(_ item: MobilePlaybackItem) -> (JellyfinClient, String, String)? {
+        guard item.sourceKind == "jellyfin",
+              let source = jellyfinSources.first(where: { $0.id == item.sourceID }),
+              let token = jellyfinToken(for: source),
+              let remote = item.remotePath else { return nil }
+        let parts: [String] = remote.split(separator: "|", maxSplits: 1).map { String($0) }
+        guard !parts.isEmpty else { return nil }
+        let itemID = parts[0]
+        let mediaID = parts.count > 1 ? parts[1] : itemID
+        return (JellyfinClient(source: source, token: token), itemID, mediaID)
+    }
+
+    func reportPlaybackStart(_ item: MobilePlaybackItem, position: Double) {
+        guard let (client, itemID, mediaID) = jellyfinPlaybackContext(item) else { return }
+        Task.detached { await client.reportStart(itemID: itemID, mediaSourceID: mediaID, playSessionID: nil, position: position, isPaused: false) }
+    }
+
+    func reportPlaybackProgress(_ item: MobilePlaybackItem, position: Double, isPaused: Bool) {
+        guard let (client, itemID, mediaID) = jellyfinPlaybackContext(item) else { return }
+        Task.detached { await client.reportProgress(itemID: itemID, mediaSourceID: mediaID, playSessionID: nil, position: position, isPaused: isPaused) }
+    }
+
+    func reportPlaybackStopped(_ item: MobilePlaybackItem, position: Double) {
+        guard let (client, itemID, mediaID) = jellyfinPlaybackContext(item) else { return }
+        Task.detached { await client.reportStopped(itemID: itemID, mediaSourceID: mediaID, playSessionID: nil, position: position) }
     }
 
     func posterURL(for work: LibraryWork) -> URL? {
