@@ -103,6 +103,12 @@ Docs/                   决策、素材、验收、证据
 - 支持扫描全部/移除根；移除删除该 source 的 works。
 - 实测两根共存/移除；跨根内容去重/自动重扫未做。
 
+## Jellyfin HLS 1080p/元数据（M2g）
+
+- hlsURL 加 8Mbps/1080p 限制；服务器 maxrate8M/1920x1080。
+- 移动 HUD 用 Jellyfin MediaStreams 标签覆盖 Unknown/CC。
+- 4K/HTTPS/多用户/负载未验证。
+
 ## iPhone Jellyfin HLS（M2f）
 
 - 移动端 HLS 用 AVURLAssetHTTPHeaderFieldsKey 注入 Authorization；Jellyfin 12 拒绝 api_key-only。

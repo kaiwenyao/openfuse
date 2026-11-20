@@ -465,6 +465,10 @@ public actor JellyfinClient {
             URLQueryItem(name: "TranscodingContainer", value: "ts"),
             URLQueryItem(name: "TranscodingProtocol", value: "hls"),
             URLQueryItem(name: "SegmentContainer", value: "ts"),
+            URLQueryItem(name: "VideoBitrate", value: "8000000"),
+            URLQueryItem(name: "AudioBitrate", value: "640000"),
+            URLQueryItem(name: "MaxWidth", value: "1920"),
+            URLQueryItem(name: "MaxHeight", value: "1080"),
             URLQueryItem(name: "DeviceId", value: source.deviceID),
             URLQueryItem(name: "api_key", value: token),
         ]

@@ -15,6 +15,8 @@ struct MobilePlaybackItem: Identifiable, Hashable {
     var remoteURL: String?
     var httpHeaders: [String: String] = [:]
     var sidecarSubtitles: [SubtitleTrack] = []
+    var serverAudioLabel: String?
+    var serverSubtitleLabel: String?
 }
 
 @MainActor
@@ -164,6 +166,17 @@ final class MobileLibraryModel: ObservableObject {
         let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
         let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
         let record = playbackStore.record(forPath: key)
+        let audioStream = media.mediaStreams?.first(where: { $0.type == "Audio" && $0.isDefault == true })
+            ?? media.mediaStreams?.first(where: { $0.type == "Audio" })
+        let audioLabel = audioStream.map { stream in
+            let base = stream.displayTitle ?? "\(stream.codec?.uppercased() ?? "AUDIO") \(stream.channels ?? 2)ch"
+            return directContainer ? base : base + "（转码 AAC）"
+        }
+        let subtitleStream = media.mediaStreams?.first(where: { $0.type == "Subtitle" && $0.isDefault == true })
+            ?? media.mediaStreams?.first(where: { $0.type == "Subtitle" })
+        let subtitleLabel = subtitleStream.flatMap { stream in
+            (stream.displayTitle ?? "服务器字幕") + "（服务器）"
+        }
         return MobilePlaybackItem(
             url: url,
             title: work.title,
@@ -175,7 +188,9 @@ final class MobileLibraryModel: ObservableObject {
             remotePath: "\(itemID)|\(media.id)",
             remoteURL: url.absoluteString,
             httpHeaders: headers,
-            sidecarSubtitles: sidecars
+            sidecarSubtitles: sidecars,
+            serverAudioLabel: audioLabel,
+            serverSubtitleLabel: subtitleLabel
         )
     }
 

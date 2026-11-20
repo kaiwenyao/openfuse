@@ -1,0 +1,19 @@
+OpenFuse M2g Jellyfin HLS 1080p/metadata evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2.
+
+Changes:
+  HLS URL adds VideoBitrate=8000000, AudioBitrate=640000, MaxWidth/Height=1920/1080.
+  Mobile HUD replaces AVPlayer Unknown/CC labels with Jellyfin MediaStreams
+  default audio/subtitle names and transcode annotation.
+
+Results:
+  Video: 1920x1080 test pattern at 12.0s.
+  Jellyfin ffmpeg: -maxrate 8000000, scale min(1920,1080), libfdk_aac 6ch.
+  HUD: "E-AC-3 5.1 测试音轨 - Chinese - Dolby Digital+ - Default (转码 AAC)";
+       "Chinese (Simplified) - ASS - External (服务器)".
+  playback.json: sourceKind jellyfin, position 12.24s, master.m3u8.
+  Scripts/run-ios-jellyfin-hls.sh PASS; 36/36 tests; five platforms/device/Mac build.
+
+Not verified:
+  CPU load/quality smoothness, 4K, HTTPS/multiuser, real device, audio listening.

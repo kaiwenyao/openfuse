@@ -62,6 +62,8 @@ else:
 log = open(os.path.join(out, "jellyfin.log"), encoding="utf-8", errors="replace").read()
 if "-f hls" not in log:
     errors.append("Jellyfin did not start HLS transcode")
+if "-maxrate 8000000" not in log:
+    errors.append("HLS transcode not using 8Mbps")
 if not os.path.exists(os.path.join(out, "play.png")):
     errors.append("screenshot missing")
 if errors:

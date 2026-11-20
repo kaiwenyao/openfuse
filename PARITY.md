@@ -593,3 +593,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 签名/加密 | MacBook Pro M2 Pro／macOS 27.2.1 | Samba 强制签名/加密 | Infuse 未安装 | SMB3_11/AES-128-CCM/AES-128-CMAC；seek 11s | Evidence 100、`reports/m5al-samba-encrypted-status.txt` | 通过 |
 | DFS/域/大文件 | 同上 | AD/DFS | 待采样 | 未测 | — | 待验证 |
+
+### M2g Jellyfin HLS 质量执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1080p HLS | iPhone 18 Pro 模拟器／iOS 27.2 | Jellyfin 12 MKV | Infuse 未安装 | 1920×1080、maxrate8M、AAC6ch；12.0/60；服务器标签 | Evidence 101、`reports/m2g-*` | 通过 |
+| 4K/HTTPS/多用户 | 同上 | 真实服务器 | 待采样 | 未测 | — | 待验证 |

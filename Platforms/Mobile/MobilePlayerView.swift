@@ -182,9 +182,15 @@ struct MobilePlayerView: View {
             let codec = audioTracks.indices.contains(index) ? Self.audioCodec(audioTracks[index]) : option.displayName
             return "音轨 \(index + 1) · \(codec)"
         }
+        if audioLabels.count == 1, let server = item.serverAudioLabel {
+            audioLabels[0] = "音轨 1 · \(server)"
+        }
         subtitleLabels = subtitleOptions.enumerated().map { index, option in
             if subtitleOptions.count == 2 { return index == 0 ? "简体中文" : "繁體中文" }
             return option.displayName
+        }
+        if subtitleLabels.count == 1, let server = item.serverSubtitleLabel {
+            subtitleLabels[0] = server
         }
         if let group = audioGroup,
            let selected = player.currentItem?.currentMediaSelection.selectedMediaOption(in: group),
