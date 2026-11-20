@@ -219,10 +219,23 @@ msg() {
     esac
 }
 
+# Step lines are highlighted the same way as the AnyPaste installer: bold
+# cyan on a terminal, reset immediately after the line. Redirected output,
+# scripts and CI stay plain; NO_COLOR (https://no-color.org) disables it too.
+step_color_start() {
+    if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then printf '\033[1;36m'; fi
+}
+
+step_color_end() {
+    if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then printf '\033[0m'; fi
+}
+
 say() {
     local text
     if text=$(msg "$1"); then
+        step_color_start
         printf '%s\n' "$text"
+        step_color_end
     fi
 }
 
@@ -230,7 +243,10 @@ sayf() {
     local key="$1"; shift
     local text
     if text=$(msg "$key"); then
+        step_color_start
+        # shellcheck disable=SC2059
         printf "$text\n" "$@"
+        step_color_end
     fi
 }
 
