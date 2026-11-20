@@ -460,7 +460,13 @@ final class MobileLibraryModel: ObservableObject {
             ephemeralPasswords[source.id] = password
             try? sourceStore.upsert(source)
             webdavSources = sourceStore.sources
-            try? await scanWebDAV(source)
+            do {
+                try await scanWebDAV(source)
+                debugScanLog("scan ok works=\(works.count)")
+            } catch {
+                debugScanLog("scan failed: \(error.localizedDescription)")
+                status = "WebDAV 扫描失败：\(error.localizedDescription)"
+            }
         }
         if let urlText = env["OPENFUSE_TEST_JELLYFIN_URL"],
            let user = env["OPENFUSE_TEST_JELLYFIN_USER"],
@@ -476,6 +482,16 @@ final class MobileLibraryModel: ObservableObject {
                 try? await scanJellyfin(source)
             }
         }
+    }
+
+    private func debugScanLog(_ message: String) {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_SCAN"] == "1" else { return }
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("webdav-scan.log")
+        let line = "\(Date().timeIntervalSince1970) \(message)\n"
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile(); handle.write(Data(line.utf8)); try? handle.close()
+        } else { try? Data(line.utf8).write(to: url) }
     }
 
     // MARK: - Jellyfin playback reporting
