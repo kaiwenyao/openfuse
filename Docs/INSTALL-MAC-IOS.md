@@ -93,7 +93,7 @@ Scripts/install-openfuse-ios.sh --device "iPad 的名字"
 | --- | --- | --- |
 | **Mac** | ✅ 已实测：S03E13 HEVC Main 10、内外挂 ASS、简繁切换、前中后拖动、退出回原季、续播；S01E01 E-AC-3 5.1 下混立体声 | ✅ 已实测：剧→季→集、直放、字幕切换、进度回写并恢复、退出回季、续播、自动下一集 |
 | **iPhone** | 🟡 模拟器通过（libmpv）：正常流程=添加指向 `…/Attack on Titan (2013)/Season 03` 的来源 → 扫描出 23 集 → 打开 S03E13 → 直放 MKV，HEVC Main 10 出画，默认「中文（简体）(ASS)」；外挂繁體同样渲染正常、无方框；`Sex Education S01E01` 的 E-AC-3 5.1 解码 6ch 后经 audiounit 下混 2ch。注：扫描整个 WebDAV 根目录在移动端过慢，建议来源地址直接指到剧/季目录；真机待验 | 🟡 模拟器实测通过（iPhone 18 Pro）：真实 Jellyfin 的 S03E13 经 HLS 转码播放；外挂 ASS 走 Stream 回退下载后默认简体，`AUTOPLAY_SUBTITLE_INDEX=2` 切到繁體，画面分别显示「什么 我到底在怕什么 / 什麼 我到底在怕什麼」；服务器进度回写 301 s，清空本地记录后用服务器 300 s 起播，实测从 302.2 s 续播并保持简体 |
-| **iPad** | ⏳ 待真机：同上；MKV 直放缺引擎 | 🟡 模拟器播放通过（iPad Pro 13"）：同一路 HLS + 简体字幕；修复了播放器右上角对齐导致的视频缩角/字幕贴边问题，现为全屏居中；横竖屏与分屏待验（本机 Xcode 27 没有 Simulator 界面程序，无法脚本旋转） |
+| **iPad** | 🟡 模拟器通过（iPad Pro 13"）：来源指向 Season 03 → S03E13 由 libmpv 直放，简体 ASS 正常、视频按宽屏铺满；旋转/分屏仍待真机 | 🟡 模拟器通过（iPad Pro 13"）：HLS + 简体字幕，布局已修为全屏居中；横竖屏/分屏待验 |
 
 ## 五、还差什么
 
