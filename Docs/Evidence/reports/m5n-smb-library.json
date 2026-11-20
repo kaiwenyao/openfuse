@@ -1,0 +1,76 @@
+{
+  "episodes": 1,
+  "generatedAt": "2026-11-20T05:05:02Z",
+  "groups": [
+    {
+      "key": "movie|smb nfo 电影",
+      "primary": "SMB NFO 电影",
+      "sources": [
+        "smb"
+      ],
+      "workIDs": [
+        "smb-3dec7137ef31bfe3"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "fileURL": "",
+          "id": "smb-3dec7137ef31bfe3-main",
+          "remotePath": "/Movie/OpenFuse.SMB.mkv",
+          "season": 0,
+          "sourceKind": "smb",
+          "title": "SMB NFO 电影",
+          "versions": [
+            {
+              "fileURL": "",
+              "id": "smb-3dec7137ef31bfe3-main-v0",
+              "mediaSourceID": "",
+              "name": "SMB",
+              "resolution": ""
+            }
+          ]
+        }
+      ],
+      "id": "smb-3dec7137ef31bfe3",
+      "kind": "movie",
+      "overridden": false,
+      "overview": "SMB NFO/海报/字幕验收。",
+      "poster": "file:build/smb-acceptance/support/SMBPosterCache/af072794ec279abe.jpg",
+      "seasons": [],
+      "sourceID": "bdebc1099012fbb7",
+      "sourceKind": "smb",
+      "title": "SMB NFO 电影",
+      "year": 2026
+    }
+  ],
+  "merged": [
+    {
+      "episodes": [
+        {
+          "episode": 1,
+          "season": 0,
+          "title": "SMB NFO 电影",
+          "versions": [
+            "SMB · SMB"
+          ]
+        }
+      ],
+      "key": "movie|smb nfo 电影",
+      "sources": [
+        "smb"
+      ],
+      "title": "SMB NFO 电影"
+    }
+  ],
+  "rawEpisodes": 1,
+  "rawWorks": 1,
+  "status": "SMB SMB：1 个作品",
+  "visible": [
+    "SMB NFO 电影"
+  ],
+  "works": 1
+}

@@ -448,8 +448,13 @@ final class AppModel: ObservableObject {
         libraryStatus = "正在扫描 SMB：\(source.name)…"
         let client = SMBClient(source: source, password: password)
         do {
+            let cache = supportDirectory.appendingPathComponent("SMBPosterCache", isDirectory: true)
             let scanned = try await Task.detached(priority: .userInitiated) {
-                try SMBLibraryScanner.scan(source: source, client: client)
+                try SMBLibraryScanner.scan(
+                    source: source,
+                    client: client,
+                    posterCacheDirectory: cache
+                )
             }.value
             try libraryStore.replace(source: scanned)
             reloadLibrary()
@@ -482,13 +487,50 @@ final class AppModel: ObservableObject {
             }.value
             smbStreamServer?.stop()
             smbStreamServer = nil
+            var subtitles: [SubtitleTrack] = []
+            let directory = (path as NSString).deletingLastPathComponent
+            let videoBase = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
+            if let siblings = try? client.list(path: directory.isEmpty ? "/" : directory) {
+                let cache = supportDirectory.appendingPathComponent("SMBSubtitleCache", isDirectory: true)
+                try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+                for entry in siblings where !entry.isDirectory {
+                    let ext = (entry.name as NSString).pathExtension.lowercased()
+                    guard SubtitleCatalog.subtitleExtensions.contains(ext) else { continue }
+                    let base = (entry.name as NSString).deletingPathExtension
+                    guard let match = SubtitleCatalog.matchSubtitleName(base, videoBase: videoBase) else { continue }
+                    guard let data = try? client.fetch(path: entry.path), !data.isEmpty else { continue }
+                    let target = cache.appendingPathComponent(
+                        LibraryID.hash("\(source.id)|\(entry.path)") + "." + ext
+                    )
+                    guard (try? data.write(to: target, options: .atomic)) != nil else { continue }
+                    let language = match.language ?? LanguageTag.infer(from: base)
+                    let format = SubtitleFormat(fileExtension: ext)
+                    subtitles.append(
+                        SubtitleTrack(
+                            id: "smb:\(source.id):\(entry.path)",
+                            displayName: SubtitleLabel.make(
+                                language: language,
+                                format: format,
+                                forced: match.forced,
+                                includeFormat: true
+                            ),
+                            language: language,
+                            format: format,
+                            source: .downloaded,
+                            url: target,
+                            isForced: match.forced
+                        )
+                    )
+                }
+            }
             let server = try await SMBStreamServer.start(client: client, path: path, size: size)
             let media = MediaItem.smb(
                 source: source,
                 path: path,
                 title: title,
                 size: size,
-                playbackURL: server.url
+                playbackURL: server.url,
+                subtitles: subtitles
             )
             startPlayer(with: media)
             smbStreamServer = server

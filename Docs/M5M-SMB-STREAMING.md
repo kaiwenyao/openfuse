@@ -37,4 +37,4 @@ M5l 先全文件下载再播放。本轮改为回环 HTTP 服务器：mpv 对 `1
 
 ## 下一项
 
-M5n：SMB 句柄复用/并发/大文件、真实 SMB3；NFO/字幕；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
+SMB 句柄复用/NFO/海报/外挂字幕已在 [M5n 验收](Docs/M5N-SMB-METADATA.md) 完成。剩余 M5o：真实 SMB3/大文件/并发、tvshow NFO 继承、HDR/AirPlay 实机、CloudKit/Trakt、音频、版本级去重、M3 多根/损坏过滤。

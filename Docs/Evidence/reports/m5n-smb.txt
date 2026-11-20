@@ -1,0 +1,24 @@
+OpenFuse M5n SMB NFO/poster/subtitle/handle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Fixture: impacket SMB2 port 1445, share with MKV + NFO + poster + zh-Hans SRT.
+
+Implementation:
+  SMBClient caches open smb2fh handles per path (no open/close per 64KiB).
+  Scanner reads movie/episode NFO and poster/folder/cover images, caches
+  posters under SMBPosterCache; resolves NFO posterReference.
+  Playback lists sibling subtitles, matches base names, downloads SRT/ASS to
+  SMBSubtitleCache, adds SubtitleTrack; loopback Range server still used.
+
+Results:
+  Library: title "SMB NFO 电影", sourceKind=smb, poster=file:...SMBPosterCache.
+  Play: --subtitle zh-Hans --seek 30 --freeze-at 31:
+    sourceKind=smb, position=31.0, selectedSubtitle=mpv:1,
+    subtitles include 中文（简体）(SRT); file=http://127.0.0.1:...
+  SMBCache absent; SMBSubtitleCache present.
+  Scripts/run-smb-acceptance.sh PASS.
+  28/28 swift tests; iOS/iPadOS/tvOS/visionOS/device/Mac builds succeed.
+
+Not verified:
+  Real SMB3/DFS/large files/concurrency; multi-season tvshow.nfo inheritance;
+  SMB poster fallback; audio; iOS SMB.

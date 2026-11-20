@@ -74,12 +74,12 @@ public enum SubtitleCatalog {
         }
     }
 
-    struct NameMatch {
-        var language: String?
-        var forced: Bool
+    public struct NameMatch {
+        public var language: String?
+        public var forced: Bool
     }
 
-    static func matchSubtitleName(_ name: String, videoBase: String) -> NameMatch? {
+    public static func matchSubtitleName(_ name: String, videoBase: String) -> NameMatch? {
         if name == videoBase { return NameMatch(language: nil, forced: false) }
         guard name.hasPrefix(videoBase + ".") else { return nil }
 

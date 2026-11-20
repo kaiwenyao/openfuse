@@ -16,6 +16,17 @@ if [[ ! -x build/impacket-venv/bin/python ]]; then
 fi
 rm -rf "$OUT"; mkdir -p "$SHARE_DIR/Movie"
 cp Fixtures/generated/openfuse-fixture.mkv "$SHARE_DIR/Movie/OpenFuse.SMB.mkv"
+cp build/jellyfin-fixture/movie.jpg "$SHARE_DIR/Movie/poster.jpg"
+cat > "$SHARE_DIR/Movie/OpenFuse.SMB.nfo" <<'NFO'
+<?xml version="1.0" encoding="UTF-8"?>
+<movie>
+  <title>SMB NFO 电影</title>
+  <year>2026</year>
+  <plot>SMB NFO/海报/字幕验收。</plot>
+  <poster>poster.jpg</poster>
+</movie>
+NFO
+cp Fixtures/mobile/openfuse-mobile.zh-Hans.srt "$SHARE_DIR/Movie/OpenFuse.SMB.zh-Hans.srt"
 Scripts/build-app.sh >/dev/null
 swift test >/dev/null
 build/impacket-venv/bin/smbserver.py -port "$PORT" -username test -password test -smb2support \
@@ -38,7 +49,7 @@ print(data["items"][0]["episodes"][0]["id"])
 PY
 )
 OPENFUSE_SUPPORT_DIR="$OUT/support" OPENFUSE_SMB_PASSWORD=test "$APP" \
-  --library-play "$EPISODE" --seek 30 --freeze-at 31 --capture "$OUT/play.png" \
+  --library-play "$EPISODE" --subtitle zh-Hans --seek 30 --freeze-at 31 --capture "$OUT/play.png" \
   --capture-after 12 --report "$OUT/play.json" --quit-after 14 >"$OUT/app.log" 2>&1 || true
 sleep 0.5
 python3 - "$OUT" <<'PY'
@@ -55,6 +66,18 @@ if play.get("sourceKind") != "smb" or not 30.8 <= play.get("position", 0) <= 31.
     errors.append(f"play/seek {play.get('sourceKind')} {play.get('position')}")
 if "OpenFuse.SMB.mkv" not in play.get("remotePath", ""):
     errors.append(f"remotePath {play.get('remotePath')}")
+if not any("中文（简体）" in item.get("name", "") for item in play.get("subtitles", [])):
+    errors.append("SMB external subtitle not loaded")
+if not str(play.get("selectedSubtitle", "")).startswith("mpv:"):
+    errors.append(f"subtitle not selected: {play.get('selectedSubtitle')}")
+if library["items"][0]["title"] != "SMB NFO 电影":
+    errors.append(f"NFO title {library['items'][0]['title']}")
+if not str(library["items"][0].get("poster", "")).startswith("file:"):
+    errors.append(f"poster {library['items'][0].get('poster')}")
+if not os.path.isdir(os.path.join(out, "support", "SMBPosterCache")):
+    errors.append("SMBPosterCache missing")
+if not os.path.isdir(os.path.join(out, "support", "SMBSubtitleCache")):
+    errors.append("SMBSubtitleCache missing")
 for name in ["library.png", "play.png"]:
     if not os.path.exists(os.path.join(out, name)):
         errors.append(f"missing {name}")
@@ -67,5 +90,5 @@ if errors:
     print("FAIL")
     for error in errors: print(" -", error)
     sys.exit(1)
-print("PASS: SMB scan + loopback Range stream, seek to 31s, no file cache")
+print("PASS: SMB NFO/poster/subtitle, loopback Range seek 31s, no file cache")
 PY

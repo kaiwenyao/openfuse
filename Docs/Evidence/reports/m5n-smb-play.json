@@ -1,0 +1,79 @@
+{
+  "app": "OpenFuse",
+  "arguments": [
+    "build/OpenFuse.app/Contents/MacOS/OpenFuse",
+    "--library-play",
+    "smb-3dec7137ef31bfe3-main",
+    "--subtitle",
+    "zh-Hans",
+    "--seek",
+    "30",
+    "--freeze-at",
+    "31",
+    "--capture",
+    "build/smb-acceptance/play.png",
+    "--capture-after",
+    "12",
+    "--report",
+    "build/smb-acceptance/play.json",
+    "--quit-after",
+    "14"
+  ],
+  "audio": [
+    {
+      "channels": 6,
+      "codec": "eac3",
+      "engineID": 1,
+      "id": "mpv-audio:1",
+      "label": "E-AC-3 5.1",
+      "name": "中文 · E-AC-3 5.1 测试音轨"
+    }
+  ],
+  "audioChannels": "6",
+  "audioCodec": "eac3",
+  "audioDevice": "auto",
+  "audioOutParams": "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams": "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "currentAO": "coreaudio",
+  "currentVO": "libmpv",
+  "duration": 60,
+  "engine": "libmpv",
+  "file": "http://127.0.0.1:52019/stream",
+  "generatedAt": "2026-11-20T05:05:26Z",
+  "hwdecCurrent": "videotoolbox",
+  "isFullScreen": false,
+  "libraryStatus": "",
+  "logs": [],
+  "mpv": "mpv v0.42.0",
+  "paused": true,
+  "position": 31.041999999999998,
+  "remotePath": "/Movie/OpenFuse.SMB.mkv",
+  "selectedAudio": "mpv-audio:1",
+  "selectedSubtitle": "mpv:1",
+  "sourceID": "bdebc1099012fbb7",
+  "sourceKind": "smb",
+  "sourceName": "SMB",
+  "subtitles": [
+    {
+      "engineID": -1,
+      "format": "srt",
+      "id": "smb:bdebc1099012fbb7:/Movie/OpenFuse.SMB.zh-Hans.srt",
+      "language": "zh-Hans",
+      "name": "中文（简体） (SRT)",
+      "source": "downloaded"
+    },
+    {
+      "engineID": 1,
+      "format": "ass",
+      "id": "mpv:1",
+      "language": "zh",
+      "name": "中文（简体） · 中日双语",
+      "source": "embedded"
+    }
+  ],
+  "title": "SMB NFO 电影",
+  "videoCodec": "hevc / Main 10",
+  "videoDescription": "H.265 / HEVC (High Efficiency Video Coding)",
+  "videoOutParams": "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1920,\"h\":1080,\"dw\":1920,\"dh\":1080,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1920,\"crop-h\":1080,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2/4/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "windowFrame": "{{0, 0}, {0, 0}}"
+}

@@ -141,6 +141,10 @@
 | `76-smb-stream-seek.jpg` | SMB Range 流 seek 到 31s | 播放器抓帧 |
 | `reports/m5m-smb-stream.json` | SMB 流播放报告 | 应用报告 |
 | `reports/m5m-smb-stream.txt` | SMB 流摘要 | 运行记录 |
+| `77-smb-nfo-poster.jpg` | SMB NFO 标题与海报 | 应用内窗口快照 |
+| `78-smb-subtitle.jpg` | SMB 外挂字幕 + seek 31s | 播放器抓帧 |
+| `reports/m5n-smb-*.json` | SMB 元数据/播放报告 | 应用报告 |
+| `reports/m5n-smb.txt` | SMB NFO/字幕摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

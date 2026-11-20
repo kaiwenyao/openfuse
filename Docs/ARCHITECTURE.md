@@ -91,6 +91,13 @@ Docs/                   决策、素材、验收、证据
 - 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
 - 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
 
+## SMB NFO/海报/字幕与句柄复用（M5n）
+
+- SMBClient 按路径缓存 smb2fh，避免每 64KiB open/close。
+- Scanner 读取 movie/base/tvshow NFO，缓存 poster/folder/cover；NFO posterReference 解析。
+- openSMBItem 匹配同目录字幕、下载 SRT/ASS/VTT 到 SMBSubtitleCache，SubtitleTrack 随 MediaItem.smb。
+- 实测标题/海报/字幕/seek31/无整文件缓存；跨季 tvshow NFO 继承/真实 SMB3 未验证。
+
 ## SMB 回环 Range 边下边播（M5m）
 
 - SMBStreamServer：BSD socket 127.0.0.1 随机端口，HTTP HEAD/GET、206/Content-Range，64KiB 分块；libsmb2 pread 按需读。

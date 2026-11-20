@@ -54,7 +54,8 @@
 - **M5k Plex 详情/版本/音轨：完成。** 详情显示 1080p/720p 与 E-AC-3 5.1/AAC，可按版本播放；`--plex-play 401` 实际播放 9.917s 并选中 Plex 外挂简体；修复电影 children 404。记录：[M5k 验收](Docs/M5K-PLEX-DETAIL.md)。
 - **M5l SMB 来源：完成本地验证。** 源码 libsmb2 7.0 + impacket SMB2 夹具：1 作品/1 集，sourceKind=smb，下载缓存 SHA-256 一致，mpv 播放 9.958s；自包含包已带 libsmb2。当前是全文件缓存、非边下边播。记录：[M5l 验收](Docs/M5L-SMB.md)。
 - **M5m SMB 边下边播：完成本地验证。** BSD socket 回环 HTTP Range 服务器 + libsmb2 pread；`--seek 30` 后播放到 31.0s，无整文件缓存。NWListener 在当前环境 EINVAL，已改 BSD socket。记录：[M5m 验收](Docs/M5M-SMB-STREAMING.md)。
-- **下一项：** M5n：SMB 句柄复用/并发/大文件、真实 SMB3；NFO/字幕；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
+- **M5n SMB NFO/海报/字幕：完成本地验证。** SMB 句柄复用；扫描读取 NFO 并缓存 poster/folder/cover；播放前列同目录字幕、下载 SRT 并选中 mpv:1；回环 Range seek 31s、无整文件缓存。剧集跨季 tvshow NFO、真实 SMB3 待验证。记录：[M5n 验收](Docs/M5N-SMB-METADATA.md)。
+- **下一项：** M5o：真实 SMB3/大文件/并发、tvshow NFO 继承；HDR/AirPlay 实机；CloudKit/Trakt；音频；版本级去重；M3 多根/损坏过滤。
 
 开发入口：
 
@@ -85,7 +86,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m5m-smb-stream`（基于 M5l 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
+当前分支 `m5n-smb-metadata`（基于 M5m 提交）。Mac 构建时依赖 Homebrew 的 libmpv；`Scripts/package-app.sh` 会把它与 49 个依赖打进 `Contents/Frameworks`，生成可脱离 Homebrew 运行的自包含 app。iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。
 
 
 ## 第一个可以日常使用的 Mac 版本

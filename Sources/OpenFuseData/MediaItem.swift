@@ -100,7 +100,8 @@ public struct MediaItem: Sendable {
         path: String,
         title: String,
         size: Int64,
-        playbackURL: URL
+        playbackURL: URL,
+        subtitles: [SubtitleTrack] = []
     ) -> MediaItem {
         MediaItem(
             title: title,
@@ -110,7 +111,7 @@ public struct MediaItem: Sendable {
                 fileSize: size,
                 modifiedAt: nil
             ),
-            subtitles: [],
+            subtitles: subtitles,
             httpHeaders: [],
             origin: .smb(sourceID: source.id, path: path, cachedURL: playbackURL),
             sourceName: source.name

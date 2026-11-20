@@ -68,6 +68,7 @@ public final class SMBClient: @unchecked Sendable {
     public let source: SMBSource
     private let password: String
     private var context: OpaquePointer?
+    private var handles: [String: OpaquePointer] = [:]
     private let lock = NSLock()
 
     public init(source: SMBSource, password: String) {
@@ -76,6 +77,9 @@ public final class SMBClient: @unchecked Sendable {
     }
 
     deinit {
+        for (_, handle) in handles {
+            if let context { _ = smb2_close(context, handle) }
+        }
         if let context {
             smb2_destroy_context(context)
         }
@@ -143,6 +147,24 @@ public final class SMBClient: @unchecked Sendable {
         }
     }
 
+    private func handleLocked(_ smbPath: String, context: OpaquePointer) throws -> OpaquePointer {
+        if let handle = handles[smbPath] { return handle }
+        guard let handle = smb2_open(context, smbPath, 0) else {
+            throw SMBError.operation(String(cString: smb2_get_error(context)))
+        }
+        handles[smbPath] = handle
+        return handle
+    }
+
+    public func closeHandles() {
+        lock.lock(); defer { lock.unlock() }
+        guard let context else { handles.removeAll(); return }
+        for (_, handle) in handles {
+            _ = smb2_close(context, handle)
+        }
+        handles.removeAll()
+    }
+
     public func size(path: String) throws -> Int64 {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }
@@ -160,10 +182,7 @@ public final class SMBClient: @unchecked Sendable {
         let smbPath = Self.normalized(path)
         var stat = smb2_stat_64()
         let expected = smb2_stat(context, smbPath, &stat) == 0 ? Int64(stat.smb2_size) : -1
-        guard let handle = smb2_open(context, smbPath, 0) else {
-            throw SMBError.operation(String(cString: smb2_get_error(context)))
-        }
-        defer { _ = smb2_close(context, handle) }
+        let handle = try handleLocked(smbPath, context: context)
         var data = Data()
         var offset: UInt64 = 0
         let chunkSize: UInt32 = 64 * 1024
@@ -190,10 +209,7 @@ public final class SMBClient: @unchecked Sendable {
         let context = try connectedContext()
         lock.lock(); defer { lock.unlock() }
         let smbPath = Self.normalized(path)
-        guard let handle = smb2_open(context, smbPath, 0) else {
-            throw SMBError.operation(String(cString: smb2_get_error(context)))
-        }
-        defer { _ = smb2_close(context, handle) }
+        let handle = try handleLocked(smbPath, context: context)
         var buffer = [UInt8](repeating: 0, count: max(0, length))
         let count = buffer.withUnsafeMutableBytes { raw in
             smb2_pread(context, handle, raw.baseAddress!.assumingMemoryBound(to: UInt8.self), UInt32(length), UInt64(offset))
@@ -269,6 +285,7 @@ public enum SMBLibraryScanner {
     public static func scan(
         source: SMBSource,
         client: SMBClient,
+        posterCacheDirectory: URL? = nil,
         token: ScanCancellationToken? = nil,
         progress: ((Int) -> Void)? = nil
     ) throws -> ScannedLibrary {
@@ -276,6 +293,26 @@ public enum SMBLibraryScanner {
         var candidates: [LibraryScanner.FileCandidate] = []
         var visited = 0
         var failedPaths: [String] = []
+        var downloadedPosters = 0
+        if let posterCacheDirectory {
+            try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
+        }
+
+        func cachePoster(_ remotePath: String) -> String? {
+            guard let posterCacheDirectory, downloadedPosters < 300 else { return nil }
+            let ext = (remotePath as NSString).pathExtension.lowercased()
+            let suffix = ["jpg", "jpeg", "png", "webp"].contains(ext) ? ext : "jpg"
+            let target = posterCacheDirectory.appendingPathComponent(LibraryID.hash(remotePath) + "." + suffix)
+            if FileManager.default.fileExists(atPath: target.path) {
+                downloadedPosters += 1
+                return target.path
+            }
+            guard let data = try? client.fetch(path: remotePath), !data.isEmpty else { return nil }
+            try? data.write(to: target, options: .atomic)
+            downloadedPosters += 1
+            return target.path
+        }
+
         while !queue.isEmpty {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let directory = queue.removeFirst()
@@ -290,26 +327,78 @@ public enum SMBLibraryScanner {
             for entry in entries where entry.isDirectory {
                 queue.append(entry.path)
             }
+
+            let directoryKey = directory
+            let parentKey = (directory as NSString).deletingLastPathComponent
+            var movieNFO: NFOMetadata?
+            var showNFO: NFOMetadata?
+            var nfoByBase: [String: NFOMetadata] = [:]
+            var posterByBase: [String: String] = [:]
+            var directoryPoster: String?
+
+            for entry in entries where !entry.isDirectory {
+                let ext = (entry.name as NSString).pathExtension.lowercased()
+                let base = (entry.name as NSString).deletingPathExtension.lowercased()
+                if ext == "nfo", let data = try? client.fetch(path: entry.path) {
+                    let metadata = NFOReader.parse(
+                        data: data,
+                        baseURL: URL(fileURLWithPath: "/smb/" + entry.path.deletingLeadingSlash)
+                    )
+                    if let metadata {
+                        if base == "tvshow" { showNFO = metadata }
+                        else if base == "movie" { movieNFO = metadata }
+                        else { nfoByBase[base] = metadata }
+                    }
+                } else if ["jpg", "jpeg", "png", "webp"].contains(ext) {
+                    if ["poster", "folder", "cover"].contains(base) {
+                        directoryPoster = cachePoster(entry.path) ?? directoryPoster
+                    }
+                    posterByBase[base] = entry.path
+                }
+            }
+
             for entry in entries where !entry.isDirectory {
                 guard LibraryScanner.videoExtensions.contains(
                     (entry.name as NSString).pathExtension.lowercased()
                 ) else { continue }
                 visited += 1
+                let base = (entry.name as NSString).deletingPathExtension
+                let lowerBase = base.lowercased()
+                let nfo = nfoByBase[lowerBase] ?? movieNFO
+                let effectiveShowNFO = showNFO ?? nfoByBase["tvshow"]
+                var posterPath = directoryPoster
+                var posterURL: String?
+                if let reference = nfo?.posterReference ?? effectiveShowNFO?.posterReference, !reference.isEmpty {
+                    if reference.hasPrefix("http://") || reference.hasPrefix("https://") {
+                        posterURL = reference
+                    } else {
+                        let showDirectory = (nfo == nil && effectiveShowNFO != nil) ? parentKey : directory
+                        let remotePoster = showDirectory + "/" + reference
+                        if let cached = cachePoster(remotePoster) {
+                            posterPath = cached
+                        } else {
+                            posterURL = "smb://\(source.server)/\(source.share)\(remotePoster)"
+                        }
+                    }
+                } else if let remote = posterByBase[lowerBase] ?? directoryPoster {
+                    posterPath = cachePoster(remote) ?? posterPath
+                }
                 candidates.append(
                     LibraryScanner.FileCandidate(
                         relativePath: entry.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")),
                         name: entry.name,
                         fileURL: nil,
                         remotePath: entry.path,
-                        posterPath: nil,
-                        posterURL: nil,
-                        nfo: nil,
-                        showNFO: nil,
+                        posterPath: posterPath,
+                        posterURL: posterURL,
+                        nfo: nfo,
+                        showNFO: effectiveShowNFO,
                         modifiedAt: entry.modifiedAt,
                         resolution: nil
                     )
                 )
             }
+            _ = directoryKey
         }
         guard !candidates.isEmpty else { throw LibraryScanError.noMedia }
         return LibraryScanner.buildLibrary(
@@ -323,3 +412,10 @@ public enum SMBLibraryScanner {
 }
 
 #endif
+
+
+private extension String {
+    var deletingLeadingSlash: String {
+        hasPrefix("/") ? String(dropFirst()) : self
+    }
+}
