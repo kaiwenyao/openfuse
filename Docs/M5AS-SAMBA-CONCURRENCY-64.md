@@ -30,4 +30,4 @@ M5ar 把 backlog 提到 128 并验证 32 并发。本轮不改产品代码，验
 
 ## 下一项
 
-M5at/M6f：>64/长稳/DFS；物理5.1/HDMI；HDR测量；CloudKit/visionOS。
+同步设置 UI 已在 [M6f 验收](Docs/M6F-SYNC-SETTINGS.md) 完成。剩余 M6g/M5at：物理5.1/HDMI、HDR测量、>64/长稳/DFS、CloudKit/visionOS。

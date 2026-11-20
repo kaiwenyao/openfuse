@@ -714,3 +714,10 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 64 Range 并发 | Mac M2 Pro／macOS 27.2.1 | 2.4GB over Samba | Infuse 未安装 | 64/64 206；播放1202；RSS167→158 | Evidence 115、`reports/m5as-*` | 通过 |
 | >64/长稳/DFS | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |
+
+### M6f 同步设置 UI 执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 设置驱动同步 | Mac M2 Pro／macOS 27.2.1 | HTTPS sync + CA | Infuse 未安装 | URL/CA 持久化，GET/POST 成功 | Evidence 116、`reports/m6f-*` | 通过 |
+| UI点击/Keychain/公共CA/并发 | 同上 | 生产同步 | 待采样 | 未自动化 | — | 待验证 |

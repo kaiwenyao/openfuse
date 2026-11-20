@@ -1,10 +1,12 @@
 import OpenFuseCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var switchTarget: JellyfinSource?
+    @State private var showCAImporter = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -12,7 +14,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("设置")
                         .font(.system(size: 20, weight: .semibold))
-                    Text("Trakt 观看同步使用设备码授权；token 保存在 Keychain。")
+                    Text("Trakt 使用设备码授权；进度同步 Bearer Token 保存在 Keychain。")
                         .font(.system(size: 11.5))
                         .foregroundStyle(Theme.secondary)
                 }
@@ -35,6 +37,28 @@ struct SettingsView: View {
                                 Button("切换用户…") { switchTarget = source }
                             }
                         }
+                    }
+                }
+                Section("进度同步") {
+                    TextField("同步地址（http/https）", text: $model.syncURLText)
+                    SecureField("Bearer Token（留空保持）", text: $model.syncTokenInput)
+                    HStack {
+                        Text(model.syncCAPath ?? "未固定 CA（使用系统信任）")
+                            .font(.system(size: 10.5, design: .monospaced))
+                            .foregroundStyle(Theme.secondary)
+                        Spacer()
+                        Button("选择 CA…") { showCAImporter = true }
+                    }
+                    HStack {
+                        if model.syncBusy { ProgressView().controlSize(.small) }
+                        if let status = model.syncStatus {
+                            Text(status).font(.system(size: 10.5)).foregroundStyle(Theme.secondary)
+                        }
+                        Spacer()
+                        Button("保存并同步") {
+                            Task { await model.saveAndSyncSettings() }
+                        }
+                        .disabled(model.syncBusy)
                     }
                 }
                 Section("Trakt") {
@@ -85,6 +109,19 @@ struct SettingsView: View {
         .frame(width: 560)
         .background(Theme.background)
         .onDisappear { model.cancelTraktPolling() }
+        .fileImporter(
+            isPresented: $showCAImporter,
+            allowedContentTypes: [.data]
+        ) { result in
+            if case .success(let url) = result {
+                _ = model.saveSyncSettings(
+                    urlText: model.syncURLText,
+                    token: model.syncTokenInput,
+                    caURL: url
+                )
+                Task { await model.syncWithSettings() }
+            }
+        }
         .sheet(item: $switchTarget) { source in
             JellyfinUserSwitchSheet(source: source)
                 .environmentObject(model)

@@ -1,0 +1,20 @@
+OpenFuse M6f sync settings UI evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1.
+
+Implementation:
+  UserDefaults: openfuse.sync.url / openfuse.sync.ca
+  Keychain: account sync-token, service com.openfuse.sync
+  CA importer copies selected file to Application Support/OpenFuse/sync-ca.pem
+  Settings: URL, Bearer Token, CA path/选择CA, 保存并同步.
+
+Results:
+  defaults URL=https://127.0.0.1:8131/progress, CA=test ca.pem.
+  App --sync-progress with only OPENFUSE_SYNC_TOKEN (no env URL/CA) completed
+  via persisted settings: GET 1, POST 1.
+  Settings screenshot shows URL, CA path, 保存并同步.
+  Scripts/run-sync-settings.sh PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  UI click/fileImporter automation, Keychain UI prompt, public CA, concurrent sync.

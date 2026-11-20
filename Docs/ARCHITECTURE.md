@@ -225,6 +225,11 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## 同步设置 UI（M6f）
+
+- URL/CA 存 UserDefaults，Token 存 Keychain；CA 复制到 Application Support。
+- 设置驱动 HTTPS 同步；UI 点击/公共 CA/并发未验证。
+
 ## 实际音频输出验证（M6e）
 
 - BlackHole/iFlyrec 2ch 录回放；有声 -24.5dB，扬声器对照 -91dB。

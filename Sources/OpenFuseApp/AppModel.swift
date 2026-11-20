@@ -96,6 +96,10 @@ final class AppModel: ObservableObject {
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
     @Published var syncStatus: String?
+    @Published var syncURLText = ""
+    @Published var syncTokenInput = ""
+    @Published var syncCAPath: String?
+    @Published var syncBusy = false
     @Published var traktClientID = ""
     @Published var traktClientSecret = ""
     @Published var traktBaseURL = "https://api.trakt.tv"
@@ -146,6 +150,11 @@ final class AppModel: ObservableObject {
         }
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
+        let defaults = UserDefaults.standard
+        self.syncURLText = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"]
+            ?? defaults.string(forKey: "openfuse.sync.url")
+            ?? ""
+        self.syncCAPath = defaults.string(forKey: "openfuse.sync.ca")
         self.plexSources = plexStore.sources
         self.smbSources = smbStore.sources
         self.localRoots = localRootStore.roots
@@ -317,21 +326,87 @@ final class AppModel: ObservableObject {
 
     func syncPlaybackProgressFromEnvironment() async {
         let environment = ProcessInfo.processInfo.environment
-        let transport: ProgressSyncTransport
         if let raw = environment["OPENFUSE_SYNC_URL"], let url = URL(string: raw) {
-            transport = HTTPProgressTransport(
-                url: url,
-                token: environment["OPENFUSE_SYNC_TOKEN"],
-                caPath: environment["OPENFUSE_SYNC_CA"]
+            await runSync(
+                transport: HTTPProgressTransport(
+                    url: url,
+                    token: environment["OPENFUSE_SYNC_TOKEN"],
+                    caPath: environment["OPENFUSE_SYNC_CA"]
+                )
             )
-        } else if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
-            transport = LocalProgressTransport(fileURL: URL(fileURLWithPath: path))
-        } else if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {
-            transport = CloudKitProgressTransport(containerIdentifier: container)
-        } else {
-            syncStatus = "未配置同步（OPENFUSE_SYNC_URL / OPENFUSE_SYNC_FILE / OPENFUSE_CLOUDKIT_CONTAINER）"
             return
         }
+        if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
+            await runSync(transport: LocalProgressTransport(fileURL: URL(fileURLWithPath: path)))
+            return
+        }
+        if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {
+            await runSync(transport: CloudKitProgressTransport(containerIdentifier: container))
+            return
+        }
+        await syncWithSettings()
+    }
+
+    @discardableResult
+    func saveSyncSettings(urlText: String, token: String, caURL: URL?) -> Bool {
+        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            syncStatus = "同步地址需要 http:// 或 https://"
+            return false
+        }
+        let defaults = UserDefaults.standard
+        defaults.set(url.absoluteString, forKey: "openfuse.sync.url")
+        syncURLText = url.absoluteString
+        if let caURL {
+            let directory = Self.defaultSupportDirectory()
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let target = directory.appendingPathComponent("sync-ca.pem")
+            let accessing = caURL.startAccessingSecurityScopedResource()
+            defer { if accessing { caURL.stopAccessingSecurityScopedResource() } }
+            do {
+                try Data(contentsOf: caURL).write(to: target, options: .atomic)
+                syncCAPath = target.path
+                defaults.set(target.path, forKey: "openfuse.sync.ca")
+            } catch {
+                syncStatus = "CA 导入失败：\(error.localizedDescription)"
+                return false
+            }
+        }
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            try? CredentialStore.save(password: trimmed, account: "sync-token", service: "com.openfuse.sync")
+        } else if CredentialStore.load(account: "sync-token", service: "com.openfuse.sync") == nil {
+            syncTokenInput = ""
+        }
+        syncTokenInput = ""
+        syncStatus = "同步设置已保存：\(url.absoluteString)"
+        return true
+    }
+
+    func syncWithSettings() async {
+        let environment = ProcessInfo.processInfo.environment
+        guard let raw = environment["OPENFUSE_SYNC_URL"].flatMap(URL.init(string:))
+                ?? URL(string: syncURLText) else {
+            syncStatus = "未配置同步地址"
+            return
+        }
+        let token = environment["OPENFUSE_SYNC_TOKEN"]
+            ?? CredentialStore.load(account: "sync-token", service: "com.openfuse.sync")
+        let caPath = environment["OPENFUSE_SYNC_CA"] ?? syncCAPath
+        await runSync(
+            transport: HTTPProgressTransport(url: raw, token: token, caPath: caPath)
+        )
+    }
+
+    func saveAndSyncSettings() async {
+        syncBusy = true
+        defer { syncBusy = false }
+        if saveSyncSettings(urlText: syncURLText, token: syncTokenInput, caURL: nil) {
+            await syncWithSettings()
+        }
+    }
+
+    private func runSync(transport: ProgressSyncTransport) async {
         do {
             let result = try await ProgressSyncService(store: store, transport: transport).sync()
             syncStatus = "同步完成：远端 \(result.remoteCount) 条，本地 \(result.localCount) 条，更新 \(result.changed) 条"
