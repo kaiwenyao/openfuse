@@ -29,7 +29,8 @@
 - **M3i WebDAV 超时恢复：完成本地验证。** 单目录 PROPFIND 504 时继续扫描，失败目录下的旧作品保留，其他目录刷新；夹具注入 504，2 作品在失败重扫后仍为 2；状态显示失败目录数。26 个单元测试。记录：[M3i 恢复验收](Docs/M3I-RECOVERY.md)。
 - **M4g iOS 实际运行：完成。** iOS 27.2 Simulator 安装并启动 iPhone/iPad；首屏、iPad 分栏、样本 MP4 播放（HUD 3.0/20.0s）、退出保存 4.795s、重启续播 12.0/20.0s 均实测；修复 `file://` URL 当路径解析的 bug。记录：[M4g iOS 运行验收](Docs/M4G-IOS-RUN.md)。
 - **M4h 移动端远程实际播放：完成。** iOS 模拟器添加/扫描 WebDAV 与 Jellyfin 并实际播放：WebDAV Basic Auth MP4 HUD 11.0/20s；Jellyfin 选 MKV 后走 HLS，HUD 9.0/60.0s。测试 bootstrap 用内存凭据绕过未签名模拟器 Keychain；生产仍走 Keychain。记录：[M4h 移动远程验收](Docs/M4H-MOBILE-REMOTE.md)。
-- **下一项：** M4i：修正移动端 HLS 选择并截取 60s 远程播放；字幕/音轨/音频听测；tvOS/visionOS runtime；真实 Jellyfin/OpenList；CloudKit/Trakt；M3 画质元数据/T07。
+- **M3j 本地分辨率：完成。** MP4 用 AVFoundation、MKV 用 Mac ffprobe 补齐 1080p；画质筛选「1080p」现显示本地电影与两部剧。记录：[M3j 分辨率验收](Docs/M3J-RESOLUTION.md)。
+- **下一项：** M4i/M3k：tvOS runtime 实际启动与焦点截图；移动端字幕/音轨/音频听测；WebDAV/Jellyfin 单集分辨率；CloudKit/Trakt；T07 其他场景。
 
 开发入口：
 
@@ -59,7 +60,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4h-mobile-remote`（基于 M4g 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m3j-resolution`（基于 M4h 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

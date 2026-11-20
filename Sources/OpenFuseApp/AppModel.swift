@@ -521,7 +521,8 @@ final class AppModel: ObservableObject {
                 )
             }.value
             guard !token.isCancelled else { throw LibraryScanError.cancelled }
-            let enriched = await enrichWithTMDB(scanned)
+            let probed = MediaProbe.enrichLocalResolutions(scanned)
+            let enriched = await enrichWithTMDB(probed)
             guard !token.isCancelled else { throw LibraryScanError.cancelled }
             try libraryStore.replace(source: enriched.library)
             reloadLibrary()

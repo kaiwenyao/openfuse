@@ -178,6 +178,14 @@
 | Jellyfin 移动远程 | 同上 | Jellyfin MKV 60s + HLS | 待采样 | 登录/扫描/PlaybackInfo/master.m3u8；HUD 9.0/60.0s | Evidence 43 | 通过（音频未听测） |
 | 移动 HLS 60s | 同上 | MKV→HLS 夹具 | 待采样 | Jellyfin movie-1 选中，移动端 AVPlayer HLS 9.0/60.0s | Evidence 43 | 通过 |
 | 音频/字幕/音轨 | 同上 | 素材含 E-AC-3/ASS | 待采样 | 未做人工听测/字幕/音轨切换 | — | 待验证 |
+
+### M3j 本地分辨率执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 本地 1080p 探测 | MacBook Pro M2 Pro／macOS 27.2.1 | 4 个本地 MKV | Infuse 未安装 | ffprobe 写回 4/4 版本 1080p | `reports/m3j-resolution.txt` | 通过 |
+| 画质筛选 | 同上 | 本地 3 作品 | 待采样 | 「1080p」显示 3 作品（此前仅 Jellyfin 电影） | Evidence 44 | 通过 |
+| 四平台构建 | Xcode 27.2 | 同上 | — | iOS/iPadOS/tvOS/visionOS/device 构建成功 | — | 通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 

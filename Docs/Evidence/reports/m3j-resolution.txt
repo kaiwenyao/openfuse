@@ -1,0 +1,20 @@
+OpenFuse M3j local resolution evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Changes:
+  Local scanner probes AVFoundation naturalSize for MP4; Mac AppModel runs
+  ffprobe for MKV files >1 MB; Jellyfin movie heights already present.
+  WebDAV/Jellyfin episodes still lack reliable height.
+
+Results:
+  Local fixture versions: 1080p (4/4 rows).
+  Library resolution filter "1080p": visible 3 works
+    (OpenFuse Fixture, 另一部剧 · 本地 NFO, 示例剧).
+  swift test: 26/26.
+  iOS/iPadOS, tvOS, visionOS generic builds: BUILD SUCCEEDED.
+  iOS device Release: BUILD SUCCEEDED.
+  Mac build: success.
+
+Not verified:
+  WebDAV/Jellyfin episode resolution; HDR/4K actual files; real media.

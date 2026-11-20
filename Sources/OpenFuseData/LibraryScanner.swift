@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 public enum LibraryScanError: LocalizedError {
@@ -46,6 +47,7 @@ public enum LibraryScanner {
         var nfo: NFOMetadata?
         var showNFO: NFOMetadata?
         var modifiedAt: Date? = nil
+        var resolution: String? = nil
     }
 
     // MARK: - Local
@@ -64,7 +66,7 @@ public enum LibraryScanner {
             throw LibraryScanError.invalidFolder
         }
         let sourceID = "local-" + LibraryID.hash(directory.path).replacingOccurrences(of: "local-", with: "")
-        var videoFiles: [(URL, String, NFOMetadata?, NFOMetadata?, Date?)] = []
+        var videoFiles: [(URL, String, NFOMetadata?, NFOMetadata?, Date?, String?)] = []
         var posterMap: [String: String] = [:]
         var fileCount = 0
         while let file = enumerator.nextObject() as? URL {
@@ -91,9 +93,9 @@ public enum LibraryScanner {
             let movieNFO = NFOReader.readMovie(videoURL: file)
             let showNFO = NFOReader.readShow(showDirectory: showDirectory)
             let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-            videoFiles.append((file, relative, movieNFO ?? episodeNFO, showNFO, modified))
+            videoFiles.append((file, relative, movieNFO ?? episodeNFO, showNFO, modified, probeLocalHeight(file)))
         }
-        let candidates = videoFiles.map { file, relative, nfo, showNFO, modified in
+        let candidates = videoFiles.map { file, relative, nfo, showNFO, modified, resolution in
             FileCandidate(
                 relativePath: relative,
                 name: file.lastPathComponent,
@@ -103,7 +105,8 @@ public enum LibraryScanner {
                 posterURL: nil,
                 nfo: nfo,
                 showNFO: showNFO,
-                modifiedAt: modified
+                modifiedAt: modified,
+                resolution: resolution
             )
         }
         let sourceName = directory.lastPathComponent.isEmpty ? "本地文件夹" : directory.lastPathComponent
@@ -113,6 +116,22 @@ public enum LibraryScanner {
             sourceID: sourceID,
             sourceName: sourceName
         )
+    }
+
+    static func probeLocalHeight(_ url: URL) -> String? {
+        #if os(visionOS)
+        return nil
+        #else
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        guard size > 1024 else { return nil }
+        let asset = AVURLAsset(url: url)
+        guard let track = asset.tracks(withMediaType: .video).first else { return nil }
+        let dimensions = track.naturalSize.applying(track.preferredTransform)
+        let height = Int(abs(dimensions.height).rounded())
+        guard height > 0 else { return nil }
+        if height >= 2000 { return "2160p" }
+        return "\(height)p"
+        #endif
     }
 
     private static func findLocalPoster(
@@ -203,7 +222,7 @@ public enum LibraryScanner {
                 name: sourceKind == "local" ? "本地文件" : "WebDAV",
                 mediaSourceID: nil,
                 container: (candidate.name as NSString).pathExtension.uppercased(),
-                resolution: nil,
+                resolution: candidate.resolution,
                 remotePath: candidate.remotePath,
                 fileURL: candidate.fileURL?.absoluteString
             )
@@ -255,7 +274,7 @@ public enum LibraryScanner {
                     name: sourceKind == "local" ? "本地文件" : "WebDAV",
                     mediaSourceID: nil,
                     container: (candidate.name as NSString).pathExtension.uppercased(),
-                    resolution: nil,
+                    resolution: candidate.resolution,
                     remotePath: candidate.remotePath,
                     fileURL: candidate.fileURL?.absoluteString
                 )

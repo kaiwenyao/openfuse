@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 本地分辨率探测（M3j）
+
+- MP4：`AVURLAsset` naturalSize/preferredTransform（visionOS 不同步支持，跳过）。
+- MKV：Mac `MediaProbe` 调 ffprobe（>1MB 才探测），写回 ScannedVersion.resolution；空文件/10k 压力不触发。
+- Jellyfin 电影用 MediaSource height；WebDAV/Jellyfin 单集仍缺。
+- 画质筛选 1080p 现覆盖本地电影/剧集。
+
 ## iOS 远程播放实测（M4h）
 
 - 测试来源注入：`OPENFUSE_TEST_WEBDAV_*` / `OPENFUSE_TEST_JELLYFIN_*` 环境变量；启动后自动添加/扫描。
