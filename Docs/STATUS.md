@@ -8,17 +8,17 @@
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
 | M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3k | SQLite、三源扫描、跨来源合并、海报、搜索、排序/筛选/防剧透、版本菜单、TMDB/NFO、手动整理、可取消扫描、10k、WebDAV NFO/海报/504 恢复、本地/Jellyfin 单集/WebDAV MP4 分辨率。剩余 T07 其他场景与 WebDAV MKV 分辨率。 |
-| M4 家庭设备与同步 | 部分完成：M4a–M4j | iPhone/iPad 实际启动/播放/续播/远程 WebDAV+Jellyfin；Apple TV 实际启动/HEVC-EAC3 播放；移动音轨与侧载 SRT 字幕（简繁切换、seek 同步）；四平台构建成功。visionOS 无 runtime；音频听测、远程字幕、ASS 样式、真实服务、CloudKit/Trakt 未做。 |
+| M4 家庭设备与同步 | 部分完成：M4a–M4k | iPhone/iPad 实际启动/播放/续播/远程 WebDAV+Jellyfin；Apple TV 实际启动/HEVC-EAC3 播放；移动音轨与本地/远程 WebDAV SRT 字幕（本地简繁/seek 验证；远程下载链路验证，画面待修）。visionOS 无 runtime；音频听测、ASS 样式、真实服务、CloudKit/Trakt 未做。 |
 | M5 其余来源与高级播放 | 未开始 | 含自包含打包、HDR、投屏、Plex/Emby/SMB。 |
 | M6 Vision Pro | 未开始 | |
 
 ## 当前分支
 
-`m4j-subtitles`（基于 M4i 提交）。M4k 从该分支继续。
+`m4k-remote-subs`（基于 M4j 提交）。M4l 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M4k：移动远程字幕、ASS/libass/样式、音频听测、visionOS runtime、CloudKit/Trakt、WebDAV MKV 分辨率。
+1. M4l：修远程播放时间/暂停与远程字幕截图、Jellyfin 外挂字幕、音频听测、visionOS runtime、CloudKit/Trakt、WebDAV MKV 分辨率。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。

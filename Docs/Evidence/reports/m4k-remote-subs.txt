@@ -1,0 +1,31 @@
+OpenFuse M4k WebDAV remote sidecar subtitle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1; iPhone 18 Pro simulator iOS 27.2
+
+Flow:
+  playbackItemAsync(work) -> WebDAV client lists video directory -> matches
+  sidecars via WebDAVClient.subtitleTracks -> fetch with Basic auth -> cache
+  under Application Support/OpenFuse/SubtitleCache -> SubtitleTrack local URLs.
+
+Server log:
+  PROPFIND /dav/Mobile/ 207
+  GET /dav/Mobile/openfuse-mobile.zh-Hans.srt 200 (339 bytes)
+  GET /dav/Mobile/openfuse-mobile.zh-Hant.srt 200 (339 bytes)
+  HEAD/GET video 200/206
+
+App:
+  HUD shows 音轨：AAC 立体声 · 字幕：中文（简体）(SRT)
+  Remote playback time jumped near the end during this run; subtitle text
+  overlay was not captured remotely. Local sidecar subtitle display is
+  already verified in M4j (Evidence 49–50).
+
+Builds/tests:
+  27/27 swift tests
+  iOS/iPadOS, tvOS, visionOS generic: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+  Mac build: success
+  visionOS runtime download ~19.9% (7.65 GB), not installed.
+
+Not verified:
+  Remote subtitle visual rendering after seek; audio output; visionOS runtime;
+  Jellyfin external subtitles; real services; CloudKit/Trakt.

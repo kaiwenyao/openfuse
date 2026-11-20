@@ -195,6 +195,15 @@
 | WebDAV MP4 分辨率 | 同上 | Basic Auth WebDAV 20s MP4 | 待采样 | 720p；720p 筛选命中 | `reports/m3k-resolution-webdav.json` | 通过 |
 | WebDAV MKV 分辨率 | 同上 | MKV | 待采样 | AVFoundation 不支持，未取 | — | 待验证 |
 | 四平台构建 | Xcode 27.2 | 同上 | — | 全部 BUILD SUCCEEDED | — | 通过 |
+
+### M4k 远程字幕执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| WebDAV 字幕发现/下载 | iPhone 18 Pro Simulator／iOS 27.2 | WebDAV MP4 + 简/繁 SRT | Infuse 未安装 | 列目录、匹配、Basic Auth GET 200，缓存至 SubtitleCache | `reports/m4k-remote-subs.txt` | 通过 |
+| 远程字幕画面 | 同上 | 同上 | 待采样 | 菜单选中简体；时间跳变未截到 cue | Evidence 51 | 部分通过/待修 |
+| 本地字幕回归 | 同上 | 本地 SRT | 待采样 | M4j 简体/繁体/seek 截图通过 | Evidence 49–50 | 通过 |
+| 四平台构建 | 同上 | — | — | 全部 BUILD SUCCEEDED | — | 通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 

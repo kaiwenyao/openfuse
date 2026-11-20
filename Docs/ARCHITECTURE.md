@@ -64,6 +64,12 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## WebDAV 远程字幕（M4k）
+
+- `playbackItemAsync`：WebDAV 播放前列视频目录，`WebDAVClient.subtitleTracks` 匹配同名字幕，Basic Auth GET 下载到 `SubtitleCache`，转换成 `SubtitleTrack(.downloaded)`。
+- 详情/autoplay 改为异步获取播放条目；字幕菜单/解析与本地共用。
+- 已验证下载/选择；远程画面因 AVPlayer 时间跳变未截到 cue，待修。
+
 ## 移动端字幕自绘（M4j）
 
 - `SubtitleParser`：SRT/VTT/ASS/SSA → cues；去 HTML/ASS 标签、`\N` 换行。

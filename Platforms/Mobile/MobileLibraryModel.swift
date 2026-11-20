@@ -140,6 +140,48 @@ final class MobileLibraryModel: ObservableObject {
         )
     }
 
+    func playbackItemAsync(for work: LibraryWork, episode: LibraryEpisode? = nil) async -> MobilePlaybackItem? {
+        guard work.sourceKind == "webdav",
+              let episode = episode ?? episodes(for: work.id).first,
+              let remotePath = episode.remotePath,
+              let source = webdavSources.first(where: { $0.id == work.sourceID }),
+              let password = ephemeralPasswords[source.id] ?? CredentialStore.load(account: source.id) else {
+            if work.sourceKind == "jellyfin" {
+                return await remotePlaybackItem(for: work, episode: episode)
+            }
+            return playbackItem(for: work)
+        }
+        let client = WebDAVClient(source: source, password: password)
+        var localTracks: [SubtitleTrack] = []
+        let directory = (remotePath as NSString).deletingLastPathComponent
+        if let siblings = try? await client.list(path: directory) {
+            let video = RemoteEntry(
+                path: remotePath,
+                name: (remotePath as NSString).lastPathComponent,
+                url: client.url(for: remotePath),
+                isDirectory: false
+            )
+            let tracks = WebDAVClient.subtitleTracks(for: video, siblings: siblings)
+            let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
+            try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+            for track in tracks {
+                let remoteSubtitle = String(track.id.dropFirst("remote:".count))
+                guard let (data, _) = try? await client.fetch(path: remoteSubtitle), !data.isEmpty else { continue }
+                let ext = (remoteSubtitle as NSString).pathExtension.lowercased()
+                let target = cache.appendingPathComponent(LibraryID.hash(remoteSubtitle) + "." + (ext.isEmpty ? "srt" : ext))
+                try? data.write(to: target, options: .atomic)
+                var local = track
+                local.id = "remote:" + remoteSubtitle
+                local.url = target
+                local.source = .downloaded
+                localTracks.append(local)
+            }
+        }
+        var item = playbackItem(work: work, episode: episode)
+        item?.sidecarSubtitles = localTracks
+        return item
+    }
+
     func episodes(for workID: String) -> [LibraryEpisode] {
         (try? libraryStore.episodes(workID: workID)) ?? []
     }

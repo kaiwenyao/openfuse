@@ -50,13 +50,7 @@ struct MobileRootView: View {
                 }
             }
             guard let work = (candidates.first ?? model.groups.first)?.primary else { return }
-            var debugItem: MobilePlaybackItem?
-            if work.sourceKind == "jellyfin" {
-                debugItem = await model.remotePlaybackItem(for: work)
-            } else {
-                debugItem = model.playbackItem(for: work)
-            }
-            autoplayItem = debugItem
+            autoplayItem = await model.playbackItemAsync(for: work)
 
         }
         .fullScreenCover(item: $autoplayItem) { item in
@@ -335,6 +329,7 @@ struct MobileDetailView: View {
     let work: LibraryWork
     @State private var selectedItem: MobilePlaybackItem?
     @State private var isLoadingRemote = false
+    @State private var isLoadingItem = false
     @State private var remoteError: String?
 
     private var currentWork: LibraryWork { model.works.first { $0.id == work.id } ?? work }
@@ -364,11 +359,16 @@ struct MobileDetailView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(5)
                         }
-                        if let item = model.playbackItem(for: currentWork) {
+                        if model.playbackItem(for: currentWork) != nil || currentWork.sourceKind != "local" {
                             Button {
-                                selectedItem = item
+                                isLoadingItem = true
+                                Task {
+                                    selectedItem = await model.playbackItemAsync(for: currentWork)
+                                    isLoadingItem = false
+                                }
                             } label: {
-                                Label(item.resumePosition == nil ? "播放" : "从 \(Int(item.resumePosition ?? 0)) 秒继续", systemImage: "play.fill")
+                                let resume = model.resumePosition(for: currentWork)
+                                Label(resume == nil ? "播放" : "从 \(Int(resume ?? 0)) 秒继续", systemImage: "play.fill")
                                     .font(.subheadline.weight(.semibold))
                                     .padding(.horizontal, 18)
                                     .padding(.vertical, 10)
@@ -428,9 +428,13 @@ struct MobileDetailView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.white)
                                 Spacer()
-                                if let item = model.playbackItem(work: currentWork, episode: episode) {
+                                if model.playbackItem(work: currentWork, episode: episode) != nil || currentWork.sourceKind != "local" {
                                     Button {
-                                        selectedItem = item
+                                        isLoadingItem = true
+                                        Task {
+                                            selectedItem = await model.playbackItemAsync(for: currentWork, episode: episode)
+                                            isLoadingItem = false
+                                        }
                                     } label: {
                                         Image(systemName: "play.circle.fill")
                                             .font(.title3)
