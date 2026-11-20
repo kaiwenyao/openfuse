@@ -1,0 +1,22 @@
+OpenFuse M5al SMB3 signing/encryption evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+Server: dperson/samba 4.13.7, mandatory signing, required encryption, min SMB3.
+
+Implementation:
+  SMBClient.connectedContext tries plain negotiation, then retries with
+  smb2_set_sign(1)+smb2_set_seal(1) if the server requires encryption.
+
+Results:
+  Scan: 1 work/1080p.
+  Playback seek 10 -> position 11/60.
+  smbstatus during playback:
+    Protocol Version SMB3_11
+    Encryption AES-128-CCM
+    Signing AES-128-CMAC
+  Scripts/run-samba-encrypted.sh PASS.
+  impacket SMB2 regression PASS.
+  36/36 tests; five platforms/device/Mac build succeed.
+
+Not verified:
+  DFS, domain/Kerberos accounts, large files/concurrency; audio listening.

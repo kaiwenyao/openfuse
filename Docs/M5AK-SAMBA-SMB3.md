@@ -38,4 +38,4 @@
 
 ## 下一项
 
-M5al/M6d：SMB 签名/加密/DFS/大文件；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+SMB3 签名/加密已在 [M5al 验收](Docs/M5AL-SAMBA-ENCRYPTED.md) 完成。剩余 M5am/M6d：DFS/域/大文件、音频听测、HDR 测量、真实 Trakt/CloudKit、visionOS 真机。

@@ -88,31 +88,39 @@ public final class SMBClient: @unchecked Sendable {
     private func connectedContext() throws -> OpaquePointer {
         lock.lock(); defer { lock.unlock() }
         if let context { return context }
-        guard let context = smb2_init_context() else { throw SMBError.context }
-        smb2_set_timeout(context, 20)
-        var urlPath = "smb://"
-        if !source.username.isEmpty {
-            urlPath += source.username + "@"
-        }
-        urlPath += "\(source.server):\(source.port)/\(source.share)/"
-        guard let parsed = smb2_parse_url(context, urlPath) else {
-            let message = String(cString: smb2_get_error(context))
+
+        var lastMessage = "SMB 连接失败"
+        for requireEncryption in [false, true] {
+            guard let context = smb2_init_context() else { throw SMBError.context }
+            smb2_set_timeout(context, 20)
+            if requireEncryption {
+                smb2_set_sign(context, 1)
+                smb2_set_seal(context, 1)
+            }
+            var urlPath = "smb://"
+            if !source.username.isEmpty {
+                urlPath += source.username + "@"
+            }
+            urlPath += "\(source.server):\(source.port)/\(source.share)/"
+            guard let parsed = smb2_parse_url(context, urlPath) else {
+                lastMessage = String(cString: smb2_get_error(context))
+                smb2_destroy_context(context)
+                continue
+            }
+            let server = parsed.pointee.server.map { String(cString: $0) } ?? source.server
+            let share = parsed.pointee.share.map { String(cString: $0) } ?? source.share
+            smb2_set_user(context, source.username)
+            smb2_set_password(context, password)
+            let result = smb2_connect_share(context, server, share, source.username)
+            smb2_destroy_url(parsed)
+            if result == 0 {
+                self.context = context
+                return context
+            }
+            lastMessage = String(cString: smb2_get_error(context))
             smb2_destroy_context(context)
-            throw SMBError.parseURL(message)
         }
-        let server = parsed.pointee.server.map { String(cString: $0) } ?? source.server
-        let share = parsed.pointee.share.map { String(cString: $0) } ?? source.share
-        smb2_set_user(context, source.username)
-        smb2_set_password(context, password)
-        let result = smb2_connect_share(context, server, share, source.username)
-        smb2_destroy_url(parsed)
-        guard result == 0 else {
-            let message = String(cString: smb2_get_error(context))
-            smb2_destroy_context(context)
-            throw SMBError.operation(message)
-        }
-        self.context = context
-        return context
+        throw SMBError.operation(lastMessage)
     }
 
     public func list(path: String? = nil) throws -> [SMBEntry] {

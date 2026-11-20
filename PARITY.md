@@ -586,3 +586,10 @@
 | Samba 扫描/播放 | MacBook Pro M2 Pro／macOS 27.2.1 | Samba Docker + MKV/SRT | Infuse 未安装 | 1 作品/1080p；seek 11.0/60；字幕 mpv:1 | Evidence 99、`reports/m5ak-samba-*` | 通过（本地 SMB3） |
 | impacket 回归 | 同上 | SMB2 夹具 | 待采样 | 扫描/播放/seek 31s 仍通过 | 脚本 PASS | 通过 |
 | 签名/加密/DFS/大文件 | 同上 | 真实 NAS | 待采样 | 未测 | — | 待验证 |
+
+### M5al SMB3 加密执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 签名/加密 | MacBook Pro M2 Pro／macOS 27.2.1 | Samba 强制签名/加密 | Infuse 未安装 | SMB3_11/AES-128-CCM/AES-128-CMAC；seek 11s | Evidence 100、`reports/m5al-samba-encrypted-status.txt` | 通过 |
+| DFS/域/大文件 | 同上 | AD/DFS | 待采样 | 未测 | — | 待验证 |

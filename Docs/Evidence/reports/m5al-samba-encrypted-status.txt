@@ -1,0 +1,5 @@
+
+Samba version 4.13.7
+PID     Username     Group        Machine                                   Protocol Version  Encryption           Signing              
+----------------------------------------------------------------------------------------------------------------------------------------
+71      test         test         192.168.65.1 (ipv4:192.168.65.1:59311)    SMB3_11           AES-128-CCM          AES-128-CMAC         

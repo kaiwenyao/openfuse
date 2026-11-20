@@ -180,6 +180,12 @@ Docs/                   决策、素材、验收、证据
 - 报告 audioDevice/audioDeviceActive；env OPENFUSE_AUDIO_DEVICE 测试。
 - 实测 BuiltInSpeakerDevice/coreaudio/6ch；听测、热插拔、exclusive 未做。
 
+## SMB3 签名/加密回退（M5al）
+
+- connectedContext 普通失败后以 smb2_set_sign/set_seal 重试。
+- 强制签名/加密 Samba：SMB3_11/AES-128-CCM/AES-128-CMAC，扫描/seek 通过。
+- DFS/域/Kerberos/大文件未验证。
+
 ## 真实 Samba SMB3（M5ak）
 
 - list 根用空路径；子路径绝对→相对回退，兼容 Samba/impacket。

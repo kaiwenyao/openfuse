@@ -9,16 +9,16 @@
 | M2 远程播放 | 部分完成：WebDAV(OpenList) + Jellyfin | Mac+iPhone 真实 OpenList `/dav`；Mac Jellyfin 12 直连/进度；iPhone Jellyfin MKV HLS 实际转码/播放。百度网盘、HTTPS/4K/多用户、HLS 元数据优化未完成。 |
 | M3 Mac 媒体库 | 基本完成：M3a–M3s | 三源扫描/合并/版本/海报/筛选/防剧透/TMDB/NFO/恢复；T07；本地/WebDAV/SMB 损坏签名过滤；多根；跨来源指纹去重；MKV/MP4 分辨率/HDR（尾部 moov）；iOS 运行期验证。碎片 MP4/性能、真实 OpenList、全文件哈希仍待。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M5ac | 五端启动；移动远程来源/字幕；进度同步本地两设备实测；CloudKit 代码；Trakt 自动轮询/历史；E-AC-3 5.1 PCM+stereo 验证；CoreAudio 设备选择。真实账号/自动同步、扬声器听测/热插拔未做。 |
-| M5 其余来源与高级播放 | 部分完成：M5a–M5ak | Plex 全链路；自包含 app；Emby；Jellyfin+Emby 去重/progress；AirPlay 入口；SMB 边下边播/元数据/并发/真实 Samba SMB3；HDR10/EDR 直通。未公证/仅 arm64；SMB 签名/加密/DFS/大文件、HDR 测量、AirPlay 实机、CloudKit 未做。 |
+| M5 其余来源与高级播放 | 部分完成：M5a–M5al | Plex 全链路；自包含 app；Emby；Jellyfin+Emby 去重/progress；AirPlay 入口；SMB 边下边播/元数据/并发/真实 Samba SMB3/签名加密；HDR10/EDR 直通。未公证/仅 arm64；SMB DFS/域/大文件、HDR 测量、AirPlay 实机、CloudKit 未做。 |
 | M6 Vision Pro | 部分完成：M6a–M6c | `.full` 沉浸实际出画；星点环境、3D 播放/关闭球、进度条；窗口切换；自动关闭写回进度；空间音频 intended experience。真机手势/空间音频/HDR 待验证。 |
 
 ## 当前分支
 
-`m5ak-samba-smb3`（基于 M2f 提交）。M5al/M6d 从该分支继续。
+`m5al-samba-encrypted`（基于 M5ak 提交）。M5am/M6d 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M5al/M6d：SMB 签名/加密/DFS/大文件；Jellyfin HTTPS/4K/多用户；HLS 元数据；百度网盘；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
+1. M5am/M6d：SMB DFS/域/大文件；Jellyfin HTTPS/4K/多用户；HLS 元数据；百度网盘；音频听测；HDR 测量；真实 Trakt/CloudKit；visionOS 真机。
 2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。
