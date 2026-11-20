@@ -455,33 +455,39 @@ public enum LibraryScanner {
                 let seasonPoster = (seasonItem?.primaryImageTag ?? posterItem.primaryImageTag).map {
                     PosterRef.jellyfin(itemID: seasonItem?.id ?? posterItem.id, tag: $0)
                 }
-                let scannedEpisodes = episodes.sorted { ($0.indexNumber ?? 0) < ($1.indexNumber ?? 0) }.map { episode -> ScannedEpisode in
+                var scannedEpisodes: [ScannedEpisode] = []
+                for episode in episodes.sorted(by: { ($0.indexNumber ?? 0) < ($1.indexNumber ?? 0) }) {
                     let episodeID = "jf:\(source.id):\(episode.id)"
                     let episodePoster = (episode.primaryImageTag ?? seasonItem?.primaryImageTag).map {
                         PosterRef.jellyfin(itemID: episode.primaryImageTag != nil ? episode.id : (seasonItem?.id ?? posterItem.id), tag: $0)
                     }
+                    let playback = try? await client.playbackInfo(itemID: episode.id)
+                    let episodeHeight = playback?.mediaSources.first?.mediaStreams?
+                        .first(where: { $0.type == "Video" })?.height
                     let version = ScannedVersion(
                         id: episodeID + "-v0",
                         name: "服务器版本",
                         mediaSourceID: nil,
                         container: nil,
-                        resolution: nil,
+                        resolution: episodeHeight.map { "\($0)p" },
                         remotePath: episode.id,
                         fileURL: nil
                     )
-                    return ScannedEpisode(
-                        id: episodeID,
-                        seasonNumber: episode.parentIndexNumber ?? seasonNumber,
-                        episodeNumber: episode.indexNumber ?? 0,
-                        title: episode.name,
-                        overview: episode.overview,
-                        runtime: JellyfinTicks.seconds(episode.runTimeTicks),
-                        poster: episodePoster,
-                        serverID: episode.id,
-                        remotePath: episode.id,
-                        remoteVariant: nil,
-                        fileURL: nil,
-                        versions: [version]
+                    scannedEpisodes.append(
+                        ScannedEpisode(
+                            id: episodeID,
+                            seasonNumber: episode.parentIndexNumber ?? seasonNumber,
+                            episodeNumber: episode.indexNumber ?? 0,
+                            title: episode.name,
+                            overview: episode.overview,
+                            runtime: JellyfinTicks.seconds(episode.runTimeTicks),
+                            poster: episodePoster,
+                            serverID: episode.id,
+                            remotePath: episode.id,
+                            remoteVariant: nil,
+                            fileURL: nil,
+                            versions: [version]
+                        )
                     )
                 }
                 seasons.append(
@@ -566,6 +572,21 @@ public enum LibraryScanner {
         var failedPaths: [String] = []
         if let posterCacheDirectory {
             try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
+        }
+
+        func probeRemoteHeight(_ remotePath: String) async -> String? {
+            let ext = (remotePath as NSString).pathExtension.lowercased()
+            guard ["mp4", "m4v", "mov"].contains(ext), let header = client.basicAuthorizationHeader else { return nil }
+            let loader = AuthenticatedAssetLoader(
+                url: client.url(for: remotePath),
+                headers: ["Authorization": header]
+            )
+            let asset = loader.makeAsset()
+            guard let track = try? await asset.loadTracks(withMediaType: .video).first,
+                  let size = try? await track.load(.naturalSize) else { return nil }
+            let height = Int(abs(size.height).rounded())
+            guard height > 0 else { return nil }
+            return height >= 2000 ? "2160p" : "\(height)p"
         }
 
         func cachePoster(remotePath: String) async -> String? {
@@ -671,6 +692,7 @@ public enum LibraryScanner {
                     }
                 }
 
+                let resolution = await probeRemoteHeight(entry.path)
                 candidates.append(
                     FileCandidate(
                         relativePath: entry.path,
@@ -681,7 +703,8 @@ public enum LibraryScanner {
                         posterURL: posterURL,
                         nfo: nfo,
                         showNFO: showNFO,
-                        modifiedAt: entry.modifiedAt
+                        modifiedAt: entry.modifiedAt,
+                        resolution: resolution
                     )
                 )
             }

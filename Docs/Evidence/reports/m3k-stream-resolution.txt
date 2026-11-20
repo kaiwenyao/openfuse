@@ -1,0 +1,21 @@
+OpenFuse M3k stream resolution evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Changes:
+  WebDAV MP4/MOV: AuthenticatedAssetLoader -> AVAsset video track naturalSize.
+  Jellyfin episodes: playbackInfo item MediaStreams video Height.
+  MKV WebDAV still not probeable via AVFoundation.
+
+Results:
+  Jellyfin fixture (with --mobile-sample): movie 1080p, ep-1/ep-2 1080p,
+    movie-mobile 1080p (fixture reports 1080 for movie-mobile? HLS item)
+  WebDAV MP4: 720p
+  Jellyfin 1080p filter: ["OpenFuse Fixture (2026)", "示例剧"]
+  WebDAV 720p filter: ["openfuse-mobile"]
+  swift test: 26/26
+  iOS/iPadOS, tvOS, visionOS generic + iOS device Release: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  WebDAV MKV resolution; real servers; HDR/4K; tvOS runtime (47.6% download).

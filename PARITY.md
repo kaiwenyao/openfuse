@@ -186,6 +186,15 @@
 | 本地 1080p 探测 | MacBook Pro M2 Pro／macOS 27.2.1 | 4 个本地 MKV | Infuse 未安装 | ffprobe 写回 4/4 版本 1080p | `reports/m3j-resolution.txt` | 通过 |
 | 画质筛选 | 同上 | 本地 3 作品 | 待采样 | 「1080p」显示 3 作品（此前仅 Jellyfin 电影） | Evidence 44 | 通过 |
 | 四平台构建 | Xcode 27.2 | 同上 | — | iOS/iPadOS/tvOS/visionOS/device 构建成功 | — | 通过 |
+
+### M3k 流分辨率执行记录（2026-11-20）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jellyfin 单集分辨率 | MacBook Pro M2 Pro／macOS 27.2.1 | Jellyfin 夹具 | Infuse 未安装 | movie/ep-1/ep-2 均 1080p；1080p 筛选含电影+剧集 | Evidence 45、`reports/m3k-resolution-jellyfin.json` | 通过 |
+| WebDAV MP4 分辨率 | 同上 | Basic Auth WebDAV 20s MP4 | 待采样 | 720p；720p 筛选命中 | `reports/m3k-resolution-webdav.json` | 通过 |
+| WebDAV MKV 分辨率 | 同上 | MKV | 待采样 | AVFoundation 不支持，未取 | — | 待验证 |
+| 四平台构建 | Xcode 27.2 | 同上 | — | 全部 BUILD SUCCEEDED | — | 通过 |
 | 移动端 UI | 同上 | iOS/tvOS/visionOS | 待采样 | 构建成功；无 runtime 未启动 | `reports/m4-ios-build.txt` | 构建通过；运行待验证 |
 
 

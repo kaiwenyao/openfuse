@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 流分辨率探测（M3k）
+
+- WebDAV MP4/M4V/MOV：`AuthenticatedAssetLoader` + AVAsset video track naturalSize；MKV 跳过。
+- Jellyfin episode：扫描时 `playbackInfo(itemID:)` 取 MediaStreams Video Height；每集一次请求。
+- 结果写入版本 resolution；画质筛选覆盖 Jellyfin 剧集/WebDAV MP4。
+- 未做：WebDAV MKV、并发/缓存、HDR 标记。
+
 ## 本地分辨率探测（M3j）
 
 - MP4：`AVURLAsset` naturalSize/preferredTransform（visionOS 不同步支持，跳过）。

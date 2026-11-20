@@ -68,6 +68,8 @@
 | `reports/m4h-mobile-remote.txt` | 移动远程测试/构建摘要 | 运行记录 |
 | `44-resolution-filter.jpg` | 本地 1080p 筛选显示 3 作品 | 应用内窗口快照 |
 | `reports/m3j-resolution.txt` | 本地分辨率探测摘要 | 扫描/ffprobe |
+| `45-stream-resolution-filter.jpg` | Jellyfin 1080p 筛选含电影+剧集 | 应用内窗口快照 |
+| `reports/m3k-stream-resolution.txt` | WebDAV/Jellyfin 流分辨率摘要 | 扫描/PlaybackInfo |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

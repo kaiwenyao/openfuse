@@ -106,6 +106,12 @@ public actor WebDAVClient {
         self.session = URLSession(configuration: configuration)
     }
 
+    public nonisolated var basicAuthorizationHeader: String? {
+        guard !source.username.isEmpty || !password.isEmpty else { return nil }
+        let token = Data("\(source.username):\(password)".utf8).base64EncodedString()
+        return "Basic \(token)"
+    }
+
     public nonisolated func url(for path: String, isDirectory: Bool = false) -> URL {
         var url = source.normalizedBaseURL
         for component in path.split(separator: "/", omittingEmptySubsequences: true) {

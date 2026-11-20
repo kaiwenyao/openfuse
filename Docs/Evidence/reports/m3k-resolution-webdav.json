@@ -1,0 +1,77 @@
+{
+  "episodes" : 1,
+  "generatedAt" : "2026-11-20T01:58:51Z",
+  "groups" : [
+    {
+      "key" : "movie|openfuse-mobile",
+      "primary" : "openfuse-mobile",
+      "sources" : [
+        "webdav"
+      ],
+      "workIDs" : [
+        "webdav-9dfd8175c0242e7f"
+      ]
+    }
+  ],
+  "items" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "fileURL" : "",
+          "id" : "webdav-9dfd8175c0242e7f-main",
+          "remotePath" : "Mobile\/openfuse-mobile.mp4",
+          "season" : 0,
+          "sourceKind" : "webdav",
+          "title" : "openfuse-mobile",
+          "versions" : [
+            {
+              "fileURL" : "",
+              "id" : "webdav-9dfd8175c0242e7f-main-v0",
+              "mediaSourceID" : "",
+              "name" : "WebDAV"
+            }
+          ]
+        }
+      ],
+      "id" : "webdav-9dfd8175c0242e7f",
+      "kind" : "movie",
+      "overridden" : false,
+      "overview" : "",
+      "poster" : "",
+      "seasons" : [
+
+      ],
+      "sourceID" : "b74fae554bc8c13d",
+      "sourceKind" : "webdav",
+      "title" : "openfuse-mobile",
+      "year" : 0
+    }
+  ],
+  "merged" : [
+    {
+      "episodes" : [
+        {
+          "episode" : 1,
+          "season" : 0,
+          "title" : "openfuse-mobile",
+          "versions" : [
+            "WebDAV · WebDAV"
+          ]
+        }
+      ],
+      "key" : "movie|openfuse-mobile",
+      "sources" : [
+        "webdav"
+      ],
+      "title" : "openfuse-mobile"
+    }
+  ],
+  "rawEpisodes" : 1,
+  "rawWorks" : 1,
+  "status" : "",
+  "visible" : [
+    "openfuse-mobile"
+  ],
+  "works" : 1
+}

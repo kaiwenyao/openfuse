@@ -35,4 +35,4 @@
 
 ## 下一项
 
-M4i/M3k：tvOS runtime 完成后的实际启动与焦点截图；移动端字幕/音轨；WebDAV/Jellyfin 单集分辨率；CloudKit/Trakt；T07 其他场景。
+WebDAV MP4 与 Jellyfin 单集分辨率已在 [M3k 验收](M3K-STREAM-RESOLUTION.md) 完成。剩余 M4i：tvOS runtime 实际启动、移动端字幕/音轨/音频听测、WebDAV MKV 分辨率、CloudKit/Trakt、T07 其他场景。
