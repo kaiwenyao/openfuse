@@ -64,6 +64,13 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## WebDAV 目录超时恢复（M3i）
+
+- `ScannedLibrary.failedPaths` 记录 PROPFIND 失败目录；scanner 继续其他目录。
+- `LibraryStore.replace(preservingRemotePrefixes:)` 保留 remote_path 落在失败前缀下的旧 works，其余刷新；全部失败等价保留整源。
+- AppModel 状态显示「N 个目录失败，已保留旧条目」；夹具 `--fail-path` 注入 504。
+- 仅目录级；无重试/退避，Jellyfin/本地无等价恢复，扫描中播放未测。
+
 ## Jellyfin HLS 转码（M4f）
 
 - `JellyfinClient.hlsURL`：构造 `master.m3u8` + H.264/AAC/TS + api_key/DeviceId。

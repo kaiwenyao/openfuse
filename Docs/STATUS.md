@@ -7,19 +7,19 @@
 | M0 参照与选型 | 完成（Infuse 实机采样除外） | AVPlayer 打不开 MKV；libmpv 胜出。夹具与声道校验完成。 |
 | M1 Mac 本地播放 | 首个可用版本 | 打开/播放/切字幕/拖动/全屏/续播/关闭重开已实测；Infuse 对照、人耳听测、100 次循环未做。 |
 | M2 远程播放 | 部分完成：WebDAV + Jellyfin Direct | WebDAV：列目录、直放、远程 ASS、Range 拖动、续播。Jellyfin Direct：登录、媒体库/剧/季/集、服务器封面与版本、服务器轨道命名、直连、进度回写、服务器续播。真实服务与 Library Mode 未完成。 |
-| M3 Mac 媒体库 | 基本完成：M3a–M3h | SQLite、三源扫描、跨来源合并、海报、搜索、排序/类型/观看状态/画质筛选、防剧透、详情、版本菜单、TMDB/NFO、手动改/合并/拆分、TMDB 候选、可取消扫描、10k 压力、WebDAV NFO/认证海报。剩余 T07 深入与画质元数据补全。 |
+| M3 Mac 媒体库 | 基本完成：M3a–M3i | SQLite、三源扫描、跨来源合并、海报、搜索、排序/筛选/防剧透、版本菜单、TMDB/NFO、手动整理、可取消扫描、10k、WebDAV NFO/海报、WebDAV 504 目录恢复。剩余 T07 其他场景与画质元数据补全。 |
 | M4 家庭设备与同步 | 部分完成：M4a–M4f | 四平台构建成功；iPad 分栏、tvOS/visionOS UI；WebDAV/Jellyfin 扫描；WebDAV MP4 认证播放 3.598s；Jellyfin MP4 直连 5.866s；MKV 源 HLS 转码 5.954s。无 mobile runtime，UI/触控/空间/音频待验证；真实 Jellyfin HLS 参数、字幕/音轨、CloudKit/Trakt 未做。 |
 | M5 其余来源与高级播放 | 未开始 | 含自包含打包、HDR、投屏、Plex/Emby/SMB。 |
 | M6 Vision Pro | 未开始 | |
 
 ## 当前分支
 
-`m4f-hls`（基于 M4e 提交）。M4g 从该分支继续。
+`m3i-recovery`（基于 M4f 提交）。M4g 从该分支继续。
 
 ## 下一批可执行工作
 
-1. M4g：真实 Jellyfin HLS/PlaybackInfo 参数、字幕/音轨、三端 runtime 截图、tvOS/visionOS 远程来源、CloudKit/Trakt。
-2. M3 尾项：T07 深入、画质元数据补全（Jellyfin 单集/本地/WebDAV）。
+1. M4g：runtime 后三端启动截图、字幕/音轨、真实 Jellyfin HLS 参数、tvOS/visionOS 远程来源、CloudKit/Trakt。
+2. M3 尾项：T07 其他场景（扫描中播放/单文件失败）、画质元数据补全。
 3. 真实 Jellyfin：独立测试账号验证 HTTPS/反向代理、转码、外挂字幕、多用户；缺账号的组合标「待验证」。
 4. 真实 OpenList：独立测试账号验证登录、限流、签名跳转与目录规模；重定向凭据改为本机代理。
 5. 轨道映射改为显式 MediaStream Index；暂停/拖动立即回写进度。

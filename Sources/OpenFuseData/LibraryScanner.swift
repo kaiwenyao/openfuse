@@ -141,7 +141,8 @@ public enum LibraryScanner {
         candidates: [FileCandidate],
         sourceKind: String,
         sourceID: String,
-        sourceName: String
+        sourceName: String,
+        failedPaths: [String] = []
     ) -> ScannedLibrary {
         struct SeriesBucket {
             var title: String
@@ -308,7 +309,8 @@ public enum LibraryScanner {
             sourceKind: sourceKind,
             sourceID: sourceID,
             sourceName: sourceName,
-            works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending }
+            works: works.sorted { $0.sortTitle.localizedStandardCompare($1.sortTitle) == .orderedAscending },
+            failedPaths: failedPaths
         )
     }
 
@@ -542,6 +544,7 @@ public enum LibraryScanner {
         var showNFOByDirectory: [String: NFOMetadata] = [:]
         var visited = 0
         var downloadedPosters = 0
+        var failedPaths: [String] = []
         if let posterCacheDirectory {
             try? FileManager.default.createDirectory(at: posterCacheDirectory, withIntermediateDirectories: true)
         }
@@ -567,7 +570,15 @@ public enum LibraryScanner {
         while !queue.isEmpty {
             if token?.isCancelled == true { throw LibraryScanError.cancelled }
             let current = queue.removeFirst()
-            let entries = try await client.list(path: current.path)
+            let entries: [RemoteEntry]
+            do {
+                entries = try await client.list(path: current.path)
+            } catch {
+                if token?.isCancelled == true { throw LibraryScanError.cancelled }
+                failedPaths.append(current.path)
+                progress?(visited)
+                continue
+            }
             progress?(visited)
             for entry in entries where entry.isDirectory {
                 if current.depth < maxDepth { queue.append((entry.path, current.depth + 1)) }
@@ -662,7 +673,8 @@ public enum LibraryScanner {
             candidates: candidates,
             sourceKind: "webdav",
             sourceID: source.id,
-            sourceName: source.name
+            sourceName: source.name,
+            failedPaths: failedPaths
         )
     }
 }

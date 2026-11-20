@@ -633,13 +633,17 @@ final class AppModel: ObservableObject {
             )
             guard !token.isCancelled else { throw LibraryScanError.cancelled }
             let enriched = await enrichWithTMDB(scanned)
-            try libraryStore.replace(source: enriched.library)
+            try libraryStore.replace(
+                source: enriched.library,
+                preservingRemotePrefixes: scanned.failedPaths
+            )
             reloadLibrary()
             let counts = (try? libraryStore.counts()) ?? (works: 0, episodes: 0)
             let tmdbMatched = tmdbAvailable
                 ? ((try? libraryStore.works())?.filter { $0.poster?.hasPrefix("remote:") == true }.count ?? 0)
                 : 0
             libraryStatus = "WebDAV \(source.name)：\(counts.works) 个作品" +
+                (scanned.failedPaths.isEmpty ? "" : "，\(scanned.failedPaths.count) 个目录失败，已保留旧条目") +
                 (tmdbMatched > 0 ? "，TMDB 匹配 \(tmdbMatched)" : "")
         } catch LibraryScanError.cancelled {
             libraryStatus = "扫描已取消，媒体库保持原样"

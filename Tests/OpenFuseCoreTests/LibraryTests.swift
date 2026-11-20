@@ -149,6 +149,57 @@ final class LibraryTests: XCTestCase {
         XCTAssertNil(try LibraryOverrideStore(directory: directory).all["w1"])
     }
 
+    func testReplacePreservesFailedRemotePrefix() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-recovery-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = try LibraryStore(directory: directory)
+
+        func episode(_ id: String, remote: String) -> ScannedEpisode {
+            ScannedEpisode(
+                id: id, seasonNumber: 1, episodeNumber: 1, title: id,
+                overview: nil, runtime: 60, poster: nil, serverID: nil,
+                remotePath: remote, remoteVariant: nil, fileURL: nil,
+                versions: [ScannedVersion(
+                    id: id + "-v", name: "WebDAV", mediaSourceID: nil,
+                    container: "MKV", resolution: nil, remotePath: remote, fileURL: nil
+                )]
+            )
+        }
+        let movie = ScannedWork(
+            id: "movie", kind: .movie, title: "Movie", sortTitle: "Movie", year: 2026,
+            overview: nil, poster: nil, sourceKind: "webdav", sourceID: "s", serverID: nil,
+            addedAt: nil, seasons: [],
+            movie: episode("movie-main", remote: "Movies/Movie.mkv")
+        )
+        let series = ScannedWork(
+            id: "series", kind: .series, title: "Series", sortTitle: "Series", year: 2026,
+            overview: nil, poster: nil, sourceKind: "webdav", sourceID: "s", serverID: nil,
+            addedAt: nil,
+            seasons: [ScannedSeason(
+                id: "season", number: 1, title: "S1", poster: nil,
+                episodes: [episode("series-s1e1", remote: "Shows/Series/S01E01.mkv")]
+            )],
+            movie: nil
+        )
+        try store.replace(source: ScannedLibrary(
+            sourceKind: "webdav", sourceID: "s", sourceName: "webdav",
+            works: [movie, series]
+        ))
+        try store.replace(
+            source: ScannedLibrary(
+                sourceKind: "webdav", sourceID: "s", sourceName: "webdav",
+                works: [movie]
+            ),
+            preservingRemotePrefixes: ["Shows/Series"]
+        )
+        let works = try store.works()
+        XCTAssertEqual(works.count, 2)
+        XCTAssertTrue(works.contains { $0.id == "series" })
+        XCTAssertTrue(works.contains { $0.id == "movie" })
+    }
+
     func testMergedEpisodesCombineSourcesAndVersions() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-merge-\(UUID().uuidString)", isDirectory: true)

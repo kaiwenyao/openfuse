@@ -115,12 +115,20 @@ public struct ScannedLibrary: Sendable {
     public var sourceID: String
     public var sourceName: String
     public var works: [ScannedWork]
+    public var failedPaths: [String]
 
-    public init(sourceKind: String, sourceID: String, sourceName: String, works: [ScannedWork]) {
+    public init(
+        sourceKind: String,
+        sourceID: String,
+        sourceName: String,
+        works: [ScannedWork],
+        failedPaths: [String] = []
+    ) {
         self.sourceKind = sourceKind
         self.sourceID = sourceID
         self.sourceName = sourceName
         self.works = works
+        self.failedPaths = failedPaths
     }
 }
 

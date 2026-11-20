@@ -43,6 +43,7 @@ PREFIX = "/dav"
 AUTH_USER = "test"
 AUTH_PASSWORD = "test"
 THROTTLE_KBPS = 0
+FAIL_PATH = ""
 LOG_LOCK = threading.Lock()
 
 
@@ -252,6 +253,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             self._record(404)
             return
+        if FAIL_PATH and relative.strip("/").startswith(FAIL_PATH.strip("/")):
+            self.send_error(HTTPStatus.GATEWAY_TIMEOUT)
+            self._record(504, {"failed": relative})
+            return
         depth = self.headers.get("Depth", "1")
         responses = [self._prop(relative, full)]
         if depth != "0" and os.path.isdir(full):
@@ -369,7 +374,7 @@ def guess_type(path: str) -> str:
 
 
 def main() -> None:
-    global ROOT, LOG_PATH, PREFIX, AUTH_USER, AUTH_PASSWORD, THROTTLE_KBPS
+    global ROOT, LOG_PATH, PREFIX, AUTH_USER, AUTH_PASSWORD, THROTTLE_KBPS, FAIL_PATH
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=ROOT)
     parser.add_argument("--port", type=int, default=8099)
@@ -380,6 +385,7 @@ def main() -> None:
     parser.add_argument("--log", default=LOG_PATH)
     parser.add_argument("--setup", action="store_true")
     parser.add_argument("--throttle-kbps", type=int, default=0)
+    parser.add_argument("--fail-path", default="")
     args = parser.parse_args()
     ROOT = os.path.abspath(args.root)
     LOG_PATH = os.path.abspath(args.log)
@@ -387,6 +393,7 @@ def main() -> None:
     AUTH_USER = args.user
     AUTH_PASSWORD = args.password
     THROTTLE_KBPS = args.throttle_kbps
+    FAIL_PATH = args.fail_path
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     if args.setup or not os.path.isdir(ROOT):
         setup_tree()

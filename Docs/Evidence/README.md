@@ -56,6 +56,8 @@
 | `reports/m4e-jellyfin-remote.json` | Jellyfin 远程 20s/5.866s 结果 | probe 输出 |
 | `reports/m4f-hls.txt` | Jellyfin HLS/MKV 转码摘要 | `test-jellyfin-hls.sh` |
 | `reports/m4f-hls.json` | HLS 60s/5.954s 结果 | probe 输出 |
+| `reports/m3i-webdav-recovery.txt` | WebDAV 504 目录恢复摘要 | `test-webdav-recovery.sh` |
+| `reports/m3i-recovery-*.json` | 失败前后库报告 | 应用 `--library-report` |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

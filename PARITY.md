@@ -56,7 +56,7 @@
 | T05（Library 聚合部分） | 同上 | Jellyfin 媒体库/剧/季/集 | 待采样 | Recursive 扫描保留服务器 Id/名称/封面/季集；电影 2 个版本；详情与播放 | Evidence 20–23；`m3-library-aggregate.json` | 部分通过（真实服务器、TMDB 待做） |
 | 媒体库详情/搜索 | 同上 | 电影、剧集 | 待采样 | 剧集季选择、S01E01/02、简介；搜索「示例」只剩示例剧 | Evidence 21–22 | 部分通过 |
 | 媒体库播放 | 同上 | 本地/WebDAV/Jellyfin 各一集 | 待采样 | 本地 9.958 s 冻结帧、外挂简体；WebDAV/Jellyfin 从库播放 sourceKind 正确 | `reports/m3-library-play.json`、Evidence 24 | 本地通过；真实服务待验证 |
-| T07（首轮） | MacBook Pro M2 Pro／macOS 27.2.1 | 10,000 个空 MKV/嵌套目录 | 待采样 | 完整扫描 10,000 作品/集 6.52 s；取消空库保持 0；取消已有库保持 10,000；未测扫描中播放/超时/新增字幕 | `reports/m3d-scan-stress.json`、Evidence 32 | 部分通过 |
+| T07（首轮+恢复） | MacBook Pro M2 Pro／macOS 27.2.1 | 10,000 个空 MKV/嵌套目录；WebDAV 504 目录 | 待采样 | 10,000 扫描 6.52s、取消保留旧库；WebDAV 单目录 504 后 2 作品仍为 2 并显示失败目录数；未测扫描中播放/单文件失败 | `reports/m3d-scan-stress.json`、`reports/m3i-webdav-recovery.txt` | 部分通过 |
 
 ### M3b 元数据执行记录（2026-11-19）
 

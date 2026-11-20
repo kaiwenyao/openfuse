@@ -59,11 +59,34 @@ public final class LibraryStore: @unchecked Sendable {
     // MARK: - Writes
 
     public func replace(source: ScannedLibrary) throws {
+        try replace(source: source, preservingRemotePrefixes: [])
+    }
+
+    /// Replaces a source while keeping works whose episodes live under a
+    /// directory that failed this scan (timeout/500). Works with no preserved
+    /// remote paths are deleted as usual.
+    public func replace(source: ScannedLibrary, preservingRemotePrefixes: [String]) throws {
         lock.lock(); defer { lock.unlock() }
         guard let database else { return }
         try execute("BEGIN IMMEDIATE;")
         do {
-            try deleteSourceLocked(kind: source.sourceKind, sourceID: source.sourceID)
+            if preservingRemotePrefixes.isEmpty {
+                try deleteSourceLocked(kind: source.sourceKind, sourceID: source.sourceID)
+            } else {
+                let keepSQL = "SELECT DISTINCT work_id FROM episodes WHERE source_kind=? AND source_id=? AND (" +
+                    preservingRemotePrefixes.map { _ in "remote_path LIKE ?" }.joined(separator: " OR ") + ")"
+                var keepArgs: [SQLValue] = [.text(source.sourceKind), .text(source.sourceID)]
+                keepArgs.append(contentsOf: preservingRemotePrefixes.map { SQLValue.text($0 + "%") })
+                let keep = try query(keepSQL, keepArgs) { $0.text(0) ?? "" }.filter { !$0.isEmpty }
+                if !keep.isEmpty {
+                    let placeholders = keep.map { _ in "?" }.joined(separator: ",")
+                    var args: [SQLValue] = [.text(source.sourceKind), .text(source.sourceID)]
+                    args.append(contentsOf: keep.map { SQLValue.text($0) })
+                    try run("DELETE FROM works WHERE source_kind=? AND source_id=? AND id NOT IN (\(placeholders))", args)
+                } else {
+                    try deleteSourceLocked(kind: source.sourceKind, sourceID: source.sourceID)
+                }
+            }
             let now = Date().timeIntervalSince1970
             let workSQL = """
             INSERT OR REPLACE INTO works

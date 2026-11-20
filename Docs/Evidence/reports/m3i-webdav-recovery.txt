@@ -1,0 +1,26 @@
+OpenFuse M3i WebDAV directory-timeout recovery evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1
+
+Command:
+  Scripts/test-webdav-recovery.sh
+
+Scenario:
+  1. WebDAV fixture with Movies + Shows/示例剧 (2 works) scanned.
+  2. Restart fixture with --fail-path "Shows/示例剧" (PROPFIND -> 504).
+  3. Rescan same source.
+
+Results:
+  base works/episodes: 2/2
+  after failure: 2/2, status "5 个目录失败，已保留旧条目"
+  preserved series: "示例剧 · WebDAV NFO"
+  movie rescanned: "OpenFuse Fixture · WebDAV NFO"
+  server log contains 504 for Shows/示例剧
+  swift test: 26/26
+  iOS/iPadOS, tvOS, visionOS builds: BUILD SUCCEEDED
+  iOS device Release: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  Scan-while-playing, per-file failures, retry/backoff, Jellyfin recovery,
+  real OpenList timeouts, runtime UI evidence.
