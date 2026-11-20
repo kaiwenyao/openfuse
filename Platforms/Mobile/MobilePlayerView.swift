@@ -25,6 +25,12 @@ struct MobilePlayerView: View {
     @State private var subtitleLabels: [String] = []
     @State private var selectedAudioLabel = "默认音轨"
     @State private var selectedSubtitleLabel = "关闭"
+    @State private var sidecarTracks: [SubtitleTrack] = []
+    @State private var sidecarLabels: [String] = []
+    @State private var selectedSidecarIndex: Int?
+    @State private var cues: [SubtitleCue] = []
+    @State private var subtitleText = ""
+    private let ticker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -45,6 +51,20 @@ struct MobilePlayerView: View {
                     .foregroundStyle(.white)
             }
             .padding(16)
+            if !subtitleText.isEmpty {
+                VStack {
+                    Spacer()
+                    Text(subtitleText)
+                        .font(.system(size: 20, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, showsHUD ? 132 : 60)
+                }
+            }
             if let errorText {
                 Text(errorText)
                     .font(.footnote)
@@ -75,11 +95,24 @@ struct MobilePlayerView: View {
                                     .foregroundStyle(.white)
                             }
                         }
-                        if !subtitleOptions.isEmpty {
+                        if !subtitleOptions.isEmpty && sidecarTracks.isEmpty {
                             Menu {
                                 Button("关闭字幕") { selectSubtitle(nil) }
                                 ForEach(subtitleOptions.indices, id: \.self) { index in
                                     Button(subtitleLabels[index]) { selectSubtitle(index) }
+                                }
+                            } label: {
+                                Image(systemName: "captions.bubble")
+                                    .padding(7)
+                                    .background(.black.opacity(0.55), in: Circle())
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        if !sidecarTracks.isEmpty {
+                            Menu {
+                                Button("关闭字幕") { selectSidecar(nil) }
+                                ForEach(sidecarTracks.indices, id: \.self) { index in
+                                    Button(sidecarLabels[index]) { selectSidecar(index) }
                                 }
                             } label: {
                                 Image(systemName: "captions.bubble")
@@ -116,6 +149,9 @@ struct MobilePlayerView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { saveProgress() }
         }
+        .onReceive(ticker) { _ in
+            tick()
+        }
     }
 
     private var showsHUD: Bool {
@@ -125,12 +161,14 @@ struct MobilePlayerView: View {
 
     private func configureTracks(_ player: AVPlayer) {
         guard let asset = player.currentItem?.asset else { return }
+        sidecarTracks = item.sidecarSubtitles
+        sidecarLabels = sidecarTracks.map { "\($0.displayName)" }
         audioGroup = asset.mediaSelectionGroup(forMediaCharacteristic: .audible)
         subtitleGroup = asset.mediaSelectionGroup(forMediaCharacteristic: .legible)
         audioOptions = audioGroup?.options ?? []
-        subtitleOptions = (subtitleGroup?.options ?? []).filter {
-            !$0.hasMediaCharacteristic(.containsOnlyForcedSubtitles)
-        }
+        subtitleOptions = sidecarTracks.isEmpty
+            ? (subtitleGroup?.options ?? []).filter { !$0.hasMediaCharacteristic(.containsOnlyForcedSubtitles) }
+            : []
         let audioTracks = asset.tracks(withMediaType: .audio)
         audioLabels = audioOptions.enumerated().map { index, option in
             let codec = audioTracks.indices.contains(index) ? Self.audioCodec(audioTracks[index]) : option.displayName
@@ -160,7 +198,42 @@ struct MobilePlayerView: View {
             selectAudio(number - 1)
         }
         if let raw = env["OPENFUSE_AUTOPLAY_SUBTITLE_INDEX"], let number = Int(raw) {
-            selectSubtitle(number == 0 ? nil : number - 1)
+            if sidecarTracks.isEmpty {
+                selectSubtitle(number == 0 ? nil : number - 1)
+            } else {
+                selectSidecar(number == 0 ? nil : number - 1)
+            }
+        }
+    }
+
+    private func selectSidecar(_ index: Int?) {
+        if let index, sidecarTracks.indices.contains(index) {
+            selectedSidecarIndex = index
+            selectedSubtitleLabel = sidecarLabels[index]
+            if let url = sidecarTracks[index].url {
+                cues = (try? SubtitleParser.parse(url: url)) ?? []
+            } else {
+                cues = []
+            }
+            subtitleText = ""
+        } else {
+            selectedSidecarIndex = nil
+            selectedSubtitleLabel = "关闭"
+            cues = []
+            subtitleText = ""
+        }
+    }
+
+    private func tick() {
+        guard let player else { return }
+        let time = player.currentTime().seconds
+        if time.isFinite {
+            currentTime = max(0, time)
+        }
+        if let cue = cues.first(where: { time >= $0.start && time < $0.end }) {
+            subtitleText = cue.text
+        } else if !cues.isEmpty {
+            subtitleText = ""
         }
     }
 
@@ -229,9 +302,20 @@ struct MobilePlayerView: View {
                 await player.seek(to: CMTime(seconds: resume, preferredTimescale: 600))
             }
             player.play()
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SEEK"],
+               let seconds = Double(raw) {
+                await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
+                if ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_PAUSE"] == "1" {
+                    player.pause()
+                }
+            }
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SUBTITLE_INDEX"],
                let number = Int(raw) {
-                selectSubtitle(number == 0 ? nil : number - 1)
+                if sidecarTracks.isEmpty {
+                    selectSubtitle(number == 0 ? nil : number - 1)
+                } else {
+                    selectSidecar(number == 0 ? nil : number - 1)
+                }
             }
             if let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_STOP_AFTER"],
                let seconds = Double(raw), seconds > 0 {

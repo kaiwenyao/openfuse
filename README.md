@@ -32,7 +32,8 @@
 - **M3j 本地分辨率：完成。** MP4 用 AVFoundation、MKV 用 Mac ffprobe 补齐 1080p；画质筛选「1080p」现显示本地电影与两部剧。记录：[M3j 分辨率验收](Docs/M3J-RESOLUTION.md)。
 - **M3k 流分辨率：完成。** WebDAV MP4 用认证 loader 读 720p；Jellyfin 扫描 PlaybackInfo 得到单集 1080p；1080p 筛选现覆盖 Jellyfin 剧集，720p 覆盖 WebDAV MP4。记录：[M3k 流分辨率验收](Docs/M3K-STREAM-RESOLUTION.md)。
 - **M4i 移动轨道与 tvOS：完成构建/运行验证。** 移动样本升级为 HEVC Main10 + E-AC-3 5.1 + AAC + 简繁 mov_text；播放器有音轨/字幕菜单，HUD 实测 E-AC-3/简体选中。tvOS 27.2 runtime 安装后 Apple TV 模拟器实际启动、焦点网格与全屏播放（帧 5.625s）。字幕文字与音频输出未确认。记录：[M4i 验收](Docs/M4I-TRACKS-TVOS.md)。
-- **下一项：** M4j：字幕自绘（SRT/ASS）与音频听测；visionOS runtime；远程来源新样本回归；CloudKit/Trakt；M3 T07/WebDAV MKV 分辨率。
+- **M4j 移动字幕自绘：完成。** SRT/ASS 解析 + 0.25s ticker 叠加字幕；简体 seek 4.5s 显示第一句，繁体 seek 10s 显示第二句，简繁切换与 seek 同步实测；修复 HUD 时间停在 0。音轨仍为 E-AC-3 选中但未听测。记录：[M4j 字幕验收](Docs/M4J-SUBTITLES.md)。
+- **下一项：** M4k：移动端远程字幕、ASS/libass 或完整样式；音频听测；visionOS runtime；CloudKit/Trakt；M3 T07/WebDAV MKV 分辨率。
 
 开发入口：
 
@@ -62,7 +63,7 @@ Scripts/test-webdav-recovery.sh     # WebDAV 504 目录旧库保留
 open build/OpenFuse.app
 ```
 
-当前分支 `m4i-tracks`（基于 M3k 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
+当前分支 `m4j-subtitles`（基于 M4i 提交）。Mac 构建依赖 Homebrew 的 libmpv；iOS 构建依赖 XcodeGen 与 Xcode，不需要 libmpv（当前 AVPlayer 路径）。自包含打包留到发行阶段。
 
 
 ## 第一个可以日常使用的 Mac 版本

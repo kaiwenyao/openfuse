@@ -64,6 +64,14 @@ Docs/                   决策、素材、验收、证据
 
 **待做：** TMDB/NFO、集级跨源版本合并、增量扫描/取消、手工纠错、最近添加/继续观看排序、T07 压测。
 
+## 移动端字幕自绘（M4j）
+
+- `SubtitleParser`：SRT/VTT/ASS/SSA → cues；去 HTML/ASS 标签、`\N` 换行。
+- 本地播放条目用 `SubtitleCatalog` 发现侧载；seed 复制简/繁 SRT。
+- `MobilePlayerView`：0.25s Timer 读取当前时间并选 cue，SwiftUI 叠加字幕（系统字体 fallback）；菜单关闭/简体/繁體；测试钩子 seek/pause。
+- 与 mov_text 原生轨道二选一（侧载优先）；ASS 定位/样式仍由 Mac libass 提供。
+- 未做：远程侧载字幕、ASS 样式、音频听测、visionOS runtime。
+
 ## 移动端音轨/字幕轨道（M4i）
 
 - 新 `openfuse-mobile.mp4`：HEVC Main10 + E-AC-3 5.1 + AAC + 简繁 mov_text，20.1s。

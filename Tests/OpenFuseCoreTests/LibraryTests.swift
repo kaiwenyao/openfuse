@@ -259,6 +259,37 @@ final class LibraryTests: XCTestCase {
         XCTAssertNil(metadata.posterPath)
     }
 
+    func testSubtitleCueParsers() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("openfuse-cues-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let srt = """
+        1
+        00:00:02,500 --> 00:00:06,200
+        第一句：简体
+
+        2
+        00:00:09,000 --> 00:00:13,500
+        第二句
+        """
+        let srtURL = directory.appendingPathComponent("a.zh-Hans.srt")
+        try srt.write(to: srtURL, atomically: true, encoding: .utf8)
+        let cues = try SubtitleParser.parse(url: srtURL)
+        XCTAssertEqual(cues.count, 2)
+        XCTAssertEqual(cues[0].start, 2.5, accuracy: 0.001)
+        XCTAssertEqual(cues[0].text, "第一句：简体")
+
+        let ass = #"""
+        [Events]
+        Dialogue: 0,0:00:02.50,0:00:06.20,Default,,0,0,0,,{\an8}<b>最初の字幕</b>\N第二行
+        """#
+        let assURL = directory.appendingPathComponent("a.ass")
+        try ass.write(to: assURL, atomically: true, encoding: .utf8)
+        let assCues = try SubtitleParser.parse(url: assURL)
+        XCTAssertEqual(assCues.first?.text, "最初の字幕\n第二行")
+    }
+
     func testLocalScannerGroupsSeriesAndMovies() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("openfuse-scan-\(UUID().uuidString)", isDirectory: true)

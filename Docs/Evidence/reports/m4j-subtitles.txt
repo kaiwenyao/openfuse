@@ -1,0 +1,31 @@
+OpenFuse M4j mobile sidecar subtitle evidence
+Date: 2026-11-20
+Host: MacBook Pro M2 Pro, macOS 27.2.1, Xcode 27.2
+Runtime: iOS 27.2 (24B8117); iPhone 18 Pro simulator
+
+Sample:
+  openfuse-mobile.mp4 = HEVC Main10 + E-AC-3 5.1 + AAC + embedded mov_text
+  Sidecars: openfuse-mobile.zh-Hans.srt / .zh-Hant.srt (copied next to sample)
+  Player: SubtitleParser (SRT/ASS), 0.25s ticker, sidecar menu, overlay text.
+
+Commands:
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY=1
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY_AUDIO_INDEX=1
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY_SUBTITLE_INDEX=1|2
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY_SEEK=4.5|10
+  SIMCTL_CHILD_OPENFUSE_AUTOPLAY_PAUSE=1
+
+Results:
+  Simplified: seek 4.5s, HUD 4.1/20.1, subtitle
+    "最初の字幕。タイミングは 2.5 秒。/ 第一句：画面 2.5 秒，字幕准时出现。"
+  Traditional: seek 10s, HUD 10.1/20.1, subtitle
+    "第二句：拖動後字幕仍同步。/ 二番目の字幕。シーク後も同期。"
+  Track labels: 音轨 1 · E-AC-3 5.1 · 字幕：中文（简体/繁體）(SRT)
+  Audio not heard/captured; E-AC3 selection only.
+  swift test: 27/27 (added SRT/ASS parser test)
+  iOS/iPadOS, tvOS, visionOS generic + iOS device: BUILD SUCCEEDED
+  Mac build: success
+
+Not verified:
+  Actual audio output/listening; mobile ASS styling/font override; remote sidecar
+  subtitles; visionOS runtime; real services; CloudKit/Trakt.

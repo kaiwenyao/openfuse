@@ -74,6 +74,9 @@
 | `47-tvos-home.jpg` | Apple TV 焦点网格实际运行 | 同上 |
 | `48-tvos-playback.jpg` | Apple TV 全屏 HEVC/EAC3 播放 | 同上 |
 | `reports/m4i-tracks-tvos.txt` | 移动轨道/tvOS 运行摘要 | 运行记录 |
+| `49-ios-subtitle-hans.jpg` | iOS 简体字幕 seek 4.5s | `simctl io screenshot` |
+| `50-ios-subtitle-hant.jpg` | iOS 繁体字幕 seek 10s | 同上 |
+| `reports/m4j-subtitles.txt` | 移动字幕解析/构建摘要 | 运行记录 |
 | `37-spoiler-protection.jpg` | 防剧透开启的详情/单集简介 | 应用内窗口快照 |
 | `reports/m3h-watch-*.json` | 观看中/最近播放/1080p 筛选报告 | 应用 `--library-report` |
 | `reports/m2-*.json` | WebDAV 播放/拖动/续播/简繁报告 | 应用 `--report` |

@@ -14,6 +14,7 @@ struct MobilePlaybackItem: Identifiable, Hashable {
     var remotePath: String?
     var remoteURL: String?
     var httpHeaders: [String: String] = [:]
+    var sidecarSubtitles: [SubtitleTrack] = []
 }
 
 @MainActor
@@ -165,7 +166,8 @@ final class MobileLibraryModel: ObservableObject {
                 sourceKind: work.sourceKind,
                 sourceID: work.sourceID,
                 remotePath: episode.remotePath,
-                remoteURL: nil
+                remoteURL: nil,
+                sidecarSubtitles: SubtitleCatalog.discover(for: url)
             )
         }
 
@@ -393,6 +395,17 @@ final class MobileLibraryModel: ObservableObject {
                 let posterTarget = sample.appendingPathComponent("poster.jpg")
                 if !FileManager.default.fileExists(atPath: posterTarget.path) {
                     try FileManager.default.copyItem(at: poster, to: posterTarget)
+                }
+            }
+            for suffix in ["zh-Hans", "zh-Hant"] {
+                if let subtitle = Bundle.main.url(
+                    forResource: "openfuse-mobile.\(suffix)",
+                    withExtension: "srt"
+                ) {
+                    let target = sample.appendingPathComponent("OpenFuse Mobile Sample.\(suffix).srt")
+                    if !FileManager.default.fileExists(atPath: target.path) {
+                        try FileManager.default.copyItem(at: subtitle, to: target)
+                    }
                 }
             }
             let scanned = try LibraryScanner.scanLocal(directory: documentsDirectory.appendingPathComponent("OpenFuse Mobile Sample (2026)"))
