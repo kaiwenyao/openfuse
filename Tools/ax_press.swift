@@ -46,9 +46,10 @@ func press(_ element: AXUIElement, target: String, pressed: inout Bool) {
     let role = attr(element, kAXRoleAttribute) as? String ?? ""
     let pressableRoles: Set<String> = ["AXButton", "AXRadioButton", "AXMenuItem", "AXCell", "AXCheckBox"]
     if !pressed, pressableRoles.contains(role), line.contains(target) {
+        _ = AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         let result = AXUIElementPerformAction(element, kAXPressAction as CFString)
         print("PRESS \(result.rawValue) \(line)")
-        pressed = true
+        pressed = result == .success
     }
     if let children = attr(element, kAXChildrenAttribute) as? [AXUIElement] {
         for child in children { press(child, target: target, pressed: &pressed) }

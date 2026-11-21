@@ -10,6 +10,7 @@ public protocol PublicMetadataProviding: Sendable {
         season: Int?
     ) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])?
     func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata?
+    func lastFailure() async -> Bool
 }
 
 public actor PublicMetadataService: PublicMetadataProviding {
@@ -17,6 +18,23 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private var seriesCache: [String: (DirectoryWorkMetadata, [DirectoryEpisodeMetadata])] = [:]
     private var movieCache: [String: DirectoryWorkMetadata] = [:]
     private var wikiCache: [String: WikipediaSummary?] = [:]
+    private var requestFailed = false
+
+    public func lastFailure() async -> Bool { requestFailed }
+
+    private func fetch(_ url: URL) async -> Data? {
+        do {
+            let (data, response) = try await session.data(from: url)
+            if let http = response as? HTTPURLResponse, http.statusCode >= 500 {
+                requestFailed = true
+                return nil
+            }
+            return data
+        } catch {
+            requestFailed = true
+            return nil
+        }
+    }
 
     public init() {
         let configuration = URLSessionConfiguration.ephemeral
@@ -33,6 +51,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
         year: Int?,
         season: Int?
     ) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? {
+        requestFailed = false
         let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)|\(season ?? 0)"
         if let cached = seriesCache[key] { return cached }
         var best: TVmazeShow?
@@ -85,6 +104,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
     // MARK: - Movies
 
     public func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? {
+        requestFailed = false
         let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)"
         if let cached = movieCache[key] { return cached }
         let queries = titleCandidates.flatMap { candidate -> [String] in
@@ -152,7 +172,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private func tvmazeSearch(_ query: String) async -> [TVmazeShow] {
         guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "https://api.tvmaze.com/search/shows?q=\(encoded)"),
-              let data = try? await session.data(from: url).0,
+              let data = await fetch(url),
               let results = try? JSONDecoder().decode([TVmazeSearchResult].self, from: data) else {
             return []
         }
@@ -161,7 +181,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
 
     private func tvmazeEpisodes(showID: Int, season: Int) async -> [DirectoryEpisodeMetadata] {
         guard let url = URL(string: "https://api.tvmaze.com/shows/\(showID)/episodes?specials=1"),
-              let data = try? await session.data(from: url).0,
+              let data = await fetch(url),
               let episodes = try? JSONDecoder().decode([TVmazeEpisode].self, from: data) else {
             return []
         }
@@ -209,7 +229,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private func searchWikipedia(query: String, language: String) async -> WikipediaSummary? {
         guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let searchURL = URL(string: "https://\(language).wikipedia.org/w/api.php?action=query&list=search&srsearch=\(encoded)&format=json&srlimit=4"),
-              let data = try? await session.data(from: searchURL).0,
+              let data = await fetch(searchURL),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let queryObject = object["query"] as? [String: Any],
               let results = queryObject["search"] as? [[String: Any]] else {
@@ -227,7 +247,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private func pageSummary(title: String, language: String) async -> WikipediaSummary? {
         let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title
         guard let url = URL(string: "https://\(language).wikipedia.org/api/rest_v1/page/summary/\(encoded)"),
-              let data = try? await session.data(from: url).0,
+              let data = await fetch(url),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return nil
         }
@@ -252,7 +272,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private func wikidataVerifyMovie(_ entityID: String?, year: Int?) async -> (isFilm: Bool, year: Int?) {
         guard let entityID,
               let url = URL(string: "https://www.wikidata.org/wiki/Special:EntityData/\(entityID).json"),
-              let data = try? await session.data(from: url).0,
+              let data = await fetch(url),
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let entities = root["entities"] as? [String: Any],
               let entity = entities[entityID] as? [String: Any],

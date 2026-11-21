@@ -54,6 +54,9 @@ public struct DirectoryMetadata: Codable, Hashable, Sendable {
     /// Per-file movie metadata so a folder with several movies does not reuse
     /// the first title for every row.
     public var movieWorks: [String: DirectoryWorkMetadata]?
+    /// matched / noCandidates / networkFailure / localOnly / partial.
+    public var matchState: String?
+    public var matchNote: String?
 
     public func episode(season: Int, number: Int) -> DirectoryEpisodeMetadata? {
         episodes.first { $0.season == season && $0.number == number }
@@ -161,6 +164,8 @@ public actor RemoteMetadataService {
         var movieWorks: [String: DirectoryWorkMetadata] = [:]
         var primaryWork: DirectoryWorkMetadata?
         var sourceLabel = "本地资料"
+        var usedPublic = false
+        var resolvedRemote = false
 
         if kind == .series {
             var resolved: DirectoryWorkMetadata?
@@ -204,15 +209,19 @@ public actor RemoteMetadataService {
                     ratingLabels: []
                 )
                 sourceLabel = "TMDB"
-            } else if let publicResult = await publicResolver.series(
-                titleCandidates: titleCandidates,
-                year: yearHint,
-                season: seasonHint
-            ) {
-                resolved = publicResult.work
-                episodes = publicResult.episodes
-                sourceLabel = "TVmaze / Wikipedia"
+            } else {
+                usedPublic = true
+                if let publicResult = await publicResolver.series(
+                    titleCandidates: titleCandidates,
+                    year: yearHint,
+                    season: seasonHint
+                ) {
+                    resolved = publicResult.work
+                    episodes = publicResult.episodes
+                    sourceLabel = "TVmaze / Wikipedia"
+                }
             }
+            resolvedRemote = resolved != nil
             primaryWork = resolved ?? DirectoryWorkMetadata(
                 kind: .series,
                 title: fallbackTitle,
@@ -259,13 +268,17 @@ public actor RemoteMetadataService {
                         ratingLabels: []
                     )
                     sourceLabel = "TMDB"
-                } else if let publicWork = await publicResolver.movie(
-                    titleCandidates: [title, info.movieTitle ?? ""],
-                    year: year
-                ) {
-                    work = publicWork
-                    sourceLabel = "Wikipedia / Wikidata"
+                } else {
+                    usedPublic = true
+                    if let publicWork = await publicResolver.movie(
+                        titleCandidates: [title, info.movieTitle ?? ""],
+                        year: year
+                    ) {
+                        work = publicWork
+                        sourceLabel = "Wikipedia / Wikidata"
+                    }
                 }
+                if work != nil { resolvedRemote = true }
                 let finalWork = work ?? DirectoryWorkMetadata(
                     kind: .movie,
                     title: title,
@@ -307,12 +320,34 @@ public actor RemoteMetadataService {
                 movieWorks[key] = item
             }
         }
+        var matchState = "matched"
+        var matchNote: String?
+        if usedPublic {
+            let networkFailed = await publicResolver.lastFailure()
+            if !resolvedRemote {
+                matchState = networkFailed ? "networkFailure" : "noCandidates"
+                matchNote = networkFailed ? "网络不可用，显示本地资料" : "未找到公开候选，显示本地资料"
+            } else if work.overview == nil || work.posterURL == nil || work.year == nil {
+                matchState = "partial"
+                matchNote = "匹配成功，部分字段缺失"
+            } else {
+                matchState = "matched"
+                matchNote = sourceLabel
+            }
+        } else if sourceLabel == "本地资料" {
+            matchState = "localOnly"
+            matchNote = "仅本地/NFO 资料"
+        } else {
+            matchNote = sourceLabel
+        }
         let metadata = DirectoryMetadata(
             work: work,
             episodes: episodes,
             sourceLabel: sourceLabel,
             updatedAt: Date(),
-            movieWorks: movieWorks.isEmpty ? nil : movieWorks
+            movieWorks: movieWorks.isEmpty ? nil : movieWorks,
+            matchState: matchState,
+            matchNote: matchNote
         )
         writeCache(cacheKey, metadata)
         return metadata

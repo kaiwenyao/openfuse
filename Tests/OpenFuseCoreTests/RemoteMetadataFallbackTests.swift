@@ -4,10 +4,28 @@ import XCTest
 private struct EmptyResolver: PublicMetadataProviding {
     func series(titleCandidates: [String], year: Int?, season: Int?) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? { nil }
     func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? { nil }
+    func lastFailure() async -> Bool { false }
+}
+
+private struct FailingResolver: PublicMetadataProviding {
+    func series(titleCandidates: [String], year: Int?, season: Int?) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? { nil }
+    func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? { nil }
+    func lastFailure() async -> Bool { true }
+}
+
+private struct PartialResolver: PublicMetadataProviding {
+    func series(titleCandidates: [String], year: Int?, season: Int?) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? {
+        (DirectoryWorkMetadata(kind: .series, title: "Partial", year: nil, overview: nil, posterURL: nil,
+                               backdropURL: nil, tmdbRating: nil, tmdbVotes: nil, imdbID: nil,
+                               externalRatings: [], seasonNumbers: [], ratingLabels: []), [])
+    }
+    func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? { nil }
+    func lastFailure() async -> Bool { false }
 }
 
 private struct PerMovieResolver: PublicMetadataProviding {
     func series(titleCandidates: [String], year: Int?, season: Int?) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? { nil }
+    func lastFailure() async -> Bool { false }
     func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? {
         guard let title = titleCandidates.first else { return nil }
         return DirectoryWorkMetadata(
@@ -57,6 +75,26 @@ final class RemoteMetadataFallbackTests: XCTestCase {
         XCTAssertEqual(metadata?.work.year, 2013)
         XCTAssertEqual(metadata?.work.overview, "NFO 简介")
         XCTAssertEqual(metadata?.sourceLabel, "本地资料")
+    }
+
+    func testNoCandidatesIsDistinguished() async {
+        let service = RemoteMetadataService(tmdb: nil, omdb: nil, cacheDirectory: temp(), publicResolver: EmptyResolver())
+        let metadata = await service.metadata(sourceID: "src", directoryPath: "Shows/Season 01", entries: [entry("Show - S01E01.mkv")])
+        XCTAssertEqual(metadata?.matchState, "noCandidates")
+        XCTAssertEqual(metadata?.matchNote, "未找到公开候选，显示本地资料")
+    }
+
+    func testNetworkFailureIsDistinguished() async {
+        let service = RemoteMetadataService(tmdb: nil, omdb: nil, cacheDirectory: temp(), publicResolver: FailingResolver())
+        let metadata = await service.metadata(sourceID: "src", directoryPath: "Shows/Season 01", entries: [entry("Show - S01E01.mkv")])
+        XCTAssertEqual(metadata?.matchState, "networkFailure")
+    }
+
+    func testPartialMatchIsDistinguished() async {
+        let service = RemoteMetadataService(tmdb: nil, omdb: nil, cacheDirectory: temp(), publicResolver: PartialResolver())
+        let metadata = await service.metadata(sourceID: "src", directoryPath: "Shows/Season 01", entries: [entry("Show - S01E01.mkv")])
+        XCTAssertEqual(metadata?.matchState, "partial")
+        XCTAssertEqual(metadata?.matchNote, "匹配成功，部分字段缺失")
     }
 
     func testManualMatchWinsOverNFO() async {

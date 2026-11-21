@@ -598,6 +598,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func scheduleAutomation(model: AppModel, arguments: [String], reopen: @escaping () -> Void) {
+        if let sequence = value(after: "--resume-sequence", in: arguments) {
+            let first = model.recent.first { ($0.displayTitle ?? "").contains("S01E08") }
+            let second = model.recent.first { ($0.displayTitle ?? "").contains("S01E07") }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                if let first { model.resume(first) }
+            }
+            if sequence == "double" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                    if let first { model.resume(first) }
+                }
+            } else if sequence == "cancel-switch" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    model.cancelLoading()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    if let second { model.resume(second) }
+                }
+            }
+        }
+
         // Acceptance hook: open another file while the first one is still
         // opening, i.e. the "pick a different episode during loading" case.
         if let switchPath = value(after: "--switch-to", in: arguments),

@@ -485,9 +485,11 @@ private struct DirectoryMetadataHeader: View {
                     .foregroundStyle(Theme.secondary)
                     .disabled(loading)
                     Spacer()
-                    Text(multiMovie ? "\(metadata.movieWorks?.count ?? 0) 部影片" : (metadata.work.kind == .movie ? "影片" : "剧集"))
+                    Text("\(multiMovie ? "\(metadata.movieWorks?.count ?? 0) 部影片" : (metadata.work.kind == .movie ? "影片" : "剧集")) · \(metadata.matchNote ?? metadata.sourceLabel)")
                         .font(.system(size: 10))
-                        .foregroundStyle(Theme.secondary.opacity(0.7))
+                        .foregroundStyle(metadata.matchState == "networkFailure" || metadata.matchState == "noCandidates"
+                                         ? Color.orange.opacity(0.85)
+                                         : Theme.secondary.opacity(0.7))
                 }
             }
             Spacer(minLength: 0)

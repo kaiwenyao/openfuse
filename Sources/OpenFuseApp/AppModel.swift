@@ -547,7 +547,17 @@ final class AppModel: ObservableObject {
     }
 
     func openRemote(source: WebDAVSource, entry: RemoteEntry, siblings: [RemoteEntry]) async {
-        let token = beginPlaybackSession()
+        await openRemote(source: source, entry: entry, siblings: siblings, sessionToken: nil)
+    }
+
+    private func openRemote(
+        source: WebDAVSource,
+        entry: RemoteEntry,
+        siblings: [RemoteEntry],
+        sessionToken: Int?
+    ) async {
+        let token = sessionToken ?? beginPlaybackSession()
+        guard sessionIsCurrent(token) else { return }
         guard let password = password(for: source) else {
             statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
             return
@@ -588,7 +598,7 @@ final class AppModel: ObservableObject {
             let parent = (path as NSString).deletingLastPathComponent
             let siblings = (try? await client.list(path: parent)) ?? []
             guard sessionIsCurrent(token) else { return }
-            await openRemote(source: source, entry: entry, siblings: siblings)
+            await openRemote(source: source, entry: entry, siblings: siblings, sessionToken: token)
         } catch {
             statusMessage = error.localizedDescription
         }
