@@ -30,6 +30,10 @@ public struct MediaItem: Sendable {
     /// Groups episodes of the same show for the home "continue watching" rail.
     public var seriesKey: String?
     public var episodeLabel: String?
+    /// Human-readable show title (folder name for files, SeriesName on
+    /// Jellyfin). The player heading stays short even when the item title is a
+    /// long file name.
+    public var seriesTitle: String?
 
     public var isRemote: Bool { origin.isRemote }
 
@@ -75,7 +79,8 @@ public struct MediaItem: Sendable {
         jellyfinContext: JellyfinPlaybackContext? = nil,
         plexContext: PlexPlaybackContext? = nil,
         seriesKey: String? = nil,
-        episodeLabel: String? = nil
+        episodeLabel: String? = nil,
+        seriesTitle: String? = nil
     ) {
         self.title = title
         self.playbackURL = playbackURL
@@ -88,6 +93,7 @@ public struct MediaItem: Sendable {
         self.plexContext = plexContext
         self.seriesKey = seriesKey
         self.episodeLabel = episodeLabel
+        self.seriesTitle = seriesTitle
     }
 
     public static func local(url: URL) throws -> MediaItem {
@@ -99,7 +105,8 @@ public struct MediaItem: Sendable {
             subtitles: SubtitleCatalog.discover(for: url),
             origin: .local(url),
             seriesKey: MediaItem.seriesKey(path: url.path),
-            episodeLabel: MediaItem.episodeLabel(path: url.path)
+            episodeLabel: MediaItem.episodeLabel(path: url.path),
+            seriesTitle: MediaItem.seriesTitle(path: url.path)
         )
     }
 
@@ -123,7 +130,10 @@ public struct MediaItem: Sendable {
             subtitles: subtitles,
             httpHeaders: [],
             origin: .smb(sourceID: source.id, path: path, cachedURL: playbackURL),
-            sourceName: source.name
+            sourceName: source.name,
+            seriesKey: MediaItem.seriesKey(path: path, sourceID: source.id),
+            episodeLabel: MediaItem.episodeLabel(path: path),
+            seriesTitle: MediaItem.seriesTitle(path: path)
         )
     }
     #endif
@@ -166,7 +176,7 @@ public struct MediaItem: Sendable {
         subtitles: [SubtitleTrack],
         password: String
     ) -> MediaItem {
-        let title = DisplayTitle.make(fromName: (entry.name as NSString).deletingPathExtension)
+        let title = DisplayTitle.make(fromName: entry.fileBaseName)
         let token = Data("\(source.username):\(password)".utf8).base64EncodedString()
         let key = "webdav://\(source.id)/\(entry.path)"
         let fingerprint = MediaFingerprint(
@@ -183,7 +193,8 @@ public struct MediaItem: Sendable {
             origin: .webdav(sourceID: source.id, path: entry.path, url: entry.url),
             sourceName: source.name,
             seriesKey: MediaItem.seriesKey(path: entry.path, sourceID: source.id),
-            episodeLabel: MediaItem.episodeLabel(path: entry.path)
+            episodeLabel: MediaItem.episodeLabel(path: entry.path),
+            seriesTitle: MediaItem.seriesTitle(path: entry.path)
         )
     }
 }
@@ -264,6 +275,21 @@ public extension MediaItem {
     }
 
     static func seriesKey(path: String, sourceID: String? = nil) -> String? {
+        guard let folder = seriesFolder(path: path) else { return nil }
+        if let sourceID {
+            return "\(sourceID)|\(folder)"
+        }
+        return URL(fileURLWithPath: folder).standardizedFileURL.path
+    }
+
+    /// Show folder for an episode file, skipping a `Season 01`-style folder.
+    static func seriesTitle(path: String) -> String? {
+        guard let folder = seriesFolder(path: path) else { return nil }
+        let name = (folder as NSString).lastPathComponent
+        return name.isEmpty ? nil : name
+    }
+
+    private static func seriesFolder(path: String) -> String? {
         let nsPath = path as NSString
         var folder = nsPath.deletingLastPathComponent
         let parsed = VideoNaming.parse(fileName: nsPath.lastPathComponent, parentFolder: folder)
@@ -271,10 +297,7 @@ public extension MediaItem {
         if VideoNaming.seasonNumber(fromFolder: (folder as NSString).lastPathComponent) != nil {
             folder = (folder as NSString).deletingLastPathComponent
         }
-        if let sourceID {
-            return "\(sourceID)|\(folder)"
-        }
-        return URL(fileURLWithPath: folder).standardizedFileURL.path
+        return folder.isEmpty ? nil : folder
     }
 
     static func jellyfin(
@@ -320,7 +343,8 @@ public extension MediaItem {
             sourceName: source.name,
             jellyfinContext: context,
             seriesKey: "\(source.id)|series|\(item.seriesID ?? item.id)",
-            episodeLabel: item.episodeLabel
+            episodeLabel: item.episodeLabel,
+            seriesTitle: item.seriesName
         )
     }
 

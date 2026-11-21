@@ -52,6 +52,33 @@ final class WebDAVTests: XCTestCase {
                        "http://127.0.0.1:8099/dav/100%25%20%E6%B5%8B%E8%AF%95/")
     }
 
+    func testSubtitleDiscoveryWhenDisplayNamesAreFullPaths() {
+        let directory = "电视剧/Fargo (2014)/Season 01"
+        let video = RemoteEntry(
+            path: "\(directory)/Fargo (2014) - S01E01 - Pilot.mkv",
+            name: "\(directory)/Fargo (2014) - S01E01 - Pilot.mkv",
+            url: URL(string: "http://host/dav/v.mkv")!,
+            isDirectory: false,
+            size: 100
+        )
+        let brother = RemoteEntry(
+            path: "\(directory)/Fargo (2014) - S01E02 - The Rooster Prince.mkv",
+            name: "\(directory)/Fargo (2014) - S01E02 - The Rooster Prince.mkv",
+            url: URL(string: "http://host/dav/b.mkv")!,
+            isDirectory: false,
+            size: 100
+        )
+        let subtitle = RemoteEntry(
+            path: "\(directory)/Fargo (2014) - S01E01 - Pilot.zh-Hans.ass",
+            name: "\(directory)/Fargo (2014) - S01E01 - Pilot.zh-Hans.ass",
+            url: URL(string: "http://host/dav/s.ass")!,
+            isDirectory: false
+        )
+        let tracks = WebDAVClient.subtitleTracks(for: video, siblings: [video, brother, subtitle])
+        XCTAssertEqual(tracks.count, 1)
+        XCTAssertEqual(tracks.first?.language, "zh-Hans")
+    }
+
     func testRemoteSubtitleDiscovery() {
         let video = RemoteEntry(
             path: "Shows/示例剧/Season 01/示例剧.S01E01.mkv",
@@ -90,6 +117,46 @@ final class WebDAVStubProtocol: URLProtocol {
 }
 
 final class WebDAVListFilterTests: XCTestCase {
+    func testFullPathDisplayNameStillYieldsOneFolderLabel() async throws {
+        // OpenList can put the whole root-relative path into <displayname>.
+        // The entry keeps that path/url for navigation and requests, while the
+        // card label is the last segment only.
+        WebDAVStubProtocol.body = Data("""
+        <?xml version="1.0" encoding="utf-8"?>
+        <d:multistatus xmlns:d="DAV:">
+          <d:response><d:href>/dav/local/</d:href><d:propstat><d:prop>
+            <d:displayname>local</d:displayname><d:resourcetype><d:collection/></d:resourcetype>
+          </d:prop></d:propstat></d:response>
+          <d:response><d:href>/dav/local/kaiwenyao/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/</d:href><d:propstat><d:prop>
+            <d:displayname>local/kaiwenyao/电视剧/Fargo (2014)</d:displayname>
+            <d:resourcetype><d:collection/></d:resourcetype>
+          </d:prop></d:propstat></d:response>
+          <d:response><d:href>/dav/local/kaiwenyao/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/</d:href><d:propstat><d:prop>
+            <d:displayname>Fargo (2014)/Season 01</d:displayname>
+            <d:resourcetype><d:collection/></d:resourcetype>
+          </d:prop></d:propstat></d:response>
+        </d:multistatus>
+        """.utf8)
+        let source = WebDAVSource(name: "t", baseURL: URL(string: "http://host/dav/")!, username: "u")
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [WebDAVStubProtocol.self]
+        let client = WebDAVClient(
+            source: source, password: "p",
+            session: URLSession(configuration: configuration)
+        )
+        let entries = try await client.list(path: "local")
+        XCTAssertEqual(entries.count, 2)
+        let fargo = try XCTUnwrap(entries.first { $0.folderDisplayName == "Fargo (2014)" })
+        let season = try XCTUnwrap(entries.first { $0.folderDisplayName == "Season 01" })
+        XCTAssertEqual(fargo.path, "local/kaiwenyao/电视剧/Fargo (2014)")
+        XCTAssertEqual(season.path, "local/kaiwenyao/电视剧/Fargo (2014)/Season 01")
+        XCTAssertEqual(fargo.name, "local/kaiwenyao/电视剧/Fargo (2014)")
+        XCTAssertEqual(season.name, "Fargo (2014)/Season 01")
+        XCTAssertTrue(season.url.absoluteString.hasPrefix("http://host/dav/local/kaiwenyao/"))
+        XCTAssertTrue(season.url.absoluteString.hasSuffix("Season%2001/"))
+    }
+
+
     func testDepthOneResponseOmitsTheRequestedDirectory() async throws {
         WebDAVStubProtocol.body = Data("""
         <?xml version="1.0" encoding="utf-8"?>

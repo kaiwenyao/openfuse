@@ -37,10 +37,13 @@ def href_for(relpath: str, is_dir: bool) -> str:
     return href
 
 
-def propfind_entry(root: str, relpath: str) -> str:
+def propfind_entry(root: str, relpath: str, display_mode: str = "base") -> str:
     full = os.path.join(root, relpath) if relpath else root
     is_dir = os.path.isdir(full)
     name = os.path.basename(relpath) or "dav"
+    if display_mode == "path":
+        name = relpath or "dav"
+    display_xml = "" if display_mode == "missing" else f"<D:displayname>{escape(name)}</D:displayname>"
     try:
         stat = os.stat(full)
         modified = http_date(stat.st_mtime)
@@ -56,7 +59,7 @@ def propfind_entry(root: str, relpath: str) -> str:
         "<D:response>"
         f"<D:href>{escape(href_for(relpath, is_dir))}</D:href>"
         "<D:propstat><D:prop>"
-        f"<D:displayname>{escape(name)}</D:displayname>"
+        f"{display_xml}"
         f"{resource}"
         f"<D:getcontentlength>{size}</D:getcontentlength>"
         f"<D:getcontenttype>{escape(content_type)}</D:getcontenttype>"
@@ -75,6 +78,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     propfind_delay = 0.0
     stall_after_bytes = 0
     stall_seconds = 0.0
+    display_mode = "base"
 
     def log_message(self, fmt, *args):  # noqa: N802 - stdlib signature
         sys.stderr.write("[webdav] " + fmt % args + "\n")
@@ -111,11 +115,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not os.path.exists(full):
             self.send_body(404, b"not found", "text/plain")
             return
-        responses = [propfind_entry(self.root, rel)]
+        responses = [propfind_entry(self.root, rel, self.display_mode)]
         if self.headers.get("Depth", "1") != "0" and os.path.isdir(full):
             for name in sorted(os.listdir(full)):
                 child = name if not rel else f"{rel}/{name}"
-                responses.append(propfind_entry(self.root, child))
+                responses.append(propfind_entry(self.root, child, self.display_mode))
         body = (
             '<?xml version="1.0" encoding="utf-8"?>'
             '<D:multistatus xmlns:D="DAV:">' + "".join(responses) + "</D:multistatus>"
@@ -223,6 +227,9 @@ def main() -> int:
                         help="pause this connection after sending N bytes (simulates a network stall)")
     parser.add_argument("--stall-seconds", type=float, default=0.0,
                         help="length of that pause")
+    parser.add_argument("--displayname-mode", choices=["base", "path", "missing"], default="base",
+                        help="base = normal servers; path = OpenList repeats the full path; "
+                             "missing = server omits <displayname>")
     args = parser.parse_args()
 
     Handler.root = os.path.abspath(args.root)
@@ -231,6 +238,7 @@ def main() -> int:
     Handler.propfind_delay = max(0.0, args.propfind_delay)
     Handler.stall_after_bytes = max(0, args.stall_after_bytes)
     Handler.stall_seconds = max(0.0, args.stall_seconds)
+    Handler.display_mode = args.displayname_mode
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     # Threaded: while a throttled GET streams the body, mpv opens a second
     # connection for the tail/seek-head; a single-threaded server would deadlock

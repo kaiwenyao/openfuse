@@ -1,10 +1,11 @@
 import OpenFuseCore
 import SwiftUI
 
-/// Speaker button + 0–100 % slider in the player control bar. Both the slider,
-/// the arrow keys and the HUD share `PlayerModel.volume`.
+/// Speaker button + 0–100 % system `Slider` in the floating panel. Both the
+/// slider, the arrow keys and the HUD share `PlayerModel.volume`.
 struct VolumeControl: View {
     @ObservedObject var player: PlayerModel
+    var compact = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -12,15 +13,30 @@ struct VolumeControl: View {
                 player.toggleMute()
             } label: {
                 Image(systemName: iconName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 18)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .frame(width: 18, height: 18)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(player.volume > 0 ? "静音" : "取消静音")
+            .accessibilityLabel(player.volume > 0 ? "静音" : "取消静音")
 
-            VolumeSlider(value: player.volume) { player.setVolume($0) }
-                .frame(width: 64, height: 18)
+            // A 320 pt window keeps the panel for play, timeline and subtitles;
+            // the slider moves to the audio menu there.
+            if !compact {
+                Slider(
+                    value: Binding(
+                        get: { player.volume },
+                        set: { player.setVolume($0) }
+                    ),
+                    in: 0...100
+                )
+                .controlSize(.mini)
+                .tint(.white)
+                .frame(width: 72)
                 .help("音量 \(Int(player.volume.rounded()))%")
+                .accessibilityLabel("音量")
+            }
         }
     }
 
@@ -30,48 +46,6 @@ struct VolumeControl: View {
         case ..<34: return "speaker.wave.1.fill"
         case ..<67: return "speaker.wave.2.fill"
         default: return "speaker.wave.3.fill"
-        }
-    }
-}
-
-private struct VolumeSlider: View {
-    let value: Double
-    var onChange: (Double) -> Void
-    @State private var dragValue: Double?
-
-    var body: some View {
-        GeometryReader { proxy in
-            let width = max(proxy.size.width, 1)
-            let percent = (dragValue ?? value) / 100
-            let knob: CGFloat = 9
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.22))
-                    .frame(height: 4)
-                Capsule()
-                    .fill(Color.white.opacity(0.85))
-                    .frame(width: width * percent, height: 4)
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: knob, height: knob)
-                    .offset(x: min(max(width * percent - knob / 2, 0), width - knob))
-                    .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
-            }
-            .frame(width: width, height: 18)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let ratio = min(max(gesture.location.x / width, 0), 1)
-                        dragValue = ratio * 100
-                        onChange(dragValue ?? value)
-                    }
-                    .onEnded { gesture in
-                        let ratio = min(max(gesture.location.x / width, 0), 1)
-                        dragValue = nil
-                        onChange(ratio * 100)
-                    }
-            )
         }
     }
 }

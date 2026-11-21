@@ -34,8 +34,15 @@ activate_app() {
   osascript -e 'tell application "System Events" to tell process "OpenFuse" to set frontmost to true' >/dev/null 2>&1
 }
 geometry() {
-  osascript -e 'tell application "System Events" to tell process "OpenFuse" to get {position of window 1, size of window 1}' \
-    | python3 -c "
+  local raw
+  raw=$(osascript -e 'tell application "System Events" to tell process "OpenFuse" to get {position of window 1, size of window 1}' 2>/dev/null || true)
+  if [[ -z "$raw" ]]; then
+    # During native fullscreen System Events sometimes has no window to
+    # enumerate for a frame; the fullscreen window covers the screen.
+    echo "0 0 1512 982"
+    return
+  fi
+  printf '%s\n' "$raw" | python3 -c "
 import sys
 parts = [p.strip() for p in sys.stdin.read().strip().split(',')]
 def num(value, fallback):

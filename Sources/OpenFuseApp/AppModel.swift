@@ -127,6 +127,10 @@ final class AppModel: ObservableObject {
     private var lastLoadingRecord: PlaybackRecord?
     private var windowStateObservers: [NSObjectProtocol] = []
     private var smbStreamServer: SMBStreamServer?
+    private var windowRecordingTimer: Timer?
+    private var windowRecordingDirectory: URL?
+    private var windowRecordingIndex = 0
+    private var windowRecordingIncludesPopovers = false
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
     @Published var libraryKindFilter: LibraryKind?
@@ -609,7 +613,7 @@ final class AppModel: ObservableObject {
         let parent = (entry.path as NSString).deletingLastPathComponent
         let key = "\(source.id)|\(parent)|\(MetadataLanguage.current().identifier)"
         guard let metadata = directoryMetadataCache[key] else { return nil }
-        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: parent)
+        let parsed = VideoNaming.parse(fileName: entry.baseName, parentFolder: parent)
         if let season = parsed.season, let number = parsed.episode,
            let episode = metadata.episode(season: season, number: number) {
             return "\(episode.label) — \(episode.title)"
@@ -743,6 +747,79 @@ final class AppModel: ObservableObject {
     func removeRecent(_ record: PlaybackRecord) {
         store.remove(path: record.mediaPath)
         refreshRecent()
+    }
+
+    /// Acceptance recorder: captures this process's own player window through
+    /// the window server, so the video layer, subtitles and the floating panel
+    /// are all in each frame. `screencapture` outside the app needs Screen
+    /// Recording permission; an app may always capture its own window.
+    func startWindowRecording(
+        to directory: URL,
+        fps: Double = 10,
+        startAfter: Double = 1.0,
+        includePopovers: Bool = false
+    ) {
+        stopWindowRecording()
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        windowRecordingDirectory = directory
+        windowRecordingIndex = 0
+        windowRecordingIncludesPopovers = includePopovers
+        let interval = 1.0 / max(1, fps)
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0, startAfter)) { [weak self] in
+            guard let self, self.windowRecordingDirectory != nil else { return }
+            let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+                Task { @MainActor in self?.captureRecordingFrame() }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            self.windowRecordingTimer = timer
+            self.captureRecordingFrame()
+        }
+    }
+
+    func stopWindowRecording() {
+        windowRecordingTimer?.invalidate()
+        windowRecordingTimer = nil
+    }
+
+    private func captureRecordingFrame() {
+        guard let directory = windowRecordingDirectory else { return }
+        let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
+        guard let window = visible.max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }),
+              window.windowNumber > 0
+        else { return }
+        let image: CGImage?
+        if windowRecordingIncludesPopovers {
+            // Capture the window rect from the screen so a popover/menu (a
+            // separate window) is in the same frame. The app may capture its
+            // own windows without the external Screen Recording grant.
+            let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+            let frame = window.frame
+            let rect = CGRect(
+                x: frame.minX,
+                y: screenHeight - frame.maxY,
+                width: frame.width,
+                height: frame.height
+            )
+            image = CGWindowListCreateImage(
+                rect,
+                .optionOnScreenOnly,
+                kCGNullWindowID,
+                [.bestResolution]
+            )
+        } else {
+            image = CGWindowListCreateImage(
+                .null,
+                .optionIncludingWindow,
+                CGWindowID(window.windowNumber),
+                [.boundsIgnoreFraming, .bestResolution]
+            )
+        }
+        guard let image else { return }
+        let rep = NSBitmapImageRep(cgImage: image)
+        guard let data = rep.representation(using: .png, properties: [:]) else { return }
+        windowRecordingIndex += 1
+        let url = directory.appendingPathComponent(String(format: "frame-%05d.png", windowRecordingIndex))
+        try? data.write(to: url, options: .atomic)
     }
 
     func saveForTermination() {
@@ -1501,7 +1578,7 @@ final class AppModel: ObservableObject {
         let firstVideo = entries.first { !$0.isDirectory && $0.isPlayableVideo }
         var candidates = ["tvshow.nfo", "movie.nfo"]
         if let firstVideo {
-            candidates.append((firstVideo.name as NSString).deletingPathExtension + ".nfo")
+            candidates.append(firstVideo.fileBaseName + ".nfo")
         }
         let parentPath = (path as NSString).deletingLastPathComponent
         var directories = [path]
@@ -2308,6 +2385,26 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Whole-screen capture from inside the app. Needed for screenshots that
+    /// include a popover (a separate window) above the player; an app may
+    /// capture its own windows without the external Screen Recording grant.
+    func captureScreen(to url: URL) {
+        guard let image = CGWindowListCreateImage(
+            .infinite,
+            .optionOnScreenOnly,
+            kCGNullWindowID,
+            [.bestResolution]
+        ) else {
+            FileHandle.standardError.write(Data("screen capture failed (no permission or display asleep)\n".utf8))
+            return
+        }
+        let rep = NSBitmapImageRep(cgImage: image)
+        if let data = rep.representation(using: .png, properties: [:]) {
+            try? data.write(to: url)
+            print("[OpenFuse] wrote screen capture to \(url.path)")
+        }
+    }
+
     func captureUI(to url: URL, preferKeyWindow: Bool = false) {
         let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
         let capturePopover = ProcessInfo.processInfo.environment["OPENFUSE_CAPTURE_POPOVER"] == "1"
@@ -2337,6 +2434,13 @@ final class AppModel: ObservableObject {
             "mpv": player.engine.getPropertyString("mpv-version") ?? "unknown",
             "file": player.url.absoluteString,
             "title": player.title,
+            "headingTitle": player.heading.title,
+            "headingDetail": player.heading.detail ?? "",
+            "showControls": player.showControls,
+            "chromeHolds": player.chromeHoldReasons,
+            "panelOrigin": NSStringFromPoint(player.lastPanelOrigin),
+            "panelSize": NSStringFromSize(player.lastPanelSize),
+            "panelContainer": NSStringFromSize(player.lastPanelContainerSize),
             "sourceKind": player.item.sourceKind ?? "local",
             "sourceName": player.item.sourceName ?? "本地文件",
             "sourceID": player.item.sourceID ?? "",
@@ -2786,6 +2890,14 @@ final class PlayerModel: ObservableObject {
     private var currentPosition: Double { seekTarget ?? position }
     private var progressTimer: Timer?
     private var controlsTimer: Timer?
+    /// Reasons the floating panel must stay visible (hover, popover, drag).
+    /// Empty means normal idle fade-out may run.
+    private var chromeHolds: Set<String> = []
+    private var keyboardHoldTask: Task<Void, Never>?
+    /// Last laid-out floating panel origin/size, recorded for acceptance.
+    private(set) var lastPanelOrigin: CGPoint = .zero
+    private(set) var lastPanelSize: CGSize = .zero
+    private(set) var lastPanelContainerSize: CGSize = .zero
     private(set) var thumbnailBenchmarkP50 = 0
     private(set) var thumbnailBenchmarkP95 = 0
     private(set) var thumbnailBenchmarkSamples = 0
@@ -2883,6 +2995,28 @@ final class PlayerModel: ObservableObject {
     }
 
     var title: String { item.title }
+
+    /// Compact top-bar heading: show name plus season/episode. The full file
+    /// name and technical line live in the playback info sheet.
+    var heading: PlayerHeading {
+        PlayerHeadingFormatter.heading(
+            seriesTitle: item.seriesTitle,
+            episodeLabel: item.episodeLabel,
+            itemTitle: item.title
+        )
+    }
+
+    var playbackFileName: String {
+        if let path = item.remotePath, !path.contains("|") {
+            let name = (path as NSString).lastPathComponent
+            if !name.isEmpty { return name.removingPercentEncoding ?? name }
+        }
+        let name = item.playbackURL.lastPathComponent
+        if !name.isEmpty { return name.removingPercentEncoding ?? name }
+        return item.title
+    }
+
+    var sourceLabel: String { item.sourceName ?? "本地文件" }
 
     var displayPosition: Double {
         min(max(position, 0), duration > 0 ? duration : position)
@@ -3395,10 +3529,12 @@ final class PlayerModel: ObservableObject {
     }
 
     func adjustVolume(by delta: Double) {
+        showControlsTemporarily()
         setVolume(VolumeMath.stepped(volume, by: delta))
     }
 
     func toggleMute() {
+        showControlsTemporarily()
         setVolume(volume > 0 ? 0 : VolumeMath.unmuted(stored: lastAudibleVolume, fallback: 60))
     }
 
@@ -3877,6 +4013,41 @@ final class PlayerModel: ObservableObject {
         scheduleControlsHide()
     }
 
+    /// Keeps the panel visible while the user is interacting with it. Multiple
+    /// independent reasons can hold it at once (hover + subtitle popover).
+    /// Keeps the panel visible while the user is navigating with the
+    /// keyboard, and releases the hold shortly after the last key.
+    func noteKeyboardActivity() {
+        if !showControls { showControls = true }
+        setChromeHold("keyboard", true)
+        keyboardHoldTask?.cancel()
+        keyboardHoldTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard !Task.isCancelled else { return }
+            self?.setChromeHold("keyboard", false)
+        }
+    }
+
+    func setChromeHold(_ reason: String, _ held: Bool) {
+        let changed = held ? chromeHolds.insert(reason).inserted : chromeHolds.remove(reason) != nil
+        guard changed else { return }
+        if held {
+            controlsTimer?.invalidate()
+            if !showControls { showControls = true }
+        } else {
+            scheduleControlsHide()
+        }
+    }
+
+    /// Test/automation snapshot: reasons currently keeping the panel visible.
+    var chromeHoldReasons: [String] { chromeHolds.sorted() }
+
+    func recordPanelLayout(origin: CGPoint, size: CGSize, containerSize: CGSize? = nil) {
+        lastPanelOrigin = origin
+        lastPanelSize = size
+        if let containerSize { lastPanelContainerSize = containerSize }
+    }
+
     func noteMouseActivity() {
         let now = Date().timeIntervalSince1970
         guard now - lastMouseNote > 0.4 else { return }
@@ -3893,7 +4064,14 @@ final class PlayerModel: ObservableObject {
         guard !isPaused else { return }
         controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.2, repeats: false) { [weak self] _ in
             Task { @MainActor in
-                guard let self, !self.isPaused, !self.isScrubbing else { return }
+                // The timer may have fired just before the mouse entered the
+                // panel; re-check the hold set so a queued tick cannot hide
+                // controls the user is now interacting with.
+                guard let self,
+                      self.chromeHolds.isEmpty,
+                      !self.isPaused,
+                      !self.isScrubbing
+                else { return }
                 self.debugTimeline("controls hidden")
                 self.showControls = false
             }

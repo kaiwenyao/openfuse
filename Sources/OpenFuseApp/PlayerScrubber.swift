@@ -17,6 +17,9 @@ struct PlayerScrubber: View {
     let duration: Double
     let thumbnails: ThumbnailProvider
     @Binding var dragValue: Double?
+    /// The floating panel starts near the top of the window, so the preview
+    /// opens downward there; dragging the panel lower flips it back above.
+    var previewBelow = false
     var onScrubBegan: () -> Void
     var onScrubEnded: (Double) -> Void
 
@@ -102,21 +105,22 @@ struct PlayerScrubber: View {
                             width: width,
                             previewWidth: previewWidth
                         ),
-                        y: -126
+                        y: previewBelow ? 28 : -126
                     )
                     .allowsHitTesting(false)
                     .transition(.opacity)
                 }
             }
-            .onAppear {
-                guard ProcessInfo.processInfo.environment["OPENFUSE_HOVER_SCRUBBER"] == "1",
+            .onChange(of: duration) { _, value in
+                // Acceptance hook: duration arrives from mpv after the view is
+                // first built, so wait for the first non-zero value instead of
+                // capturing the initial 0 in onAppear.
+                guard value > 0,
+                      ProcessInfo.processInfo.environment["OPENFUSE_HOVER_SCRUBBER"] == "1",
                       !autoHovered else { return }
                 autoHovered = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    updateHover(x: width * 0.25, width: width)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    updateHover(x: width * 0.70, width: width)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    updateHover(x: width * 0.62, width: width)
                 }
             }
             .onContinuousHover { phase in
@@ -226,30 +230,43 @@ struct PlayerTimeRow: View {
     let duration: Double
     let thumbnails: ThumbnailProvider
     @Binding var dragValue: Double?
+    var previewBelow = false
+    var compact = false
     var onScrubBegan: () -> Void
     var onScrubEnded: (Double) -> Void
 
+    private var current: Double { dragValue ?? clock.position }
+
     var body: some View {
-        HStack(spacing: 12) {
-            Text(Timecode.short(dragValue ?? clock.position))
-                .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+        HStack(spacing: compact ? 7 : 10) {
+            Text(Timecode.short(current))
+                .font(.system(size: compact ? 10 : 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 62, alignment: .trailing)
+                .frame(width: compact ? 44 : 52, alignment: .trailing)
+                .monospacedDigit()
 
             PlayerScrubber(
                 clock: clock,
                 duration: duration,
                 thumbnails: thumbnails,
                 dragValue: $dragValue,
+                previewBelow: previewBelow,
                 onScrubBegan: onScrubBegan,
                 onScrubEnded: onScrubEnded
             )
 
-            Text(duration > 0 ? Timecode.short(duration) : "--:--")
-                .font(.system(size: 11.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.6))
-                .frame(width: 62, alignment: .leading)
+            Text(remaining)
+                .font(.system(size: compact ? 10 : 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.62))
+                .frame(width: compact ? 50 : 58, alignment: .leading)
+                .monospacedDigit()
         }
+    }
+
+    /// Shows the time left rather than the total duration, matching QuickTime.
+    private var remaining: String {
+        guard duration > 0 else { return "--:--" }
+        return "-" + Timecode.short(max(0, duration - current))
     }
 }
 

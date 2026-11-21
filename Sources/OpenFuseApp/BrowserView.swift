@@ -349,7 +349,7 @@ struct WebDAVBrowserView: View {
                         poster(url: preview.work.posterURL, width: 190, height: 285)
                         VStack(alignment: .leading, spacing: 8) {
                             Text(preview.work.title).font(.system(size: 28, weight: .bold))
-                            Text(RemotePath.displayName(seasonEntry.path))
+                            Text(seasonEntry.folderDisplayName)
                                 .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.accent)
                             Text(preview.work.year.map(String.init) ?? "").font(.system(size: 12)).foregroundStyle(Theme.secondary)
                             if let overview = preview.work.overview {
@@ -362,6 +362,8 @@ struct WebDAVBrowserView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(preview.work.title)，\(seasonEntry.folderDisplayName)")
+                .accessibilityHint("打开该季目录")
                 .padding(.horizontal, 26)
                 HStack {
                     Text("该季目录").font(.system(size: 13, weight: .semibold))
@@ -498,7 +500,7 @@ struct WebDAVBrowserView: View {
                             .foregroundStyle(Theme.text)
                             .lineLimit(1)
                     } else {
-                        Text(entry.name)
+                        Text(entry.isDirectory ? entry.folderDisplayName : entry.name)
                             .font(.system(size: 13.5, weight: .medium))
                             .foregroundStyle(entry.isDirectory || entry.isPlayableVideo ? Theme.text : Theme.secondary)
                             .lineLimit(1)
@@ -544,8 +546,19 @@ struct WebDAVBrowserView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(entryAccessibilityLabel(entry))
+        .accessibilityHint(entry.isDirectory ? "打开文件夹" : (entry.isPlayableVideo ? "播放视频" : ""))
         .disabled(isLoading || (!entry.isDirectory && !entry.isPlayableVideo))
         .opacity(isLoading && entry.isDirectory ? 0.55 : 1)
+    }
+
+    /// One label rule for the grid, the list and VoiceOver. Folders use the
+    /// same single-segment name as the card title; the parent stays in the
+    /// breadcrumb.
+    private func entryAccessibilityLabel(_ entry: RemoteEntry) -> String {
+        if entry.isDirectory { return "文件夹，\(entry.folderDisplayName)" }
+        if let episode = metadataEpisode(for: entry) { return "\(episode.label)，\(episode.title)" }
+        return entry.name
     }
 
     /// Entering a folder is a single canonical transition. Clicks that land
@@ -651,7 +664,7 @@ struct WebDAVBrowserView: View {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(entry.isDirectory ? 16/9 : (metadataEpisode(for: entry) != nil ? 16/9 : 16/9), contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                Text(entry.isDirectory ? RemotePath.displayName(entry.path) :
+                Text(entry.isDirectory ? entry.folderDisplayName :
                         (metadataEpisode(for: entry).map { "\($0.label) — \($0.title)" } ?? entry.name))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Theme.text)
@@ -663,6 +676,8 @@ struct WebDAVBrowserView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(entryAccessibilityLabel(entry))
+        .accessibilityHint(entry.isDirectory ? "打开文件夹" : (entry.isPlayableVideo ? "播放视频" : ""))
     }
 
     private func metadataWork(for entry: RemoteEntry) -> DirectoryWorkMetadata? {

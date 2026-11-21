@@ -27,10 +27,63 @@ public enum RemotePath {
             .joined(separator: "/")
     }
 
-    /// Label for one breadcrumb segment.
+    /// Label for one breadcrumb segment. `component` must already be split;
+    /// passing a whole `RemoteEntry.path` here renders `Show/Season 1` on a
+    /// single card. Use `folderDisplayName(name:path:)` for entries.
     public static func displayName(_ component: String) -> String {
         component.isEmpty ? "/" : component
     }
+
+    /// Label for one directory entry, always exactly one path segment.
+    ///
+    /// WebDAV servers disagree about `<displayname>`: a healthy server returns
+    /// the folder's own name, OpenList sometimes returns the whole
+    /// root-relative path, and others omit it (`RemoteEntry.name` then already
+    /// falls back to the last href segment). The browser draws one card per
+    /// child and the parent stays in the breadcrumb, so the card must never
+    /// repeat the path. Prefer a usable single-segment server name and derive
+    /// the last non-empty `path` segment otherwise. `path` and `url` keep
+    /// serving requests, navigation and cache keys unchanged, and this helper
+    /// never decodes percent escapes a second time.
+    public static func folderDisplayName(name: String, path: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var segment = trimmed
+        while segment.count > 1, segment.hasSuffix("/") {
+            segment.removeLast()
+        }
+        if !segment.isEmpty,
+           segment != ".",
+           segment != "..",
+           !segment.contains("/"),
+           !segment.lowercased().contains("%2f") {
+            return segment
+        }
+        return components(path).last ?? segment
+    }
+}
+
+public extension RemoteEntry {
+    /// Single-segment display label used by the grid, the list, the season card
+    /// subtitle and VoiceOver. Requests keep using `path`/`url`.
+    var folderDisplayName: String {
+        RemotePath.folderDisplayName(name: name, path: path)
+    }
+
+    /// File name with a folder-style fallback. Some WebDAV servers put the
+    /// whole root-relative path into `<displayname>`; using that as a filename
+    /// (subtitle matching, NFO sidecars, playback title) would duplicate the
+    /// directory in every request.
+    var baseName: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty,
+           !trimmed.contains("/"),
+           !trimmed.lowercased().contains("%2f") {
+            return trimmed
+        }
+        return (path as NSString).lastPathComponent
+    }
+
+    var fileBaseName: String { (baseName as NSString).deletingPathExtension }
 }
 
 /// Navigation state for one browser. Pure value type so the "click a folder

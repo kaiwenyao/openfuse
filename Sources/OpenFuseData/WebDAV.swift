@@ -286,12 +286,12 @@ public actor WebDAVClient {
     /// Discover external subtitles that sit next to a remote video and share
     /// its base name. Uses the same matching rules as local sidecars.
     public nonisolated static func subtitleTracks(for video: RemoteEntry, siblings: [RemoteEntry]) -> [SubtitleTrack] {
-        let videoBase = (video.name as NSString).deletingPathExtension
+        let videoBase = video.fileBaseName
         var tracks: [SubtitleTrack] = []
         for sibling in siblings where !sibling.isDirectory {
             guard SubtitleCatalog.subtitleExtensions.contains(sibling.fileExtension) else { continue }
             guard sibling.path != video.path else { continue }
-            let siblingBase = (sibling.name as NSString).deletingPathExtension
+            let siblingBase = sibling.fileBaseName
             guard let match = SubtitleCatalog.matchSubtitleName(siblingBase, videoBase: videoBase) else { continue }
             let language = match.language ?? LanguageTag.infer(from: siblingBase)
             let format = SubtitleFormat(fileExtension: sibling.fileExtension)

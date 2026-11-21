@@ -1,0 +1,292 @@
+webdav fixture on http://127.0.0.1:8099/dav/ -> /Users/ykw/Documents/openfuse/build/webdav-ui/root
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53915)
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53934)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53937)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53940)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53963)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53966)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/ HTTP/1.1" 207 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/tvshow.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/movie.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.nfo HTTP/1.1" 404 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54000)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54003)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 474, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 462, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/ykw/Documents/openfuse/Scripts/webdav_fixture.py", line 173, in do_GET
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 842, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------
+[webdav] "GET /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv HTTP/1.1" 206 -
+[webdav] "PROPFIND /dav/local/kaiwenyao/baidu/%E7%94%B5%E8%A7%86%E5%89%A7/Fargo%20(2014)/Season%2001/ HTTP/1.1" 207 -

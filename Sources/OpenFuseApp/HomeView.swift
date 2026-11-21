@@ -208,6 +208,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        AppModel.shared.stopWindowRecording()
         AppModel.shared.saveForTermination()
     }
 
@@ -241,6 +242,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + delayed) {
                 model.captureWindow(to: URL(fileURLWithPath: captureWindow))
             }
+        }
+        if let captureScreen = value(after: "--capture-screen", in: arguments) {
+            let delayed = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + delayed) {
+                model.captureScreen(to: URL(fileURLWithPath: captureScreen))
+            }
+        }
+        if let recordWindow = value(after: "--record-window", in: arguments) {
+            let fps = value(after: "--record-fps", in: arguments).flatMap(Double.init) ?? 10
+            let startAfter = value(after: "--record-after", in: arguments).flatMap(Double.init) ?? 1.0
+            model.startWindowRecording(
+                to: URL(fileURLWithPath: recordWindow),
+                fps: fps,
+                startAfter: startAfter
+            )
+        }
+        if let recordScreen = value(after: "--record-screen", in: arguments) {
+            let fps = value(after: "--record-fps", in: arguments).flatMap(Double.init) ?? 10
+            let startAfter = value(after: "--record-after", in: arguments).flatMap(Double.init) ?? 1.0
+            model.startWindowRecording(
+                to: URL(fileURLWithPath: recordScreen),
+                fps: fps,
+                startAfter: startAfter,
+                includePopovers: true
+            )
         }
 
         if arguments.contains("--home") {

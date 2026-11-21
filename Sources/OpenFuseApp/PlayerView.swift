@@ -185,6 +185,11 @@ struct PlayerView: View {
             if event.window !== NSApp.keyWindow { return event }
             // Never steal typing (none in the player today, but keep it safe).
             if NSApp.keyWindow?.firstResponder is NSTextView { return event }
+            // Keyboard focus/use keeps the floating panel on screen; the
+            // normal idle fade-out is re-armed after the key is handled.
+            if !event.modifierFlags.contains(.command) {
+                player.noteKeyboardActivity()
+            }
             switch event.keyCode {
             case 126, 125:
                 // Bare ↑/↓ adjust volume; modified arrows keep their system
@@ -233,35 +238,170 @@ struct PlayerView: View {
 
 /// Control overlay. Split out of `PlayerView` so the 10 Hz playhead updates
 /// only invalidate the scrubber (`PlaybackClock`) instead of this whole
-/// hierarchy — re-laying out three `Menu`s and the AirPlay picker 20 times a
-/// second was one half of the stutter.
+/// hierarchy.
+///
+/// The chrome is a compact floating panel in the QuickTime style: a two-row
+/// panel near the top centre of the video, draggable by its blank surface,
+/// with the title bar reduced to the work name and season/episode. It only
+/// hit-tests the controls it actually draws; the rest of the video canvas
+/// keeps receiving interactions.
 struct PlayerChrome: View {
     @ObservedObject var player: PlayerModel
     @State private var scrubValue: Double?
-    @State private var showLog = false
+    @State private var showInfo = false
     @State private var showSubtitleMenu = false
+    @State private var panelOffset: CGSize = .zero
+    @State private var panelSize: CGSize = .zero
+    @State private var draggingPanel = false
+    @State private var dragStartOffset: CGSize = .zero
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            Spacer(minLength: 0)
-            floatingPanel
+        GeometryReader { proxy in
+            let container = proxy.size
+            let width = FloatingPanelMath.panelWidth(containerWidth: container.width)
+            let compact = width < 430
+            let roomy = width >= 520
+            let panelHeight = panelSize.height > 0
+                ? panelSize.height
+                : FloatingPanelMath.panelHeight(compact: compact)
+            let layoutSize = CGSize(width: width, height: panelHeight)
+            let clampedOffset = FloatingPanelMath.clampedOffset(
+                offset: panelOffset,
+                panelSize: layoutSize,
+                containerSize: container
+            )
+            let base = FloatingPanelMath.baseOrigin(
+                containerSize: container,
+                panelSize: layoutSize
+            )
+            let panelOrigin = CGPoint(x: base.x + clampedOffset.width, y: base.y + clampedOffset.height)
+            let previewBelow = FloatingPanelMath.previewOpensDownward(panelOriginY: panelOrigin.y)
+
+            ZStack(alignment: .top) {
+                topBar(compact: compact)
+                    .frame(maxWidth: 560)
+                    .padding(.horizontal, compact ? 8 : 18)
+                    .padding(.top, compact ? 8 : 14)
+
+                floatingPanel(
+                    width: width,
+                    containerSize: container,
+                    compact: compact,
+                    roomy: roomy,
+                    previewBelow: previewBelow
+                )
+                    .frame(width: width)
+                    .background(
+                        GeometryReader { panelProxy in
+                            Color.clear.preference(key: PanelSizeKey.self, value: panelProxy.size)
+                        }
+                    )
+                    .onPreferenceChange(PanelSizeKey.self) { size in
+                        if abs(size.height - panelSize.height) > 0.5 || abs(size.width - panelSize.width) > 0.5 {
+                            panelSize = size
+                        }
+                    }
+                    .offset(x: clampedOffset.width, y: panelOrigin.y)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .onChange(of: panelOrigin) { _, newValue in
+                player.recordPanelLayout(
+                    origin: newValue,
+                    size: CGSize(width: width, height: panelSize.height)
+                )
+            }
+            .onChange(of: panelSize) { _, newSize in
+                let height = newSize.height > 0 ? newSize.height : FloatingPanelMath.panelHeight(compact: compact)
+                player.recordPanelLayout(
+                    origin: CGPoint(x: base.x + clampedOffset.width, y: base.y + clampedOffset.height),
+                    size: CGSize(width: width, height: height),
+                    containerSize: container
+                )
+            }
+            .onAppear {
+                if panelSize.height <= 0 {
+                    panelSize = CGSize(width: width, height: FloatingPanelMath.panelHeight(compact: compact))
+                }
+                player.recordPanelLayout(
+                    origin: CGPoint(x: base.x + clampedOffset.width, y: base.y + clampedOffset.height),
+                    size: CGSize(width: width, height: panelHeight),
+                    containerSize: container
+                )
+            }
+            .onChange(of: container) { _, newSize in
+                let newWidth = FloatingPanelMath.panelWidth(containerWidth: newSize.width)
+                let newHeight = panelSize.height > 0
+                    ? panelSize.height
+                    : FloatingPanelMath.panelHeight(compact: newWidth < 430)
+                let newPanelSize = CGSize(width: newWidth, height: newHeight)
+                let newOffset = FloatingPanelMath.clampedOffset(
+                    offset: panelOffset,
+                    panelSize: newPanelSize,
+                    containerSize: newSize
+                )
+                panelOffset = newOffset
+                let newBase = FloatingPanelMath.baseOrigin(
+                    containerSize: newSize,
+                    panelSize: newPanelSize
+                )
+                player.recordPanelLayout(
+                    origin: CGPoint(x: newBase.x + newOffset.width, y: newBase.y + newOffset.height),
+                    size: newPanelSize,
+                    containerSize: newSize
+                )
+            }
+        }
+        .sheet(isPresented: $showInfo) {
+            PlaybackInfoSheet(player: player)
+        }
+        .onChange(of: showInfo) { _, open in
+            player.setChromeHold("playback-info", open)
+        }
+        .onChange(of: showSubtitleMenu) { _, open in
+            player.setChromeHold("subtitle-popover", open)
+        }
+        .onChange(of: player.showSubtitleDelayPrompt) { _, open in
+            player.setChromeHold("subtitle-offset-sheet", open)
         }
         .background {
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.65), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 150)
-                Spacer()
-                LinearGradient(colors: [.clear, .black.opacity(0.82)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 240)
+            // Keyboard focus inside the panel (Full Keyboard Access / Tab)
+            // keeps the controls on screen; the model releases the hold when
+            // the first responder leaves.
+            ChromeFocusMonitor { focused in
+                player.setChromeHold("keyboard-focus", focused)
             }
-            .ignoresSafeArea()
             .allowsHitTesting(false)
         }
-        .sheet(isPresented: $showLog) {
-            logSheet
+        .onDisappear {
+            player.setChromeHold("panel-hover", false)
+            player.setChromeHold("panel-drag", false)
+            player.setChromeHold("titlebar-hover", false)
+            player.setChromeHold("subtitle-popover", false)
+            player.setChromeHold("playback-info", false)
+            player.setChromeHold("subtitle-offset-sheet", false)
+            player.setChromeHold("keyboard-focus", false)
         }
         .onAppear {
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_SUBTITLE_MENU_AFTER"],
+               let delay = Double(raw) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    showSubtitleMenu = true
+                }
+            }
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_SUBTITLE_MENU_CLOSE_AFTER"],
+               let delay = Double(raw) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    showSubtitleMenu = false
+                }
+            }
+            if let raw = ProcessInfo.processInfo.environment["OPENFUSE_SUBTITLE_OFFSET_AFTER"],
+               let delay = Double(raw),
+               let value = ProcessInfo.processInfo.environment["OPENFUSE_SUBTITLE_OFFSET_VALUE"].flatMap(Double.init) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    player.setSubtitleDelay(value)
+                }
+            }
             guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_CLICK_SUBTITLE_AT"] else { return }
             let values = raw.split(separator: ",").compactMap { Double($0) }
             guard values.count >= 3 else { return }
@@ -286,8 +426,10 @@ struct PlayerChrome: View {
         }
     }
 
-    private var topBar: some View {
-        HStack(spacing: 14) {
+    // MARK: - Title bar
+
+    private func topBar(compact: Bool) -> some View {
+        HStack(spacing: 10) {
             Button {
                 if NSApp.keyWindow?.styleMask.contains(.fullScreen) == true {
                     NSApp.keyWindow?.toggleFullScreen(nil)
@@ -299,310 +441,374 @@ struct PlayerChrome: View {
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .bold))
-                    .frame(width: 34, height: 34)
-                    .background(.black.opacity(0.45), in: Circle())
-                    .overlay(Circle().stroke(.white.opacity(0.16), lineWidth: 1))
+                    .font(.system(size: 13, weight: .bold))
+                    .frame(width: 28, height: 28)
+                    .background(.white.opacity(0.10), in: Circle())
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .help("返回首页（保存播放位置）")
+            .help("返回来源（保存播放位置）")
+            .accessibilityLabel("返回来源")
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(player.title)
-                    .font(.system(size: 16, weight: .semibold))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(player.heading.title)
+                    .font(.system(size: compact ? 12 : 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                HStack(spacing: 6) {
-                    Text(player.item.sourceName ?? "本地文件")
-                    Text("·")
-                    Text(player.audioTracks.first?.technicalLabel ?? "音频")
-                    if let subtitle = selectedSubtitleName {
-                        Text("·")
-                        Text(subtitle)
-                    }
+                    .truncationMode(.middle)
+                    .shadow(color: .black.opacity(0.65), radius: 2, y: 1)
+                if let detail = player.heading.detail {
+                    Text(detail)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .lineLimit(1)
+                        .shadow(color: .black.opacity(0.65), radius: 2, y: 1)
                 }
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(.white.opacity(0.65))
             }
-            Spacer()
+
+            Spacer(minLength: 6)
+
             Button {
-                showLog = true
+                player.showControlsTemporarily()
+                showInfo = true
             } label: {
-                Image(systemName: "waveform.path.ecg")
+                Image(systemName: "info.circle")
                     .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 32, height: 32)
-                    .background(.black.opacity(0.45), in: Circle())
-                    .overlay(Circle().stroke(.white.opacity(0.16), lineWidth: 1))
+                    .frame(width: 28, height: 28)
+                    .background(.white.opacity(0.10), in: Circle())
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .help("播放日志")
+            .help("播放信息")
+            .accessibilityLabel("播放信息")
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .background {
+            ZStack {
+                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(.black.opacity(0.52))
+            }
+        }
+        .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 0.8))
+        .onHover { player.setChromeHold("titlebar-hover", $0) }
+    }
+
+    // MARK: - Floating panel
+
+    private func floatingPanel(
+        width: CGFloat,
+        containerSize: CGSize,
+        compact: Bool,
+        roomy: Bool,
+        previewBelow: Bool
+    ) -> some View {
+        VStack(spacing: compact ? 6 : 8) {
+            firstRow(compact: compact, roomy: roomy, previewBelow: previewBelow)
+            PlayerTimeRow(
+                clock: player.clock,
+                duration: player.duration,
+                thumbnails: player.thumbnails,
+                dragValue: $scrubValue,
+                previewBelow: previewBelow,
+                compact: compact,
+                onScrubBegan: {
+                    player.beginScrub()
+                    player.setChromeHold("scrubber", true)
+                },
+                onScrubEnded: { target in
+                    player.endScrub(at: target)
+                    player.setChromeHold("scrubber", false)
+                    scrubValue = nil
+                }
+            )
+        }
+        .padding(.horizontal, compact ? 10 : 14)
+        .padding(.top, compact ? 8 : 11)
+        .padding(.bottom, compact ? 8 : 10)
+        .background {
+            PlayerPanelSurface(
+                cornerRadius: compact ? 15 : 18,
+                reduceTransparency: reduceTransparency || ProcessInfo.processInfo.environment["OPENFUSE_REDUCE_TRANSPARENCY"] == "1"
+            )
+            .contentShape(RoundedRectangle(cornerRadius: compact ? 15 : 18, style: .continuous))
+        }
+        .overlay(alignment: .top) {
+            // Drag only by the blank strip above the transport row. Putting the
+            // gesture on the whole panel background also fired while dragging
+            // the volume slider or the scrubber, moving the panel under the
+            // cursor.
+            ZStack(alignment: .top) {
+                Color.clear
+                Capsule()
+                    .fill(.white.opacity(0.16))
+                    .frame(width: 28, height: 3)
+                    .padding(.top, 3.5)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 10)
+            .contentShape(Rectangle())
+            .gesture(panelDragGesture(containerSize: containerSize))
+        }
+        .onHover { inside in
+            player.setChromeHold("panel-hover", inside)
+            if inside { player.showControlsTemporarily() }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("播放控制面板")
+    }
+
+    private func panelDragGesture(containerSize: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .global)
+            .onChanged { value in
+                if !draggingPanel {
+                    draggingPanel = true
+                    dragStartOffset = FloatingPanelMath.clampedOffset(
+                        offset: panelOffset,
+                        panelSize: panelSize,
+                        containerSize: containerSize
+                    )
+                    player.setChromeHold("panel-drag", true)
+                    player.showControlsTemporarily()
+                }
+                let proposed = CGSize(
+                    width: dragStartOffset.width + value.translation.width,
+                    height: dragStartOffset.height + value.translation.height
+                )
+                panelOffset = FloatingPanelMath.clampedOffset(
+                    offset: proposed,
+                    panelSize: panelSize,
+                    containerSize: containerSize
+                )
+            }
+            .onEnded { _ in
+                draggingPanel = false
+                player.setChromeHold("panel-drag", false)
+                player.showControlsTemporarily()
+            }
+    }
+
+    private func firstRow(compact: Bool, roomy: Bool, previewBelow: Bool) -> some View {
+        ZStack {
+            centerTransport(compact: compact)
+            if compact {
+                HStack(spacing: 8) {
+                    subtitleButton(compact: true, previewBelow: previewBelow)
+                    Spacer(minLength: 0)
+                    moreMenu(compact: true, previewBelow: previewBelow)
+                }
+            } else {
+                HStack(spacing: 0) {
+                    VolumeControl(player: player, compact: !roomy)
+                    Spacer(minLength: 6)
+                    HStack(spacing: 8) {
+                        Button { player.toggleFolderList() } label: {
+                            Image(systemName: "list.bullet.rectangle")
+                                .font(.system(size: 14, weight: .medium))
+                                .frame(width: 24, height: 24)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("同文件夹选集")
+                        .accessibilityLabel("同文件夹选集")
+                        .disabled(player.folderVideos.isEmpty)
+                        subtitleButton(compact: false, previewBelow: previewBelow)
+                        moreMenu(compact: false, previewBelow: previewBelow)
+                    }
+                }
+            }
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 22)
-        .padding(.top, 18)
+        .frame(height: compact ? 38 : 42)
     }
 
-    private var floatingPanel: some View {
-        GeometryReader { proxy in
-            HStack {
-                Spacer(minLength: 8)
-                Group {
-                    if proxy.size.width < 560 {
-                        compactBottomBar
+    private func centerTransport(compact: Bool) -> some View {
+        HStack(spacing: compact ? 10 : 14) {
+            Button { player.skip(-10) } label: {
+                Image(systemName: "gobackward.10")
+                    .font(.system(size: compact ? 15 : 17, weight: .medium))
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("快退 10 秒")
+            .accessibilityLabel("快退 10 秒")
+
+            Button { player.togglePlayPause() } label: {
+                Image(systemName: player.isPaused ? "play.fill" : "pause.fill")
+                    .font(.system(size: compact ? 15 : 17, weight: .bold))
+                    .frame(width: compact ? 38 : 42, height: compact ? 38 : 42)
+                    .background(.white.opacity(0.94), in: Circle())
+                    .foregroundStyle(.black)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .help(player.isPaused ? "播放" : "暂停")
+            .accessibilityLabel(player.isPaused ? "播放" : "暂停")
+
+            Button { player.skip(10) } label: {
+                Image(systemName: "goforward.10")
+                    .font(.system(size: compact ? 15 : 17, weight: .medium))
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("快进 10 秒")
+            .accessibilityLabel("快进 10 秒")
+        }
+    }
+
+    private func subtitleButton(compact: Bool, previewBelow: Bool) -> some View {
+        Button {
+            player.showControlsTemporarily()
+            showSubtitleMenu.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "captions.bubble")
+                    .font(.system(size: 12.5, weight: .semibold))
+                Text(subtitleButtonLabel ?? "字幕")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7, weight: .bold))
+                    .opacity(compact ? 0 : 0.7)
+            }
+            .padding(.horizontal, compact ? 6 : 8)
+            .padding(.vertical, 5)
+            .background(.white.opacity(showSubtitleMenu ? 0.18 : 0.09), in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("字幕与字幕偏移")
+        .accessibilityLabel("字幕菜单")
+        .popover(isPresented: $showSubtitleMenu, arrowEdge: previewBelow ? .top : .bottom) {
+            subtitleMenuContent
+        }
+        .onAppear {
+            guard ProcessInfo.processInfo.environment["OPENFUSE_OPEN_SUBTITLE_MENU"] == "1" else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                showSubtitleMenu = true
+            }
+        }
+    }
+
+    private func moreMenu(compact: Bool, previewBelow: Bool) -> some View {
+        Menu {
+            Button {
+                player.playPreviousEpisode()
+            } label: {
+                Label("上一集", systemImage: "backward.end")
+            }
+            .disabled(!player.canPlayPreviousEpisode)
+            Button {
+                player.playNextEpisode()
+            } label: {
+                Label("下一集", systemImage: "forward.end")
+            }
+            .disabled(!player.canPlayNextEpisode)
+            Menu("音量") {
+                Button("增大 5%") { player.adjustVolume(by: 5) }
+                Button("减小 5%") { player.adjustVolume(by: -5) }
+                Button(player.volume > 0 ? "静音" : "取消静音") { player.toggleMute() }
+            }
+            Divider()
+            Menu("音轨") {
+                ForEach(player.audioTracks) { track in
+                    Button {
+                        player.selectAudio(track)
+                    } label: {
+                        if player.selectedAudioID == track.id {
+                            Label("\(track.displayName) · \(track.technicalLabel)", systemImage: "checkmark")
+                        } else {
+                            Text("\(track.displayName) · \(track.technicalLabel)")
+                        }
+                    }
+                }
+            }
+            Menu("播放速度") {
+                ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
+                    Button {
+                        player.setSpeed(speed)
+                    } label: {
+                        if abs(player.speed - speed) < 0.001 {
+                            Label(String(format: "%.2fx", speed), systemImage: "checkmark")
+                        } else {
+                            Text(String(format: "%.2fx", speed))
+                        }
+                    }
+                }
+            }
+            Menu("音频输出") {
+                Button("自动（立体声下混）") { player.setAudioLayout("auto-safe") }
+                Button("5.1 环绕") { player.setAudioLayout("5.1") }
+                Button("直通") { player.setAudioLayout("auto") }
+                Divider()
+                Button {
+                    player.selectAudioDevice("auto")
+                } label: {
+                    if player.selectedAudioDeviceID == "auto" {
+                        Label("自动选择设备", systemImage: "checkmark")
                     } else {
-                        bottomBar
+                        Text("自动选择设备")
                     }
                 }
-                .padding(proxy.size.width < 560 ? 8 : 14)
-                .background(.black.opacity(0.68), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(.white.opacity(0.10), lineWidth: 1)
-                )
-                .frame(maxWidth: 980)
-                Spacer(minLength: 8)
+                ForEach(player.audioDevices) { device in
+                    Button {
+                        player.selectAudioDevice(device.id)
+                    } label: {
+                        if player.selectedAudioDeviceID == device.id {
+                            Label("\(device.name)（\(device.outputChannels)ch）", systemImage: "checkmark")
+                        } else {
+                            Text("\(device.name)（\(device.outputChannels)ch）")
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, proxy.size.width < 560 ? 6 : 18)
-            .padding(.bottom, proxy.size.width < 560 ? 8 : 18)
-        }
-        .frame(height: 205)
-    }
-
-    private var compactBottomBar: some View {
-        VStack(spacing: 6) {
-            PlayerTimeRow(
-                clock: player.clock,
-                duration: player.duration,
-                thumbnails: player.thumbnails,
-                dragValue: $scrubValue,
-                onScrubBegan: { player.beginScrub() },
-                onScrubEnded: { target in
-                    player.endScrub(at: target)
-                    scrubValue = nil
-                }
-            )
-            .padding(.horizontal, 6)
-            HStack(spacing: 12) {
-                Button { player.togglePlayPause() } label: {
-                    Image(systemName: player.isPaused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .frame(width: 38, height: 38)
-                        .background(.white.opacity(0.92), in: Circle())
-                        .foregroundStyle(.black)
-                }
-                .buttonStyle(.plain)
-                Button { player.skip(-10) } label: { Image(systemName: "gobackward.10").font(.system(size: 15)) }
-                    .buttonStyle(.plain)
-                Button { player.skip(10) } label: { Image(systemName: "goforward.10").font(.system(size: 15)) }
-                    .buttonStyle(.plain)
-                Button { showSubtitleMenu.toggle() } label: {
-                    Image(systemName: "captions.bubble").font(.system(size: 15))
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showSubtitleMenu, arrowEdge: .bottom) { subtitleMenuContent }
-                Menu {
-                    ForEach(player.audioTracks) { track in
-                        Button(track.displayName) { player.selectAudio(track) }
-                    }
-                    Divider()
-                    ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                        Button(String(format: "%.2fx", speed)) { player.setSpeed(speed) }
-                    }
-                    Divider()
-                    Button("同文件夹视频") { player.toggleFolderList() }
-                    Button("全屏") { player.toggleFullScreen() }
-                } label: {
-                    Image(systemName: "ellipsis.circle").font(.system(size: 16))
-                }
-                .menuStyle(.borderlessButton)
-                Spacer(minLength: 0)
+            Divider()
+            Button {
+                player.toggleFolderList()
+            } label: {
+                Label("同文件夹视频", systemImage: "list.bullet.rectangle")
             }
-        }
-    }
-
-    private var bottomBar: some View {
-        VStack(spacing: 14) {
-            PlayerTimeRow(
-                clock: player.clock,
-                duration: player.duration,
-                thumbnails: player.thumbnails,
-                dragValue: $scrubValue,
-                onScrubBegan: { player.beginScrub() },
-                onScrubEnded: { target in
-                    player.endScrub(at: target)
-                    scrubValue = nil
+            .disabled(player.folderVideos.isEmpty)
+            Button {
+                player.showControlsTemporarily()
+                showInfo = true
+            } label: {
+                Label("播放信息…", systemImage: "info.circle")
+            }
+            Button {
+                player.toggleFullScreen()
+            } label: {
+                Label("全屏", systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 14, weight: .medium))
+                if !compact {
+                    Text("更多")
+                        .font(.system(size: 10.5, weight: .medium))
                 }
-            )
-            .padding(.horizontal, 24)
-
-            HStack(spacing: 20) {
-                Button { player.playPreviousEpisode() } label: {
-                    Image(systemName: "backward.end.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(player.canPlayPreviousEpisode ? .white : .white.opacity(0.3))
-                }
-                .buttonStyle(.plain)
-                .disabled(!player.canPlayPreviousEpisode)
-                .help("上一集")
-
-                Button { player.skip(-10) } label: {
-                    Image(systemName: "gobackward.10")
-                        .font(.system(size: 20, weight: .medium))
-                }
-                .buttonStyle(.plain)
-
-                Button { player.togglePlayPause() } label: {
-                    Image(systemName: player.isPaused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 22, weight: .bold))
-                        .frame(width: 50, height: 50)
-                        .background(.white.opacity(0.92), in: Circle())
-                        .foregroundStyle(.black)
-                }
-                .buttonStyle(.plain)
-
-                Button { player.skip(10) } label: {
-                    Image(systemName: "goforward.10")
-                        .font(.system(size: 20, weight: .medium))
-                }
-                .buttonStyle(.plain)
-
-                Button { player.playNextEpisode() } label: {
-                    Image(systemName: "forward.end.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(player.canPlayNextEpisode ? .white : .white.opacity(0.3))
-                }
-                .buttonStyle(.plain)
-                .disabled(!player.canPlayNextEpisode)
-                .help("下一集")
-
-                Spacer()
-
-                Button {
-                    player.toggleFolderList()
-                } label: {
-                    Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.white)
-                }
-                .buttonStyle(.plain)
-                .help("同文件夹视频")
-                .disabled(player.folderVideos.isEmpty)
-
-                Button {
-                    showSubtitleMenu.toggle()
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "captions.bubble")
-                        Text(selectedSubtitleName ?? "字幕")
-                            .lineLimit(1)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .bold))
-                    }
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(.white)
-                    .fixedSize(horizontal: true, vertical: false)
-                }
-                .buttonStyle(.plain)
-                .help("字幕与字幕偏移")
-                .accessibilityLabel("字幕菜单")
-                .popover(isPresented: $showSubtitleMenu, arrowEdge: .bottom) {
-                    subtitleMenuContent
-                }
-                .onAppear {
-                    guard ProcessInfo.processInfo.environment["OPENFUSE_OPEN_SUBTITLE_MENU"] == "1" else { return }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                        showSubtitleMenu = true
-                    }
-                }
-
-                Menu {
-                    ForEach(player.audioTracks) { track in
-                        Button {
-                            player.selectAudio(track)
-                        } label: {
-                            if player.selectedAudioID == track.id {
-                                Label("\(track.displayName) · \(track.technicalLabel)", systemImage: "checkmark")
-                            } else {
-                                Text("\(track.displayName) · \(track.technicalLabel)")
-                            }
-                        }
-                    }
-                    Divider()
-                    Menu("音频输出") {
-                        Button("自动（立体声下混）") { player.setAudioLayout("auto-safe") }
-                        Button("5.1 环绕") { player.setAudioLayout("5.1") }
-                        Button("直通") { player.setAudioLayout("auto") }
-                        Divider()
-                        Button {
-                            player.selectAudioDevice("auto")
-                        } label: {
-                            if player.selectedAudioDeviceID == "auto" {
-                                Label("自动选择设备", systemImage: "checkmark")
-                            } else {
-                                Text("自动选择设备")
-                            }
-                        }
-                        ForEach(player.audioDevices) { device in
-                            Button {
-                                player.selectAudioDevice(device.id)
-                            } label: {
-                                if player.selectedAudioDeviceID == device.id {
-                                    Label("\(device.name)（\(device.outputChannels)ch）", systemImage: "checkmark")
-                                } else {
-                                    Text("\(device.name)（\(device.outputChannels)ch）")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Label(selectedAudioName ?? "音轨", systemImage: "speaker.wave.2")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundStyle(.white)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-
-                Menu {
-                    ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                        Button {
-                            player.setSpeed(speed)
-                        } label: {
-                            if abs(player.speed - speed) < 0.001 {
-                                Label(String(format: "%.2fx", speed), systemImage: "checkmark")
-                            } else {
-                                Text(String(format: "%.2fx", speed))
-                            }
-                        }
-                    }
-                } label: {
-                    Text(String(format: "%.2fx", player.speed))
-                        .font(.system(size: 12.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-
-                VolumeControl(player: player)
-
-                AirPlayRoutePicker()
-                    .frame(width: 24, height: 24)
-                    .help("AirPlay 投屏")
-
-                Button { player.toggleFullScreen() } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .buttonStyle(.plain)
-                .help("全屏 (F)")
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 26)
-            .padding(.bottom, 22)
+            .contentShape(Rectangle())
         }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("音轨、速度、输出与播放信息")
+        .accessibilityLabel("更多播放选项")
     }
 
     private var subtitleMenuContent: some View {
         VStack(alignment: .leading, spacing: 2) {
+            Text("字幕")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.secondary)
+                .padding(.horizontal, 10)
+                .padding(.top, 4)
+                .padding(.bottom, 2)
             SubtitleMenuRow(
                 title: "关闭字幕",
                 selected: player.selectedSubtitleID == nil,
@@ -658,29 +864,248 @@ struct PlayerChrome: View {
         return player.subtitleTracks.first(where: { $0.id == id })?.displayName
     }
 
+    /// "中文（简体）(ASS)" is too wide for the panel; the button only needs the
+    /// language, while the full label stays in the popover and info sheet.
+    private var subtitleButtonLabel: String? {
+        guard let name = selectedSubtitleName else { return nil }
+        for marker in [" (", "(", " · "] {
+            if let range = name.range(of: marker) {
+                let short = name[..<range.lowerBound].trimmingCharacters(in: .whitespaces)
+                if !short.isEmpty { return String(short.prefix(10)) }
+            }
+        }
+        return name
+    }
+
+}
+
+/// Tracks whether the player window's first responder is a focused control
+/// (not the window/content view). SwiftUI exposes keyboard focus through the
+/// responder chain for AppKit-backed controls; this keeps the floating panel
+/// visible while the user is tabbing through it.
+private struct ChromeFocusMonitor: NSViewRepresentable {
+    var onChange: (Bool) -> Void
+
+    func makeNSView(context: Context) -> FocusView {
+        let view = FocusView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ nsView: FocusView, context: Context) {
+        nsView.onChange = onChange
+    }
+
+    final class FocusView: NSView {
+        var onChange: ((Bool) -> Void)?
+        private var observer: NSObjectProtocol?
+        private var lastValue = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+            observer = nil
+            guard let window else {
+                publish(false)
+                return
+            }
+            observer = NotificationCenter.default.addObserver(
+                forName: NSWindow.didUpdateNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.evaluate()
+            }
+            evaluate()
+        }
+
+        override func viewWillMove(toWindow newWindow: NSWindow?) {
+            if newWindow == nil {
+                if let observer { NotificationCenter.default.removeObserver(observer) }
+                observer = nil
+                publish(false)
+            }
+            super.viewWillMove(toWindow: newWindow)
+        }
+
+        deinit {
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+        }
+
+        private func evaluate() {
+            guard let window else {
+                publish(false)
+                return
+            }
+            let responder = window.firstResponder
+            let focused = responder != nil
+                && responder !== window
+                && responder !== window.contentView
+                && !(responder is NSTextView)
+            publish(focused)
+        }
+
+        private func publish(_ value: Bool) {
+            guard value != lastValue else { return }
+            lastValue = value
+            onChange?(value)
+        }
+    }
+}
+
+/// Opaque fallback when Reduce Transparency is on, system glass on macOS 26+,
+/// and NSVisualEffectView's within-window blend on the macOS 14/15 deployment
+/// targets. The panel only occupies its drawn area, so the video surface keeps
+/// its own hit testing everywhere else.
+private struct PlayerPanelSurface: View {
+    let cornerRadius: CGFloat
+    let reduceTransparency: Bool
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        Group {
+            if reduceTransparency {
+                shape.fill(Color(white: 0.075).opacity(0.985))
+            } else {
+                if #available(macOS 26.0, *) {
+                    shape
+                        .fill(.clear)
+                        .glassEffect(.regular, in: shape)
+                        .overlay(shape.fill(.black.opacity(0.18)))
+                } else {
+                    VisualEffectBackground(material: .hudWindow, blendingMode: .withinWindow)
+                        .clipShape(shape)
+                }
+            }
+        }
+        .overlay(shape.stroke(.white.opacity(0.14), lineWidth: 0.8))
+        .shadow(color: .black.opacity(0.40), radius: 18, y: 8)
+    }
+}
+
+private struct VisualEffectBackground: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        view.isEmphasized = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
+
+private struct PanelSizeKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
+    }
+}
+
+/// Full file name, source, coding and session log live here so the floating
+/// panel can stay short.
+private struct PlaybackInfoSheet: View {
+    @ObservedObject var player: PlayerModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("播放信息")
+                    .font(.system(size: 17, weight: .semibold))
+                Spacer()
+                Button("关闭") { dismiss() }
+            }
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 7) {
+                row("标题", player.title)
+                row("作品", player.heading.title)
+                if let detail = player.heading.detail { row("季集", detail) }
+                row("文件", player.playbackFileName)
+                row("来源", player.sourceLabel)
+                GridRow {
+                    Text("AirPlay")
+                        .foregroundStyle(Theme.secondary)
+                    AirPlayRoutePicker()
+                        .frame(width: 22, height: 22)
+                        .help("AirPlay 投屏")
+                }
+                row("音轨", selectedAudioName ?? "默认")
+                row("字幕", selectedSubtitleName ?? "关闭")
+                row("速度", String(format: "%.2fx", player.speed))
+                row("时长", player.duration > 0 ? Timecode.short(player.duration) : "--:--")
+                if let codec = player.engine.getPropertyString("video-codec"), !codec.isEmpty {
+                    row("视频编码", codec)
+                }
+                if let codec = player.engine.getPropertyString("audio-codec-name"), !codec.isEmpty {
+                    row("音频编码", codec)
+                }
+                if let size = player.engine.videoSize() {
+                    row("画面", "\(Int(size.width))×\(Int(size.height))")
+                }
+                row("缓存", player.isNetworkSource ? byteString(player.cacheBytes) : "本地文件")
+            }
+            .font(.system(size: 11.5))
+
+            Text("会话日志")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.secondary)
+            ScrollView {
+                Text(player.logs.suffix(160).joined(separator: "\n"))
+                    .font(.system(size: 10, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+            }
+            .background(Theme.elevated.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(20)
+        .frame(width: 640, height: 480)
+        .background(Theme.background)
+    }
+
+    @ViewBuilder
+    private func row(_ label: String, _ value: String) -> some View {
+        GridRow {
+            Text(label)
+                .foregroundStyle(Theme.secondary)
+            Text(value)
+                .textSelection(.enabled)
+                .lineLimit(2)
+        }
+    }
+
     private var selectedAudioName: String? {
         guard let id = player.selectedAudioID else { return nil }
         return player.audioTracks.first(where: { $0.id == id })?.displayName
     }
 
-    private var logSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("播放会话")
-                    .font(.headline)
-                Spacer()
-                Button("关闭") { showLog = false }
-            }
-            ScrollView {
-                Text(player.logs.suffix(120).joined(separator: "\n"))
-                    .font(.system(size: 10.5, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+    private var selectedSubtitleName: String? {
+        guard let id = player.selectedSubtitleID else { return nil }
+        return player.subtitleTracks.first(where: { $0.id == id })?.displayName
+    }
+
+    /// "中文（简体）(ASS)" is too wide for the panel; the button only needs the
+    /// language, while the full label stays in the popover and info sheet.
+    private var subtitleButtonLabel: String? {
+        guard let name = selectedSubtitleName else { return nil }
+        for marker in [" (", "(", " · "] {
+            if let range = name.range(of: marker) {
+                let short = name[..<range.lowerBound].trimmingCharacters(in: .whitespaces)
+                if !short.isEmpty { return String(short.prefix(10)) }
             }
         }
-        .padding(20)
-        .frame(width: 720, height: 420)
-        .background(Theme.background)
+        return name
+    }
+
+    private func byteString(_ size: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
     }
 }
 
@@ -709,7 +1134,7 @@ private struct SubtitleMenuRow: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .background(
-                hovering && !disabled ? Theme.accent.opacity(0.14) : Color.clear,
+                hovering && !disabled ? Theme.accent.opacity(0.24) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 6, style: .continuous)
             )
             .contentShape(Rectangle())

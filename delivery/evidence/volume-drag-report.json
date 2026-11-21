@@ -1,0 +1,176 @@
+{
+  "alwaysOnTop" : false,
+  "app" : "OpenFuse",
+  "arguments" : [
+    "build\/OpenFuse.app\/Contents\/MacOS\/OpenFuse",
+    "--open",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.mkv",
+    "--capture",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/ui-final\/drag-volume\/frame.png",
+    "--report",
+    "\/Users\/ykw\/Documents\/openfuse\/build\/ui-final\/drag-volume\/report.json",
+    "--capture-after",
+    "6",
+    "--quit-after",
+    "8"
+  ],
+  "audio" : [
+    {
+      "channels" : 6,
+      "codec" : "eac3",
+      "engineID" : 1,
+      "id" : "mpv-audio:1",
+      "label" : "E-AC-3 5.1",
+      "name" : "中文 · E-AC-3 5.1 测试音轨"
+    }
+  ],
+  "audioChannels" : "6",
+  "audioCodec" : "eac3",
+  "audioDevice" : "auto",
+  "audioDeviceActive" : "auto",
+  "audioOutParams" : "{\"samplerate\":48000,\"channel-count\":2,\"channels\":\"stereo\",\"hr-channels\":\"stereo\",\"format\":\"floatp\"}",
+  "audioParams" : "{\"samplerate\":48000,\"channel-count\":6,\"channels\":\"5.1(side)\",\"hr-channels\":\"5.1(side)\",\"format\":\"floatp\"}",
+  "blendSubtitles" : "no",
+  "bufferedEnd" : 49.25,
+  "bufferedRanges" : [
+    {
+      "end" : 19.957999999999998,
+      "start" : 0
+    },
+    {
+      "end" : 48.768000000000001,
+      "start" : 22
+    }
+  ],
+  "bufferingPercent" : 100,
+  "cacheSpeedBytes" : 157027,
+  "cacheStateRaw" : "{\"cache-end\":49.750000,\"reader-pts\":29.750000,\"cache-duration\":20.000000,\"eof\":false,\"underrun\":false,\"idle\":true,\"total-bytes\":8932416,\"fw-bytes\":3687728,\"raw-input-rate\":157027,\"debug-low-level-seeks\":1,\"debug-byte-level-seeks\":2,\"debug-ts-last\":49.600000,\"ts-per-stream\":[{\"type\":\"video\",\"cache-duration\":20.000000,\"reader-pts\":29.750000,\"cache-end\":49.750000},{\"type\":\"audio\",\"cache-duration\":20.032000,\"reader-pts\":29.568000,\"cache-end\":49.600000}],\"bof-cached\":true,\"eof-cached\":false,\"seekable-ranges\":[{\"start\":22.000000,\"end\":47.958000},{\"start\":0.000000,\"end\":19.958000}]}",
+  "cacheUsedBytes" : 3687024,
+  "chromeHolds" : [
+    "panel-hover"
+  ],
+  "currentAO" : "coreaudio",
+  "currentFolderVideoID" : "\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.mkv",
+  "currentVO" : "libmpv",
+  "currentVolumeProperty" : "95.000000",
+  "decoderDropFrameCount" : 0,
+  "displayFps" : 120.001,
+  "duration" : 60,
+  "engine" : "libmpv",
+  "estimatedVFFps" : 24,
+  "file" : "file:\/\/\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo%20(2014)\/Season%2001\/Fargo%20(2014)%20-%20S01E01%20-%20Pilot.mkv",
+  "folderCount" : 1,
+  "folderLabel" : "同文件夹 · 1 个视频",
+  "folderOverviews" : [
+
+  ],
+  "folderShowList" : false,
+  "folderSubtitles" : [
+    "Fargo · 2014"
+  ],
+  "folderThumbnails" : [
+
+  ],
+  "folderTitles" : [
+    "S1 · E1 — Pilot"
+  ],
+  "frameDropCount" : 1,
+  "generatedAt" : "2026-11-21T20:53:49Z",
+  "hasRenderContext" : true,
+  "hasSpeedSample" : true,
+  "hdrComputePeak" : "yes",
+  "headingDetail" : "S01E01 · Pilot",
+  "headingTitle" : "Fargo (2014)",
+  "hwdecCurrent" : "videotoolbox",
+  "isBuffering" : false,
+  "isFullScreen" : false,
+  "isNetworkSource" : false,
+  "isNetworkStalled" : false,
+  "isOpening" : false,
+  "isReconnecting" : false,
+  "libraryStatus" : "",
+  "logs" : [
+    "[warn] libmpv_render: Disabling HDR peak computation (one or more of the following is not supported: compute shaders=0, SSBO=0).",
+    "[warn] libmpv_render: Tone mapping curve unsupported by vo_gpu, falling back."
+  ],
+  "mpv" : "mpv v0.42.0",
+  "mpvSid" : "3",
+  "osdLevel" : "0",
+  "panelContainer" : "{1180, 732}",
+  "panelOrigin" : "{310, 64}",
+  "panelSize" : "{560, 94}",
+  "paused" : false,
+  "position" : 29.375,
+  "remotePath" : "",
+  "renderer" : "libmpv\/NSOpenGLView",
+  "screenEDR" : 16,
+  "screenVisibleFrame" : "{{0, 0}, {1454, 948}}",
+  "selectedAudio" : "mpv-audio:1",
+  "selectedSubtitle" : "ext:\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.zh-Hans.ass",
+  "showControls" : true,
+  "sourceID" : "",
+  "sourceKind" : "local",
+  "sourceName" : "本地文件",
+  "subAssOverride" : "scale",
+  "subDelay" : 0,
+  "subDelaySummary" : "同步（0 秒）",
+  "subDelayTrack" : "ext:\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.zh-Hans.ass",
+  "subText" : "三番目。シーク後の同期を確認する。\n第三句：简体中文字幕轨道，拖动后应重新同步。",
+  "subtitles" : [
+    {
+      "engineID" : 3,
+      "format" : "ass",
+      "id" : "ext:\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.zh-Hans.ass",
+      "language" : "zh-Hans",
+      "name" : "中文（简体） (ASS)",
+      "source" : "external"
+    },
+    {
+      "engineID" : 2,
+      "format" : "ass",
+      "id" : "ext:\/Users\/ykw\/Documents\/openfuse\/build\/show-fixture\/Fargo (2014)\/Season 01\/Fargo (2014) - S01E01 - Pilot.zh-Hant.ass",
+      "language" : "zh-Hant",
+      "name" : "中文（繁體） (ASS)",
+      "source" : "external"
+    },
+    {
+      "engineID" : 1,
+      "format" : "ass",
+      "id" : "mpv:1",
+      "language" : "zh",
+      "name" : "中文（简体） · 中日双语",
+      "source" : "embedded"
+    }
+  ],
+  "subUseMargins" : "yes",
+  "subVisibility" : "yes",
+  "targetColorspaceHint" : "yes",
+  "thumbnailBenchmarkHotP95" : 0,
+  "thumbnailBenchmarkP50" : 0,
+  "thumbnailBenchmarkP95" : 0,
+  "thumbnailBenchmarkSamples" : 0,
+  "thumbnailCacheCount" : 3,
+  "thumbnailDiskHits" : 1,
+  "thumbnailLastBytes" : 20122,
+  "thumbnailLastElapsedMs" : 122,
+  "thumbnailLastSource" : "decode",
+  "thumbnailLastTime" : 54,
+  "thumbnailMergedRequests" : 0,
+  "thumbnailTrickplayHits" : 0,
+  "title" : "Fargo (2014) - S01E01 - Pilot",
+  "toneMapping" : "spline",
+  "userPaused" : false,
+  "videoCodec" : "hevc \/ Main 10",
+  "videoDescription" : "H.265 \/ HEVC (High Efficiency Video Coding)",
+  "videoGamma" : "bt.1886",
+  "videoOutParams" : "{\"pixelformat\":\"videotoolbox\",\"hw-pixelformat\":\"p010\",\"average-bpp\":24,\"w\":1920,\"h\":1080,\"dw\":1920,\"dh\":1080,\"crop-x\":0,\"crop-y\":0,\"crop-w\":1920,\"crop-h\":1080,\"aspect\":1.777778,\"aspect-name\":\"16:9\",\"par\":1.000000,\"sar\":1.777778,\"sar-name\":\"16:9\",\"colormatrix\":\"bt.709\",\"colorlevels\":\"limited\",\"primaries\":\"bt.709\",\"gamma\":\"bt.1886\",\"sig-peak\":0.000000,\"light\":\"display\",\"chroma-location\":\"mpeg2\/4\/h264\",\"stereo-in\":\"mono\",\"rotate\":0,\"alpha\":\"none\"}",
+  "videoPrimaries" : "bt.709",
+  "videoSigPeak" : "0.000000",
+  "videoSync" : "audio",
+  "volume" : 95,
+  "windowAppearance" : "NSAppearanceNameDarkAqua",
+  "windowFrame" : "{{137, 141}, {1180, 760}}",
+  "windowLevel" : 0,
+  "windowScaleContentSize" : "",
+  "windowScaleLastAction" : ""
+}
