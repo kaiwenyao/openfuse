@@ -4,7 +4,7 @@
 
 ```text
 delivery/OpenFuse-macos.zip              28 MB，自包含 libmpv 及依赖
-delivery/OpenFuse-macos.zip.sha256       c3a5d1980d70bd310262a7d798980ac88c853e9c20bfe3d87ea79cd2908a8447
+delivery/OpenFuse-macos.zip.sha256       5464f2e063bc2309e7b2aa2eabffccd81f3350255ffc51cadb03b0bb7fafe348
 delivery/install-openfuse-macos.sh       安装/升级脚本
 ```
 

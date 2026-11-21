@@ -162,7 +162,7 @@ bash install-openfuse-macos.sh --app OpenFuse-macos.zip \
   [3/5] 正在本地签名…
   [4/5] 正在安装到 /tmp/openfuse-install-test…
   [5/5] OpenFuse 安装完成。
-  已安装 0.9.2(04b0160):/tmp/openfuse-install-test/OpenFuse.app
+  已安装 0.9.2(03f15fd):/tmp/openfuse-install-test/OpenFuse.app
 ```
 
 临时安装目录已删除。安装包内含 libmpv/FFmpeg 全部依赖，`codesign --verify --deep --strict` 通过，打包后的应用实际启动并播放夹具成功。

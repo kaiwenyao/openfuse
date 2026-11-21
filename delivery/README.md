@@ -23,7 +23,7 @@ open /Applications/OpenFuse.app
 | 路径 | 说明 |
 | --- | --- |
 | `OpenFuse-macos.zip` | 28 MB 自包含 macOS 应用（libmpv + FFmpeg + 依赖，无需 Homebrew） |
-| `OpenFuse-macos.zip.sha256` | `c3a5d1980d70bd310262a7d798980ac88c853e9c20bfe3d87ea79cd2908a8447`（重新打包后以实际文件为准） |
+| `OpenFuse-macos.zip.sha256` | `5464f2e063bc2309e7b2aa2eabffccd81f3350255ffc51cadb03b0bb7fafe348`（重新打包后以实际文件为准） |
 | `install-openfuse-macos.sh` | 安装/升级脚本 |
 | `INSTALL.md` | 安装、校验、直接解压与运行要求 |
 | `TEST-RESULTS.md` | 逐项验收结果、测试命令、面板几何数据、QuickTime 对照与待验证项 |
