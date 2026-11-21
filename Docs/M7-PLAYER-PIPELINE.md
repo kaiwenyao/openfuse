@@ -331,3 +331,33 @@ playback.firstFrame      ~5.4 s
 - `userPaused` 记录用户意图：缓冲恢复时 mpv 若自动解除暂停，会立刻重新 `pause`，所以“缓冲期间右键暂停”在恢复后仍保持暂停。
 
 本机验收：`build/player-interactions/`（音量 95、mpv 95、四个区域暂停、两次恢复、缓冲暂停保持）与 `build/player-responsiveness/summary.txt`（10+10 次 ⌘Tab）。
+
+## 13. 0.5.5：进度条 hover 缩略图
+
+### 13.1 结构
+
+- `ThumbnailProvider`（App 目标，`@MainActor`）持有一个独立的 `MPVEngine`，初始化参数 `thumbnailOutput:` 打开图像输出模式：
+  `vo=image`、`vo-image-format=png`、`vo-image-outdir=<dir>`、`frames=1`、`vf=scale=320:-2`、`hwdec=no`、`audio=no`、`keep-open=no`、`sub-visibility=no`、`sid=no`。它不创建 GL 渲染上下文，也不使用播放器的 URL/位置。
+- 每次请求在 `openfuse.thumbnails` 串行队列上：清空输出目录 → `start=<bucket>` → `loadfile` → `play` → 轮询 PNG（本地 2.5 s、远程 8 s 超时）。播放引擎完全不动，所以预览不会造成 seek、缓冲或音频中断。
+- 2 秒一个 bucket（`ThumbnailMath`），最多缓存 80 张；同一 bucket 直接命中。每次新请求递增 `RequestBox` 令牌，旧任务在 load 前/轮询中退出，快速扫过进度条不会堆积。
+- `PlayerScrubber` 用 `.onContinuousHover` 取得 x，换算时间并取 bucket；预览 120 ms 防抖，加载中显示进度圈，失败显示“无缩略图”；鼠标移出立即隐藏并取消。预览宽 168 pt（320×180 等比），水平位置由 `ThumbnailMath.previewOrigin` 夹在进度条内，垂直在进度条上方 126 pt。
+
+### 13.2 验收
+
+`Scripts/run-thumbnail-preview.sh`：
+
+| 场景 | 结果 |
+| --- | --- |
+| 本地 25% + 70% 停留 | `thumbnailCacheCount=2`、`thumbnailLastBytes>5000`、PNG 320×180、position 继续到 6.8 s |
+| 光标只在画面 | `thumbnailCacheCount=0` |
+| WebDAV 50% | 缓存 1 张、PNG 320×180、position 9.9 s |
+| 全屏 60% | 缓存 ≥1、窗口截图存在 |
+
+证据：`build/thumbnail-preview/local/window.png`（00:44 预览）、`webdav/window.png`（00:30 预览）、`thumbs-local/00000001.png`。播放管线 60 s soak 仍为 0 decoder drop、fade 43.5 ms；M1、控制栏、交互、缓存、WebDAV 回归全部通过。
+
+### 13.3 已知边界
+
+- 缩略图只解码视频帧，不烧录字幕；这是预览的预期行为。
+- 远程首次预览需要一次 range 请求，慢源可能等待数秒（HUD 显示加载圈）；之后的 ±2 s 桶命中缓存。
+- 只有控制栏可见时才能 hover 进度条；鼠标移动会先唤出控制栏。
+- 2 秒粒度是速度/精度折中，未做邻近桶预取。

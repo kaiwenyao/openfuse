@@ -97,7 +97,7 @@ public final class MPVEngine: @unchecked Sendable {
 
     public private(set) var snapshot = MPVSnapshot(position: 0, duration: 0, isPaused: true, tracks: [])
 
-    public init(headless: Bool = false, httpHeaders: [String] = []) {
+    public init(headless: Bool = false, httpHeaders: [String] = [], thumbnailOutput: URL? = nil) {
         if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
             FileHandle.standardError.write(Data("[timing] mpvEngine.init.begin\n".utf8))
         }
@@ -110,13 +110,29 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("input-vo-keyboard", "no")
         setOption("osc", "no")
         setOption("osd-level", "0")
-        setOption("vo", headless ? "null" : "libmpv")
-        if !headless {
-            setOption("gpu-api", "opengl")
+        if let thumbnailOutput {
+            // One decoded frame written as a PNG. Used by the scrubber hover
+            // preview on a private engine, so playback is never disturbed.
+            try? FileManager.default.createDirectory(at: thumbnailOutput, withIntermediateDirectories: true)
+            setOption("vo", "image")
+            setOption("vo-image-format", "png")
+            setOption("vo-image-outdir", thumbnailOutput.path)
+            setOption("frames", "1")
+            setOption("hwdec", "no")
+            setOption("audio", "no")
+            setOption("keep-open", "no")
+            setOption("vf", "scale=320:-2")
+            setOption("sub-visibility", "no")
+            setOption("sid", "no")
+        } else {
+            setOption("vo", headless ? "null" : "libmpv")
+            if !headless {
+                setOption("gpu-api", "opengl")
+            }
+            setOption("hwdec", "videotoolbox")
         }
-        setOption("hwdec", "videotoolbox")
         let pcmOutput = ProcessInfo.processInfo.environment["OPENFUSE_AO_PCM"] ?? ""
-        setOption("ao", headless ? "null" : (pcmOutput.isEmpty ? "coreaudio" : "pcm"))
+        setOption("ao", (headless || thumbnailOutput != nil) ? "null" : (pcmOutput.isEmpty ? "coreaudio" : "pcm"))
         if !pcmOutput.isEmpty {
             setOption("ao-pcm-file", pcmOutput)
             setOption("ao-pcm-waveheader", "yes")
@@ -141,9 +157,13 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("tone-mapping", ProcessInfo.processInfo.environment["OPENFUSE_TONE_MAPPING"] ?? "spline")
         setOption("hdr-compute-peak", "yes")
         setOption("target-peak", "auto")
-        let edr = NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1
-        let allowHDR = ProcessInfo.processInfo.environment["OPENFUSE_HDR_PASSTHROUGH"] != "0"
-        setOption("target-colorspace-hint", (allowHDR && edr > 1) ? "yes" : "no")
+        if thumbnailOutput == nil {
+            let edr = NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1
+            let allowHDR = ProcessInfo.processInfo.environment["OPENFUSE_HDR_PASSTHROUGH"] != "0"
+            setOption("target-colorspace-hint", (allowHDR && edr > 1) ? "yes" : "no")
+        } else {
+            setOption("target-colorspace-hint", "no")
+        }
         if !httpHeaders.isEmpty {
             setOption("http-header-fields", httpHeaders.joined(separator: ","))
         }

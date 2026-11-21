@@ -294,6 +294,7 @@ struct PlayerChrome: View {
             PlayerTimeRow(
                 clock: player.clock,
                 duration: player.duration,
+                thumbnails: player.thumbnails,
                 dragValue: $scrubValue,
                 onScrubBegan: { player.beginScrub() },
                 onScrubEnded: { target in

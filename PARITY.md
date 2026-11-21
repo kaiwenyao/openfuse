@@ -797,3 +797,13 @@
 | 音量 | 同上 | 本地夹具 | ↓↓↑，滑块，重启 | volume=95、mpv volume=95；HUD 85%；重启保持 | `build/player-fixes-054/volume-hud.png` | 通过（本机） |
 | 右键暂停 | 同上 | 本地夹具／全屏 | 视频、黑边、控制栏、全屏各一次；两次恢复 | 全部 `paused=true`，两次后 `false`；缓冲暂停恢复后仍 true | `build/player-interactions/*` | 通过（本机） |
 | Jellyfin 打开/⌘Tab | — | 无 Jellyfin 服务器，Docker 不可用 | — | 未复现；Jellyfin 与 WebDAV 共用 `startPlayer`/会话令牌路径 | — | 未测 |
+
+### M7e 0.5.5 进度条 hover 缩略图（2026-11-21，本机）
+
+| 测试 | 设备／系统 | 素材／来源 | 步骤与结果 | 截图／报告 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| 本地缩略图 | M2 Pro／macOS 27.2.1 | 夹具 MKV | 25% 与 70% 各停留一次：`thumbnailCacheCount=2`、PNG 320×180、播放位置继续前进、未暂停 | `build/thumbnail-preview/local/window.png` | 通过 |
+| 非进度条不请求 | 同上 | 同上 | 光标只经过画面：`thumbnailCacheCount=0` | `build/thumbnail-preview/no-hover/` | 通过 |
+| WebDAV 缩略图 | 同上 | faststart MP4／本地 WebDAV | 50% 停留：缓存 1 张、320×180、播放未被打断 | `build/thumbnail-preview/webdav/window.png` | 通过 |
+| 全屏缩略图 | 同上 | 夹具 MKV | 全屏 60% 停留：缓存 ≥1 | `build/thumbnail-preview/fullscreen/` | 通过 |
+| 移出隐藏 | 同上 | 同上 | 移出后预览消失、请求取消 | 手动截图 | 通过（目视） |

@@ -2097,6 +2097,9 @@ final class AppModel: ObservableObject {
             "isNetworkStalled": player.isNetworkStalled,
             "isReconnecting": player.isReconnecting,
             "userPaused": player.userPaused,
+            "thumbnailCacheCount": player.thumbnails.cacheCount,
+            "thumbnailLastTime": player.thumbnails.lastTime as Any,
+            "thumbnailLastBytes": player.thumbnails.lastBytes,
             "currentVolumeProperty": player.engine.getPropertyString("volume") ?? "nil",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",
@@ -2137,6 +2140,8 @@ final class AppModel: ObservableObject {
 @MainActor
 final class PlayerModel: ObservableObject {
     let item: MediaItem
+    /// Private mpv engine used only for scrubber hover previews.
+    let thumbnails = ThumbnailProvider()
     var url: URL { item.playbackURL }
     var fingerprint: MediaFingerprint { item.fingerprint }
     let engine: MPVEngine
@@ -2236,6 +2241,11 @@ final class PlayerModel: ObservableObject {
         self.store = store
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
+        self.thumbnails.configure(
+            itemKey: item.fingerprint.resumeKey,
+            url: item.playbackURL,
+            headers: item.httpHeaders
+        )
         let storedVolume = UserDefaults.standard.object(forKey: PlayerModel.volumeDefaultsKey) as? Double
         let initialVolume = VolumeMath.clamp(storedVolume ?? 100)
         self.volume = initialVolume
@@ -3034,6 +3044,7 @@ final class PlayerModel: ObservableObject {
         controlsTimer = nil
         cacheStalenessTimer?.invalidate()
         cacheStalenessTimer = nil
+        thumbnails.shutdown()
         volumeHUDWorkItem?.cancel()
         volumeHUDWorkItem = nil
         engine.pause()

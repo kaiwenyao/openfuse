@@ -1,3 +1,4 @@
+import AppKit
 import OpenFuseCore
 import SwiftUI
 
@@ -14,12 +15,26 @@ import SwiftUI
 struct PlayerScrubber: View {
     @ObservedObject var clock: PlaybackClock
     let duration: Double
+    let thumbnails: ThumbnailProvider
     @Binding var dragValue: Double?
     var onScrubBegan: () -> Void
     var onScrubEnded: (Double) -> Void
 
+    private struct Hover: Equatable {
+        let x: CGFloat
+        let time: Double
+        let bucket: Int
+    }
+
+    @State private var hover: Hover?
+    @State private var previewImage: NSImage?
+    @State private var previewLoading = false
+    @State private var previewFailed = false
+    @State private var previewTask: Task<Void, Never>?
+
     private let trackHeight: CGFloat = 4
     private let knobSize: CGFloat = 11
+    private let previewWidth: CGFloat = 168
 
     var body: some View {
         GeometryReader { proxy in
@@ -70,9 +85,86 @@ struct PlayerScrubber: View {
                     }
             )
             .animation(nil, value: duration)
+            .overlay(alignment: .topLeading) {
+                if let hover, duration > 0 {
+                    ThumbnailPreview(
+                        image: previewImage,
+                        time: ThumbnailMath.bucketTime(hover.bucket),
+                        loading: previewLoading,
+                        failed: previewFailed
+                    )
+                    .frame(width: previewWidth)
+                    .offset(
+                        x: ThumbnailMath.previewOrigin(
+                            hoverX: hover.x,
+                            width: width,
+                            previewWidth: previewWidth
+                        ),
+                        y: -126
+                    )
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+                }
+            }
+            .onContinuousHover { phase in
+                switch phase {
+                case .active(let point):
+                    updateHover(x: point.x, width: width)
+                case .ended:
+                    endHover()
+                }
+            }
         }
         .frame(height: 22)
         .help("拖动定位")
+        .onDisappear { endHover() }
+    }
+
+    private func updateHover(x: CGFloat, width: CGFloat) {
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+            print("[thumb] hover x=\(x) width=\(width) duration=\(duration)")
+        }
+        guard duration > 0 else { return }
+        let time = ThumbnailMath.hoverTime(x: x, width: width, duration: duration)
+        let bucket = ThumbnailMath.bucket(for: time)
+        let clampedX = min(max(x, 0), width)
+        let changedBucket = hover?.bucket != bucket
+        hover = Hover(x: clampedX, time: time, bucket: bucket)
+        guard changedBucket else { return }
+
+        previewTask?.cancel()
+        if let cached = thumbnails.cachedImage(for: time) {
+            previewImage = cached
+            previewLoading = false
+            previewFailed = false
+            return
+        }
+        previewImage = nil
+        previewLoading = true
+        previewFailed = false
+        previewTask = Task { @MainActor in
+            // Small debounce so sweeping across the bar does not queue a
+            // thumbnail per pixel.
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+            let image = await thumbnails.image(for: time)
+            guard !Task.isCancelled, hover?.bucket == bucket else { return }
+            previewImage = image
+            previewLoading = false
+            previewFailed = image == nil
+        }
+    }
+
+    private func endHover() {
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+            print("[thumb] hover ended")
+        }
+        previewTask?.cancel()
+        previewTask = nil
+        hover = nil
+        previewImage = nil
+        previewLoading = false
+        previewFailed = false
     }
 
     /// Cache spans clamped to the timeline. Falls back to the single cache end
@@ -107,6 +199,7 @@ struct PlayerScrubber: View {
 struct PlayerTimeRow: View {
     @ObservedObject var clock: PlaybackClock
     let duration: Double
+    let thumbnails: ThumbnailProvider
     @Binding var dragValue: Double?
     var onScrubBegan: () -> Void
     var onScrubEnded: (Double) -> Void
@@ -121,6 +214,7 @@ struct PlayerTimeRow: View {
             PlayerScrubber(
                 clock: clock,
                 duration: duration,
+                thumbnails: thumbnails,
                 dragValue: $dragValue,
                 onScrubBegan: onScrubBegan,
                 onScrubEnded: onScrubEnded
@@ -131,5 +225,54 @@ struct PlayerTimeRow: View {
                 .foregroundStyle(.white.opacity(0.6))
                 .frame(width: 62, alignment: .leading)
         }
+    }
+}
+
+
+/// Floating hover preview: thumbnail (320×180 PNG scaled to 168×94.5) plus the
+/// timecode under the cursor.
+private struct ThumbnailPreview: View {
+    let image: NSImage?
+    let time: Double
+    let loading: Bool
+    let failed: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack {
+                Color.black.opacity(0.9)
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else if loading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.white)
+                } else if failed {
+                    Text("无缩略图")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+            }
+            .frame(width: 168, height: 94.5)
+            .clipped()
+
+            HStack(spacing: 6) {
+                Text(Timecode.short(time))
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color.black.opacity(0.86))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.45), radius: 8, y: 3)
     }
 }

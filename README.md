@@ -13,14 +13,13 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.5.4（2026-11-21）
+## 当前版本 0.5.5（2026-11-21）
 
-- **打开视频/切换视频不再卡住。** `loadfile`、`seek` 改为异步；关闭旧会话不再在主线程等待 `mpv_terminate_destroy`；mpv 句柄与轨道列表加锁，避免事件线程与主线程竞争；每个会话拥有独立的 `NSOpenGLView`；异步来源请求带会话令牌，慢 PROPFIND/Jellyfin 结果不能覆盖后选的视频。
-- **缓冲/加载反馈更完整。** 网络打开时 HUD 显示“正在打开…”与“测速中…”；有样本后显示 `已缓存大小 · KB/s`；断流测量到零速显示 `0 B/s`；流被切断时显示“连接中断，重试播放”，按播放/空格会在原位置重新连接；本地文件不显示网络测速。进度条继续高亮已缓存区间。
-- **App 内音量。** 控制栏新增扬声器按钮与 0–100% 滑块；裸 ↑/↓ 每次 ±5%，按住连续；短暂 HUD 显示百分比；音量写入 UserDefaults，切集与重启保持；使用 mpv `volume`，只影响 OpenFuse。
-- **右键暂停/继续。** 视频、黑边、字幕区、缓冲提示、底部控制栏均可；窗口与全屏；鼠标右键和触控板双指辅助点按都走 `rightMouseDown`，每次点击只切换一次；媒体库/文件列表保留原有右键菜单。缓冲期间手动暂停后，缓存恢复仍保持暂停。
-- **0.5.2/0.5.3 的修复保持：** 8-bit sRGB 呈现、SRT/ASS 完整显示、深色标题栏、WebDAV 路径规范化、播放头 10 Hz 解耦。
-- 验证：73 个单元测试；`Scripts/run-player-responsiveness.sh`（10×窗口 + 10×全屏，5 s 延迟首字节，⌘Tab 往返与空格、切换/退出）、`Scripts/run-player-interactions.sh`（音量、四个右键区域、缓冲暂停）、`Scripts/run-cache-features.sh`（测速中/缓冲速度/0 B/s/恢复）以及控制栏、播放管线、M1、WebDAV 四个既有脚本全部通过。
+- **进度条 hover 缩略图。** 光标停在进度条上时，在光标上方显示 320×180 的画面预览与对应时间码；2 秒一个缓存桶，扫过进度条时只请求停留下来的位置，旧的请求会被取消。
+- 缩略图由独立的无声 libmpv 引擎生成（`vo=image`、`frames=1`、`hwdec=no`、`audio=no`），**不会 seek 或打扰正在播放的播放器**；本地文件、WebDAV 远程流都能用，全屏同样生效。
+- 预览在进度条内自动夹取位置，不会跑出窗口；加载中显示转圈，失败显示“无缩略图”；鼠标移出进度条立即隐藏并取消请求。
+- 0.5.4 的修复保持：打开/切换不再卡死、缓冲测速三态与断流重连、App 内音量、播放器任意位置右键暂停。
+- 验证：76 个单元测试（新增 ThumbnailMath）；新增 `Scripts/run-thumbnail-preview.sh`（本地两个位置、非进度条不请求、WebDAV、全屏、分辨率与播放不被打断），控制栏、交互、缓存、播放管线、M1、WebDAV 全部通过。证据在 `build/thumbnail-preview/`。
 
 # OpenFuse 开发计划
 
