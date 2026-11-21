@@ -27,6 +27,9 @@ public struct MediaItem: Sendable {
     public var sourceName: String?
     public var jellyfinContext: JellyfinPlaybackContext?
     public var plexContext: PlexPlaybackContext?
+    /// Groups episodes of the same show for the home "continue watching" rail.
+    public var seriesKey: String?
+    public var episodeLabel: String?
 
     public var isRemote: Bool { origin.isRemote }
 
@@ -70,7 +73,9 @@ public struct MediaItem: Sendable {
         origin: Origin,
         sourceName: String? = nil,
         jellyfinContext: JellyfinPlaybackContext? = nil,
-        plexContext: PlexPlaybackContext? = nil
+        plexContext: PlexPlaybackContext? = nil,
+        seriesKey: String? = nil,
+        episodeLabel: String? = nil
     ) {
         self.title = title
         self.playbackURL = playbackURL
@@ -81,6 +86,8 @@ public struct MediaItem: Sendable {
         self.sourceName = sourceName
         self.jellyfinContext = jellyfinContext
         self.plexContext = plexContext
+        self.seriesKey = seriesKey
+        self.episodeLabel = episodeLabel
     }
 
     public static func local(url: URL) throws -> MediaItem {
@@ -90,7 +97,9 @@ public struct MediaItem: Sendable {
             playbackURL: url,
             fingerprint: fingerprint,
             subtitles: SubtitleCatalog.discover(for: url),
-            origin: .local(url)
+            origin: .local(url),
+            seriesKey: MediaItem.seriesKey(path: url.path),
+            episodeLabel: MediaItem.episodeLabel(path: url.path)
         )
     }
 
@@ -172,7 +181,9 @@ public struct MediaItem: Sendable {
             subtitles: subtitles,
             httpHeaders: source.username.isEmpty ? [] : ["Authorization: Basic \(token)"],
             origin: .webdav(sourceID: source.id, path: entry.path, url: entry.url),
-            sourceName: source.name
+            sourceName: source.name,
+            seriesKey: MediaItem.seriesKey(path: entry.path, sourceID: source.id),
+            episodeLabel: MediaItem.episodeLabel(path: entry.path)
         )
     }
 }
@@ -239,6 +250,30 @@ public struct JellyfinPlaybackContext: Sendable {
 }
 
 public extension MediaItem {
+    static func episodeLabel(path: String) -> String? {
+        let url = URL(fileURLWithPath: path)
+        let parsed = VideoNaming.parse(
+            fileName: url.lastPathComponent,
+            parentFolder: url.deletingLastPathComponent().path
+        )
+        guard let season = parsed.season, let episode = parsed.episode else { return nil }
+        return String(format: "S%02dE%02d", season, episode)
+    }
+
+    static func seriesKey(path: String, sourceID: String? = nil) -> String? {
+        let nsPath = path as NSString
+        var folder = nsPath.deletingLastPathComponent
+        let parsed = VideoNaming.parse(fileName: nsPath.lastPathComponent, parentFolder: folder)
+        guard parsed.season != nil, parsed.episode != nil else { return nil }
+        if VideoNaming.seasonNumber(fromFolder: (folder as NSString).lastPathComponent) != nil {
+            folder = (folder as NSString).deletingLastPathComponent
+        }
+        if let sourceID {
+            return "\(sourceID)|\(folder)"
+        }
+        return URL(fileURLWithPath: folder).standardizedFileURL.path
+    }
+
     static func jellyfin(
         source: JellyfinSource,
         item: JellyfinItem,
@@ -279,7 +314,9 @@ public extension MediaItem {
             httpHeaders: ["X-Emby-Token: \(token)"],
             origin: .jellyfin(sourceID: source.id, itemID: item.id, mediaSourceID: mediaSource.id),
             sourceName: source.name,
-            jellyfinContext: context
+            jellyfinContext: context,
+            seriesKey: "\(source.id)|series|\(item.seriesID ?? item.id)",
+            episodeLabel: item.episodeLabel
         )
     }
 

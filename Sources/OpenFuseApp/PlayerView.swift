@@ -390,6 +390,16 @@ struct PlayerChrome: View {
                             }
                         }
                     }
+                    Divider()
+                    Text("字幕偏移：\(player.subtitleDelaySummary)")
+                    Button("提前 0.1 秒") { player.adjustSubtitleDelay(by: -0.1) }
+                        .disabled(player.selectedSubtitleID == nil)
+                    Button("延后 0.1 秒") { player.adjustSubtitleDelay(by: 0.1) }
+                        .disabled(player.selectedSubtitleID == nil)
+                    Button("输入秒数…") { player.beginSubtitleDelayInput() }
+                        .disabled(player.selectedSubtitleID == nil)
+                    Button("重置为 0") { player.resetSubtitleDelay() }
+                        .disabled(player.selectedSubtitleID == nil)
                 } label: {
                     Label(selectedSubtitleName ?? "字幕", systemImage: "captions.bubble")
                         .font(.system(size: 12.5, weight: .medium))
@@ -397,6 +407,7 @@ struct PlayerChrome: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+                .accessibilityLabel("字幕菜单")
 
                 Menu {
                     ForEach(player.audioTracks) { track in

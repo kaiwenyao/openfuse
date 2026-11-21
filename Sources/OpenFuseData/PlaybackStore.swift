@@ -19,6 +19,8 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
     public var sourceID: String?
     public var remotePath: String?
     public var remoteURL: String?
+    public var seriesKey: String?
+    public var episodeLabel: String?
 
     public var id: String { mediaPath }
     public var url: URL {
@@ -41,7 +43,9 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
         sourceKind: String? = nil,
         sourceID: String? = nil,
         remotePath: String? = nil,
-        remoteURL: String? = nil
+        remoteURL: String? = nil,
+        seriesKey: String? = nil,
+        episodeLabel: String? = nil
     ) {
         self.mediaPath = mediaPath
         self.fileSize = fileSize
@@ -57,6 +61,8 @@ public struct PlaybackRecord: Codable, Hashable, Sendable, Identifiable {
         self.sourceID = sourceID
         self.remotePath = remotePath
         self.remoteURL = remoteURL
+        self.seriesKey = seriesKey
+        self.episodeLabel = episodeLabel
     }
 }
 
@@ -178,7 +184,9 @@ public final class PlaybackStore: @unchecked Sendable {
         sourceKind: String? = nil,
         sourceID: String? = nil,
         remotePath: String? = nil,
-        remoteURL: String? = nil
+        remoteURL: String? = nil,
+        seriesKey: String? = nil,
+        episodeLabel: String? = nil
     ) -> PlaybackRecord {
         lock.lock(); defer { lock.unlock() }
         let key = fingerprint.resumeKey
@@ -193,6 +201,8 @@ public final class PlaybackStore: @unchecked Sendable {
         if let sourceID { record.sourceID = sourceID }
         if let remotePath { record.remotePath = remotePath }
         if let remoteURL { record.remoteURL = remoteURL }
+        if let seriesKey { record.seriesKey = seriesKey }
+        if let episodeLabel { record.episodeLabel = episodeLabel }
 
         let resolvedFinished = finished ?? ResumePolicy.isFinished(position: position, duration: record.duration)
         if resolvedFinished {

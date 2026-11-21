@@ -431,3 +431,7 @@ Esc → isFullScreen=false
 ## 16. 0.6.1：Jellyfin macOS 网格与详情
 
 见 [JELLYFIN-MACOS.md](JELLYFIN-MACOS.md)。要点：卡片比例按类型固定（库/分集 16:9，电影/剧集 2:3）；窗口内 Hero 详情 + 季集选择；社区/影评人/OMDb 评分与 People；当前 MediaSource 的大小/编码/分辨率/音轨/总码率/23.976 fps 与展开参数；AX 点击与间距命中验收。
+
+## 17. 0.7.0：字幕偏移入口、零配置资料、继续观看与加载页
+
+见 [0.7.0-EXPERIENCE.md](0.7.0-EXPERIENCE.md)。要点：底栏字幕偏移复用顶部操作；WebDAV NFO + TVmaze/Wikipedia/Wikidata 零 key 匹配；首页 4 项继续观看与剧照/帧缩略图；点击后立即加载页、可取消/重试；独立进度同步及其凭据/入口移除。

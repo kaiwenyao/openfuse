@@ -4,9 +4,15 @@ import Foundation
 import OpenFuseCore
 import UniformTypeIdentifiers
 
+struct DirectoryMatchOverride: Codable, Hashable, Sendable {
+    var title: String?
+    var year: Int?
+}
+
 enum AppRoute: Equatable {
     case home
     case player
+    case loading
     case browser(WebDAVSource)
     case jellyfinBrowser(JellyfinSource)
     case plexBrowser(PlexSource)
@@ -105,19 +111,18 @@ final class AppModel: ObservableObject {
     @Published var libraryEpisodeCount = 0
     @Published var isScanningLibrary = false
     @Published var libraryStatus: String?
-    @Published var syncStatus: String?
-    @Published var syncURLText = ""
-    @Published var syncTokenInput = ""
-    @Published var syncCAPath: String?
-    @Published var syncBusy = false
     /// Window management state (IINA-style Window menu).
     @Published var isPlayerFullScreen = false
     @Published var isAlwaysOnTop = false
     @Published var windowScaleLastAction = ""
     @Published var windowScaleContentSize = ""
-    @Published var metadataKeyStatus: String?
-    @Published var metadataBusy = false
     @Published var jellyfinDetailSelections: [String: JellyfinDetailSelection] = [:]
+    @Published var loadingTitle = ""
+    @Published var loadingSubtitle = ""
+    @Published var loadingError: String?
+    @Published var isLoadingPlayback = false
+    private var loadingGeneration = 0
+    private var lastLoadingRecord: PlaybackRecord?
     private var windowStateObservers: [NSObjectProtocol] = []
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
@@ -147,6 +152,7 @@ final class AppModel: ObservableObject {
     let libraryStore: LibraryStore
     let libraryOverrideStore: LibraryOverrideStore
     @Published var libraryOverrides: [String: LibraryOverride] = [:]
+    @Published var directoryMatchOverrides: [String: DirectoryMatchOverride] = [:]
     private var sessionJellyfinTokens: [String: String] = [:]
     private var sessionPlexTokens: [String: String] = [:]
     private var sessionSMBPasswords: [String: String] = [:]
@@ -192,15 +198,15 @@ final class AppModel: ObservableObject {
         }
         self.sources = sourceStore.sources
         self.jellyfinSources = jellyfinStore.sources
-        let defaults = UserDefaults.standard
-        self.syncURLText = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"]
-            ?? defaults.string(forKey: "openfuse.sync.url")
-            ?? ""
-        self.syncCAPath = defaults.string(forKey: "openfuse.sync.ca")
+        purgeLegacySyncConfiguration()
         self.plexSources = plexStore.sources
         self.smbSources = smbStore.sources
         self.localRoots = localRootStore.roots
         self.libraryOverrides = libraryOverrideStore.all
+        if let data = try? Data(contentsOf: directory.appendingPathComponent("webdav-matches.json")),
+           let decoded = try? JSONDecoder().decode([String: DirectoryMatchOverride].self, from: data) {
+            self.directoryMatchOverrides = decoded
+        }
         if CredentialStore.defaultMode == .keychain, CredentialStore.legacyStoreExists {
             // Old builds kept passwords in Application Support/OpenFuse/credentials.json.
             // Move them into the Keychain entry by entry and drop the plaintext
@@ -223,99 +229,83 @@ final class AppModel: ObservableObject {
     }
 
     func refreshRecent() {
-        recent = store.recentlyPlayed(limit: 24)
+        recent = store.recentlyPlayed(limit: 200)
     }
 
-    func syncPlaybackProgressFromEnvironment() async {
-        let environment = ProcessInfo.processInfo.environment
-        if let raw = environment["OPENFUSE_SYNC_URL"], let url = URL(string: raw) {
-            await runSync(
-                transport: HTTPProgressTransport(
-                    url: url,
-                    token: environment["OPENFUSE_SYNC_TOKEN"],
-                    caPath: environment["OPENFUSE_SYNC_CA"]
-                )
-            )
-            return
+    /// Thumbnail for a home history card. Server Jellyfin stills are preferred;
+    /// WebDAV uses the matched episode still/poster; local uses a frame cached
+    /// during playback. No remote video is opened from the home page.
+    /// Lazily fills WebDAV metadata for an old history record without opening
+    /// the video. Used by the home rail after an upgrade.
+    func loadRecentMetadata(for record: PlaybackRecord) async -> DirectoryMetadata? {
+        guard record.sourceKind == "webdav",
+              let sourceID = record.sourceID,
+              let path = record.remotePath,
+              let source = sources.first(where: { $0.id == sourceID }),
+              let client = webdavClient(for: source) else { return nil }
+        let directory = (path as NSString).deletingLastPathComponent
+        let key = "\(sourceID)|\(directory)"
+        if let cached = directoryMetadataCache[key] { return cached }
+        if let cached = await metadataService().cachedMetadata(sourceID: sourceID, directoryPath: directory) {
+            directoryMetadataCache[key] = cached
+            return cached
         }
-        if let path = environment["OPENFUSE_SYNC_FILE"], !path.isEmpty {
-            await runSync(transport: LocalProgressTransport(fileURL: URL(fileURLWithPath: path)))
-            return
-        }
-        if let container = environment["OPENFUSE_CLOUDKIT_CONTAINER"], !container.isEmpty {
-            await runSync(transport: CloudKitProgressTransport(containerIdentifier: container))
-            return
-        }
-        await syncWithSettings()
+        guard let entries = try? await client.list(path: directory) else { return nil }
+        return await loadDirectoryMetadata(source: source, path: directory, entries: entries)
     }
 
-    @discardableResult
-    func saveSyncSettings(urlText: String, token: String, caURL: URL?) -> Bool {
-        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
-              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
-            syncStatus = "同步地址需要 http:// 或 https://"
-            return false
-        }
-        let defaults = UserDefaults.standard
-        defaults.set(url.absoluteString, forKey: "openfuse.sync.url")
-        syncURLText = url.absoluteString
-        if let caURL {
-            let directory = Self.defaultSupportDirectory()
-            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let target = directory.appendingPathComponent("sync-ca.pem")
-            let accessing = caURL.startAccessingSecurityScopedResource()
-            defer { if accessing { caURL.stopAccessingSecurityScopedResource() } }
-            do {
-                try Data(contentsOf: caURL).write(to: target, options: .atomic)
-                syncCAPath = target.path
-                defaults.set(target.path, forKey: "openfuse.sync.ca")
-            } catch {
-                syncStatus = "CA 导入失败：\(error.localizedDescription)"
-                return false
+    func recentThumbnailURL(for record: PlaybackRecord) async -> URL? {
+        switch record.sourceKind {
+        case "jellyfin", "emby":
+            guard let sourceID = record.sourceID,
+                  let source = jellyfinSources.first(where: { $0.id == sourceID }),
+                  let client = jellyfinClient(for: source),
+                  let itemID = record.remotePath?.split(separator: "|").first.map(String.init) else {
+                return nil
             }
+            return client.imageURL(itemID: itemID, tag: nil, maxWidth: 640)
+        case "webdav":
+            guard let sourceID = record.sourceID,
+                  let path = record.remotePath else { return nil }
+            let directory = (path as NSString).deletingLastPathComponent
+            var metadata = directoryMetadataCache["\(sourceID)|\(directory)"]
+            if metadata == nil {
+                metadata = await metadataService().cachedMetadata(sourceID: sourceID, directoryPath: directory)
+            }
+            guard let metadata else { return nil }
+            let parsed = VideoNaming.parse(fileName: (path as NSString).lastPathComponent, parentFolder: directory)
+            if let season = parsed.season, let episode = parsed.episode,
+               let found = metadata.episode(season: season, number: episode),
+               let still = found.stillURL {
+                return URL(string: still)
+            }
+            if let poster = metadata.work(for: path).posterURL {
+                return URL(string: poster)
+            }
+            return nil
+        default:
+            break
         }
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            try? CredentialStore.save(password: trimmed, account: "sync-token", service: "com.openfuse.sync")
-        } else if CredentialStore.load(account: "sync-token", service: "com.openfuse.sync") == nil {
-            syncTokenInput = ""
+        let mapping = UserDefaults.standard.dictionary(forKey: "openfuse.recentThumbMap") as? [String: String] ?? [:]
+        if let path = mapping[record.mediaPath], FileManager.default.fileExists(atPath: path) {
+            return URL(fileURLWithPath: path)
         }
-        syncTokenInput = ""
-        syncStatus = "同步设置已保存：\(url.absoluteString)"
-        return true
+        return nil
     }
 
-    func syncWithSettings() async {
-        let environment = ProcessInfo.processInfo.environment
-        guard let raw = environment["OPENFUSE_SYNC_URL"].flatMap(URL.init(string:))
-                ?? URL(string: syncURLText) else {
-            syncStatus = "未配置同步地址"
-            return
+    /// Progress Sync was removed in 0.7.0. Only its dedicated settings,
+    /// credential and CA file are cleaned up; local playback history, subtitle
+    /// offsets and Jellyfin progress reporting stay untouched.
+    private func purgeLegacySyncConfiguration() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: "openfuse.sync.purged") else { return }
+        for key in ["openfuse.sync.url", "openfuse.sync.ca", "openfuse.sync.token"] {
+            defaults.removeObject(forKey: key)
         }
-        let token = environment["OPENFUSE_SYNC_TOKEN"]
-            ?? CredentialStore.load(account: "sync-token", service: "com.openfuse.sync")
-        let caPath = environment["OPENFUSE_SYNC_CA"] ?? syncCAPath
-        await runSync(
-            transport: HTTPProgressTransport(url: raw, token: token, caPath: caPath)
-        )
-    }
-
-    func saveAndSyncSettings() async {
-        syncBusy = true
-        defer { syncBusy = false }
-        if saveSyncSettings(urlText: syncURLText, token: syncTokenInput, caURL: nil) {
-            await syncWithSettings()
-        }
-    }
-
-    private func runSync(transport: ProgressSyncTransport) async {
-        do {
-            let result = try await ProgressSyncService(store: store, transport: transport).sync()
-            syncStatus = "同步完成：远端 \(result.remoteCount) 条，本地 \(result.localCount) 条，更新 \(result.changed) 条"
-            refreshRecent()
-        } catch {
-            syncStatus = "同步失败：\(error.localizedDescription)"
-        }
+        CredentialStore.delete(account: "sync-token", service: "com.openfuse.sync")
+        let directory = Self.defaultSupportDirectory()
+        try? FileManager.default.removeItem(at: directory.appendingPathComponent("sync-ca.pem"))
+        defaults.set(true, forKey: "openfuse.sync.purged")
     }
 
     func presentOpenPanel() {
@@ -386,7 +376,8 @@ final class AppModel: ObservableObject {
             item: item,
             startAt: startAt,
             store: store,
-            subtitleOffsets: subtitleOffsets
+            subtitleOffsets: subtitleOffsets,
+            supportDirectory: supportDirectory
         )
         PlaybackTrace.mark("startPlayer.modelReady")
         // Keep the menu bar's 播放/字幕/音轨 items in sync with the player without
@@ -618,31 +609,89 @@ final class AppModel: ObservableObject {
         PlaybackTrace.mark("closePlayer.end")
     }
 
+    /// The user leaves the home page in this UI event; source resolution and
+    /// player preparation happen asynchronously behind the loading page.
     func resume(_ record: PlaybackRecord) {
+        lastLoadingRecord = record
+        loadingGeneration &+= 1
+        let generation = loadingGeneration
+        loadingTitle = record.displayTitle ?? record.url.deletingPathExtension().lastPathComponent
+        loadingSubtitle = [record.episodeLabel, sourceDisplayName(for: record)]
+            .compactMap { $0 }.joined(separator: " · ")
+        loadingError = nil
+        isLoadingPlayback = true
+        beginPlaybackSession()
+        route = .loading
+        Task { await performResume(record, generation: generation) }
+    }
+
+    private func sourceDisplayName(for record: PlaybackRecord) -> String? {
+        switch record.sourceKind {
+        case "jellyfin", "emby":
+            return record.sourceID.flatMap { id in jellyfinSources.first { $0.id == id }?.name }
+        case "webdav":
+            return record.sourceID.flatMap { id in sources.first { $0.id == id }?.name }
+        case "smb":
+            return record.sourceID.flatMap { id in smbSources.first { $0.id == id }?.name }
+        case "plex":
+            return record.sourceID.flatMap { id in plexSources.first { $0.id == id }?.name }
+        default:
+            return "本地"
+        }
+    }
+
+    private func performResume(_ record: PlaybackRecord, generation: Int) async {
         if record.sourceKind == "jellyfin" || record.sourceKind == "emby",
            let sourceID = record.sourceID,
            let source = jellyfinSources.first(where: { $0.id == sourceID }) {
             let parts = (record.remotePath ?? "").split(separator: "|", maxSplits: 1).map(String.init)
-            guard let itemID = parts.first, !itemID.isEmpty else { return }
+            guard let itemID = parts.first, !itemID.isEmpty else {
+                finishLoadingFailure(generation, message: "缺少 Jellyfin 条目")
+                return
+            }
             let mediaID = parts.count > 1 ? parts[1] : nil
-            Task { await openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID) }
+            await openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID)
+        } else if record.sourceKind == "smb",
+                  let sourceID = record.sourceID,
+                  let path = record.remotePath,
+                  let source = smbSources.first(where: { $0.id == sourceID }) {
+            await openSMBItem(source: source, path: path, title: record.displayTitle ?? "SMB")
+        } else if record.sourceKind == "webdav",
+                  let sourceID = record.sourceID,
+                  let path = record.remotePath,
+                  let source = sources.first(where: { $0.id == sourceID }) {
+            await openRemote(source: source, path: path)
+        } else {
+            open(url: record.url)
+        }
+        guard generation == loadingGeneration else { return }
+        if player == nil, route == .loading {
+            finishLoadingFailure(generation, message: statusMessage ?? "无法打开这个视频")
+        }
+    }
+
+    private func finishLoadingFailure(_ generation: Int, message: String) {
+        guard generation == loadingGeneration else { return }
+        isLoadingPlayback = false
+        loadingError = message
+    }
+
+    func cancelLoading() {
+        loadingGeneration &+= 1
+        beginPlaybackSession()
+        player?.stopAndClose()
+        player = nil
+        isLoadingPlayback = false
+        loadingError = nil
+        route = .home
+    }
+
+    func retryLoading() {
+        guard let record = lastLoadingRecord else {
+            cancelLoading()
             return
         }
-        if record.sourceKind == "smb",
-           let sourceID = record.sourceID,
-           let path = record.remotePath,
-           let source = smbSources.first(where: { $0.id == sourceID }) {
-            Task { await openSMBItem(source: source, path: path, title: record.displayTitle ?? "SMB") }
-            return
-        }
-        if record.sourceKind == "webdav",
-           let sourceID = record.sourceID,
-           let path = record.remotePath,
-           let source = sources.first(where: { $0.id == sourceID }) {
-            Task { await openRemote(source: source, path: path) }
-            return
-        }
-        open(url: record.url)
+        resume(record)
     }
 
     func removeRecent(_ record: PlaybackRecord) {
@@ -1333,7 +1382,7 @@ final class AppModel: ObservableObject {
     }
 
     var tmdbAvailable: Bool {
-        metadataAPIKey(account: "tmdb-api-key", env: "OPENFUSE_TMDB_API_KEY") != nil
+        !(ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"] ?? "").isEmpty
     }
 
     func tmdbImageURL(path: String?) -> URL? {
@@ -1345,18 +1394,8 @@ final class AppModel: ObservableObject {
         return await client.candidates(title: title, year: year, kind: kind)
     }
 
-    func metadataAPIKey(account: String, env: String) -> String? {
-        if let value = ProcessInfo.processInfo.environment[env], !value.isEmpty { return value }
-        switch CredentialStore.loadDetailed(account: account, service: "com.openfuse.metadata", interactive: false) {
-        case .found(let value):
-            return value
-        default:
-            return nil
-        }
-    }
-
     private func tmdbClient() -> TMDBClient? {
-        guard let key = metadataAPIKey(account: "tmdb-api-key", env: "OPENFUSE_TMDB_API_KEY") else {
+        guard let key = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"], !key.isEmpty else {
             return nil
         }
         let base = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_BASE_URL"].flatMap(URL.init(string:))
@@ -1367,7 +1406,7 @@ final class AppModel: ObservableObject {
     }
 
     private func omdbClient() -> OMDbClient? {
-        guard let key = metadataAPIKey(account: "omdb-api-key", env: "OPENFUSE_OMDB_API_KEY") else {
+        guard let key = ProcessInfo.processInfo.environment["OPENFUSE_OMDB_API_KEY"], !key.isEmpty else {
             return nil
         }
         let base = ProcessInfo.processInfo.environment["OPENFUSE_OMDB_BASE_URL"].flatMap(URL.init(string:))
@@ -1408,21 +1447,30 @@ final class AppModel: ObservableObject {
         if let firstVideo {
             candidates.append((firstVideo.name as NSString).deletingPathExtension + ".nfo")
         }
-        for candidate in candidates {
-            let nfoPath = path.isEmpty ? candidate : path + "/" + candidate
-            if let (data, _) = try? await client.fetch(path: nfoPath),
-               let parsed = NFOReader.parse(data: data, baseURL: client.url(for: path, isDirectory: true)) {
-                nfo = parsed
-                break
+        let parentPath = (path as NSString).deletingLastPathComponent
+        var directories = [path]
+        if !parentPath.isEmpty, parentPath != path { directories.append(parentPath) }
+        for directory in directories {
+            for candidate in candidates {
+                let nfoPath = directory.isEmpty ? candidate : directory + "/" + candidate
+                if let (data, _) = try? await client.fetch(path: nfoPath),
+                   let parsed = NFOReader.parse(data: data, baseURL: client.url(for: directory, isDirectory: true)) {
+                    nfo = parsed
+                    break
+                }
             }
+            if nfo != nil { break }
         }
         let override = libraryOverrides["webdav:\(source.id):\(path)"]
+        let match = directoryMatchOverrides["\(source.id)|\(path)"]
         let metadata = await metadataService().metadata(
             sourceID: source.id,
             directoryPath: path,
             entries: entries,
             nfo: nfo,
-            override: override
+            override: override,
+            matchTitle: match?.title,
+            matchYear: match?.year
         )
         if let metadata {
             directoryMetadataCache[key] = metadata
@@ -1430,50 +1478,22 @@ final class AppModel: ObservableObject {
         return metadata
     }
 
+    func setDirectoryMatch(source: WebDAVSource, path: String, title: String, year: Int?) {
+        let key = "\(source.id)|\(path)"
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        directoryMatchOverrides[key] = DirectoryMatchOverride(
+            title: trimmed.isEmpty ? nil : trimmed,
+            year: year
+        )
+        if let data = try? JSONEncoder().encode(directoryMatchOverrides) {
+            try? data.write(to: supportDirectory.appendingPathComponent("webdav-matches.json"), options: .atomic)
+        }
+    }
+
     func refreshDirectoryMetadata(source: WebDAVSource, path: String, entries: [RemoteEntry]) async -> DirectoryMetadata? {
         directoryMetadataCache.removeValue(forKey: "\(source.id)|\(path)")
         await metadataService().clearCache(sourceID: source.id, directoryPath: path)
         return await loadDirectoryMetadata(source: source, path: path, entries: entries, force: true)
-    }
-
-    func saveMetadataKeys(tmdb: String, omdb: String) {
-        let trimmedTMDB = tmdb.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedOMDb = omdb.trimmingCharacters(in: .whitespacesAndNewlines)
-        do {
-            if !trimmedTMDB.isEmpty {
-                try CredentialStore.save(password: trimmedTMDB, account: "tmdb-api-key", service: "com.openfuse.metadata")
-            }
-            if !trimmedOMDb.isEmpty {
-                try CredentialStore.save(password: trimmedOMDb, account: "omdb-api-key", service: "com.openfuse.metadata")
-            }
-            metadataServiceInstance = nil
-            metadataKeyStatus = "已保存到 Keychain"
-        } catch {
-            metadataKeyStatus = error.localizedDescription
-        }
-    }
-
-    func validateMetadataKeys() async {
-        metadataBusy = true
-        defer { metadataBusy = false }
-        guard let tmdb = tmdbClient() else {
-            metadataKeyStatus = "未配置 TMDB API key"
-            return
-        }
-        let match = await tmdb.match(title: "Game of Thrones", year: 2011, kind: .series)
-        guard match != nil else {
-            metadataKeyStatus = "TMDB 验证失败：没有返回结果"
-            return
-        }
-        if let omdb = omdbClient() {
-            if let ratings = await omdb.ratings(imdbID: "tt0944947") {
-                metadataKeyStatus = "TMDB 正常；OMDb：\(ratings.labels.joined(separator: " · "))"
-            } else {
-                metadataKeyStatus = "TMDB 正常；OMDb 未返回评分"
-            }
-        } else {
-            metadataKeyStatus = "TMDB 正常（未配置 OMDb）"
-        }
     }
 
     private func enrichWithTMDB(_ library: ScannedLibrary) async -> (library: ScannedLibrary, matched: Int) {
@@ -2587,6 +2607,7 @@ final class PlayerModel: ObservableObject {
     let engine: MPVEngine
     private let store: PlaybackStore
     private let subtitleOffsets: SubtitleOffsetStore?
+    private let supportDirectory: URL?
     private let initialPosition: Double
 
     /// Raw mpv playhead for resume/reporting. Deliberately not `@Published`:
@@ -2689,13 +2710,15 @@ final class PlayerModel: ObservableObject {
         item: MediaItem,
         startAt: Double,
         store: PlaybackStore,
-        subtitleOffsets: SubtitleOffsetStore? = nil
+        subtitleOffsets: SubtitleOffsetStore? = nil,
+        supportDirectory: URL? = nil
     ) {
         PlaybackTrace.mark("player.init.begin")
         self.item = item
         self.initialPosition = startAt
         self.store = store
         self.subtitleOffsets = subtitleOffsets
+        self.supportDirectory = supportDirectory
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
         self.thumbnails.configure(
@@ -2807,6 +2830,7 @@ final class PlayerModel: ObservableObject {
         // position. Safe with the 0.4.x renderer (unlike `sub-pos`, which made
         // plain text disappear in the 0.5.0 pipeline).
         engine.setProperty("sub-margin-y-offset", "72")
+        scheduleRecentThumbnailCapture()
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -3443,7 +3467,9 @@ final class PlayerModel: ObservableObject {
             sourceKind: item.sourceKind,
             sourceID: item.sourceID,
             remotePath: item.remotePath,
-            remoteURL: item.isRemote ? item.playbackURL.absoluteString : nil
+            remoteURL: item.isRemote ? item.playbackURL.absoluteString : nil,
+            seriesKey: item.seriesKey,
+            episodeLabel: item.episodeLabel
         )
         if resolvedFinished {
             reportPlexStop()
@@ -3574,6 +3600,21 @@ final class PlayerModel: ObservableObject {
     func finishSession() {
         saveProgress()
         reportJellyfinStop(wait: true)
+    }
+
+    private func scheduleRecentThumbnailCapture() {
+        guard let supportDirectory else { return }
+        let directory = supportDirectory.appendingPathComponent("RecentThumbnails", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let hash = abs(item.fingerprint.resumeKey.hashValue)
+        let path = directory.appendingPathComponent("\(hash).png")
+        var mapping = UserDefaults.standard.dictionary(forKey: "openfuse.recentThumbMap") as? [String: String] ?? [:]
+        mapping[item.fingerprint.resumeKey] = path.path
+        UserDefaults.standard.set(mapping, forKey: "openfuse.recentThumbMap")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self, self.position > 0.2 else { return }
+            self.engine.screenshot(to: path)
+        }
     }
 
     func stopAndClose() {

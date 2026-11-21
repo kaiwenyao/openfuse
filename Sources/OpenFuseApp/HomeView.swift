@@ -243,30 +243,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        if arguments.contains("--home") {
+            model.route = .home
+            scheduleAutomation(model: model, arguments: arguments, reopen: {})
+            return
+        }
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
-        }
-        if arguments.contains("--validate-metadata") {
-            Task { @MainActor in
-                await model.validateMetadataKeys()
-                if let status = model.metadataKeyStatus {
-                    let dir = model.acceptanceDirectory()
-                    try? status.write(to: dir.appendingPathComponent("metadata-status.txt"), atomically: true, encoding: .utf8)
-                }
-            }
         }
         if arguments.contains("--show-settings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 model.showSettings = true
             }
-        }
-        if arguments.contains("--sync-progress") {
-            Task { @MainActor in
-                await model.syncPlaybackProgressFromEnvironment()
-                print(model.syncStatus ?? "sync finished")
-                self.scheduleQuitOnly(arguments: arguments)
-            }
-            return
         }
         if let newUser = value(after: "--jellyfin-switch-user", in: arguments) {
             let password = value(after: "--jellyfin-switch-password", in: arguments) ?? ""
@@ -717,6 +705,8 @@ struct RootView: View {
                 } else {
                     HomeView()
                 }
+            case .loading:
+                PlayerLoadingView()
             case .browser(let source):
                 WebDAVBrowserView(source: source)
             case .jellyfinBrowser(let source):
@@ -763,6 +753,8 @@ struct HomeView: View {
     @EnvironmentObject private var model: AppModel
     @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
     @State private var isDropTarget = false
+    @State private var showAllHistory = false
+    @State private var recentThumbnails: [String: URL] = [:]
     @State private var showAddJellyfin = false
     @State private var showAddPlex = false
     @State private var showAddSMB = false
@@ -994,6 +986,10 @@ struct HomeView: View {
         .padding(.bottom, 26)
     }
 
+    private var visibleRecent: [PlaybackRecord] {
+        ContinueWatching.visible(model.recent, limit: ContinueWatching.defaultLimit)
+    }
+
     private var continueWatching: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -1001,18 +997,42 @@ struct HomeView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Spacer()
-                Text("\(model.recent.count) 个条目")
+                Text("\(visibleRecent.count) 个继续观看")
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.secondary)
+                Button("查看全部") { showAllHistory = true }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(Theme.accent)
             }
             LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
-                ForEach(model.recent) { record in
-                    MediaCard(record: record) {
+                ForEach(visibleRecent) { record in
+                    MediaCard(record: record, thumbnailURL: recentThumbnails[record.id]) {
                         model.resume(record)
                     } onRemove: {
                         model.removeRecent(record)
                     }
                 }
+            }
+        }
+        .task(id: visibleRecent.map(\.id).joined(separator: "|")) {
+            var loaded: [String: URL] = [:]
+            for record in visibleRecent {
+                if let url = await model.recentThumbnailURL(for: record) {
+                    loaded[record.id] = url
+                } else if await model.loadRecentMetadata(for: record) != nil,
+                          let url = await model.recentThumbnailURL(for: record) {
+                    loaded[record.id] = url
+                }
+            }
+            recentThumbnails = loaded
+        }
+        .sheet(isPresented: $showAllHistory) {
+            RecentHistorySheet(records: ContinueWatching.history(model.recent)) { record in
+                showAllHistory = false
+                model.resume(record)
+            } onRemove: { record in
+                model.removeRecent(record)
             }
         }
     }
@@ -1440,6 +1460,7 @@ struct HomeView: View {
 
 struct MediaCard: View {
     let record: PlaybackRecord
+    var thumbnailURL: URL? = nil
     let onOpen: () -> Void
     let onRemove: () -> Void
 
@@ -1468,6 +1489,18 @@ struct MediaCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
+                    if let thumbnailURL {
+                        AsyncImage(url: thumbnailURL) { phase in
+                            if case .success(let image) = phase {
+                                image.resizable().scaledToFill()
+                            } else {
+                                Color.clear
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                    }
+                    LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .center, endPoint: .bottom)
                     HStack {
                         Spacer()
                         Image(systemName: record.isFinished ? "checkmark.circle.fill" : "play.circle.fill")
@@ -1481,7 +1514,11 @@ struct MediaCard: View {
                             .foregroundStyle(.white)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
-                        Text(record.isFinished ? "已看完" : "\(Timecode.short(record.position)) / \(Timecode.short(record.duration))")
+                            .padding(.trailing, 56)
+                        Text(record.isFinished
+                             ? "已看完"
+                             : [record.episodeLabel, "\(Timecode.short(record.position)) / \(Timecode.short(record.duration))"]
+                                .compactMap { $0 }.joined(separator: " · "))
                             .font(.system(size: 11.5, weight: .medium, design: .monospaced))
                             .foregroundStyle(.white.opacity(0.75))
                     }
@@ -1517,6 +1554,73 @@ struct MediaCard: View {
             Button("打开", action: onOpen)
             Button("从播放记录中移除", role: .destructive, action: onRemove)
         }
+    }
+}
+
+struct RecentHistorySheet: View {
+    let records: [PlaybackRecord]
+    var onOpen: (PlaybackRecord) -> Void
+    var onRemove: (PlaybackRecord) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("播放历史")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text("\(records.count) 条记录")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.secondary)
+                }
+                Spacer()
+                Button("关闭") { dismiss() }
+            }
+            .padding(18)
+            Divider()
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(records) { record in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(record.displayTitle ?? record.url.deletingPathExtension().lastPathComponent)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(Theme.text)
+                                    .lineLimit(2)
+                                HStack(spacing: 8) {
+                                    if record.isFinished {
+                                        Text("已看完")
+                                    } else {
+                                        Text("\(Timecode.short(record.position)) / \(Timecode.short(record.duration))")
+                                    }
+                                    Text(record.lastPlayedAt.formatted(date: .abbreviated, time: .shortened))
+                                }
+                                .font(.system(size: 10.5, design: .monospaced))
+                                .foregroundStyle(Theme.secondary)
+                            }
+                            Spacer()
+                            Button("播放") { onOpen(record) }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                            Button {
+                                onRemove(record)
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        Divider().overlay(Theme.stroke.opacity(0.5))
+                    }
+                }
+            }
+        }
+        .frame(width: 620, height: 520)
+        .background(Theme.background)
     }
 }
 

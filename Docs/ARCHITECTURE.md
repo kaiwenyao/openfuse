@@ -240,7 +240,9 @@ Docs/                   决策、素材、验收、证据
 - URL/CA 存 UserDefaults，Token 存 Keychain；无 env 时读设置。
 - 持久化设置驱动 HTTPS 续播11.0；UI 点击/公共 CA/并发未验证。
 
-## 同步设置 UI（M6f）
+## 同步设置
+
+> **0.7.0 已移除。** 以下为历史记录；当前构建没有同步入口或凭据读取。 UI（M6f）
 
 - URL/CA 存 UserDefaults，Token 存 Keychain；CA 复制到 Application Support。
 - 设置驱动 HTTPS 同步；UI 点击/公共 CA/并发未验证。
@@ -514,6 +516,8 @@ Docs/                   决策、素材、验收、证据
 - 未做直连浏览、Plex 进度回写、字幕、真实服务器、Emby/SMB/HDR。
 
 ## 跨设备进度同步（M4p）
+
+> **0.7.0 已移除。** 以下为历史记录；当前构建没有同步入口或凭据读取。
 
 - `PlaybackStore.merge(records:)`：新 `lastPlayedAt` 优先；JSON 日期改为带毫秒 ISO8601。
 - `ProgressSyncTransport`：`LocalProgressTransport`（共享文件，验收）/ `CloudKitProgressTransport`（私有库 `PlaybackProgress` CKRecord）。

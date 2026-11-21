@@ -17,6 +17,9 @@ struct WebDAVBrowserView: View {
     @State private var directoryMetadata: DirectoryMetadata?
     @State private var metadataLoading = false
     @State private var showMetadataDetail = false
+    @State private var showMatchEditor = false
+    @State private var matchTitle = ""
+    @State private var matchYear = ""
 
     private var pathStack: [String] { nav.stack }
     private var currentPath: String { nav.path }
@@ -37,6 +40,9 @@ struct WebDAVBrowserView: View {
         }
         .task(id: currentPath) {
             await load(path: currentPath)
+        }
+        .sheet(isPresented: $showMatchEditor) {
+            matchEditor
         }
         .overlay {
             if showMetadataDetail, let directoryMetadata {
@@ -171,7 +177,7 @@ struct WebDAVBrowserView: View {
                         metadata: metadata,
                         loading: metadataLoading,
                         onDetail: { showMetadataDetail = true },
-                        onRefresh: { Task { await refreshMetadata() } }
+                        onRefresh: { openMatchEditor() }
                     )
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
@@ -192,7 +198,7 @@ struct WebDAVBrowserView: View {
                             .font(.system(size: 11))
                             .foregroundStyle(Theme.secondary)
                         Spacer()
-                        Button("重新匹配") { Task { await refreshMetadata() } }
+                        Button("重新匹配") { openMatchEditor() }
                             .buttonStyle(.plain)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(Theme.accent)
@@ -246,6 +252,11 @@ struct WebDAVBrowserView: View {
                             .font(.system(size: 13.5, weight: .medium))
                             .foregroundStyle(Theme.text)
                             .lineLimit(1)
+                    } else if entry.isPlayableVideo, let work = metadataWork(for: entry) {
+                        Text(work.title)
+                            .font(.system(size: 13.5, weight: .medium))
+                            .foregroundStyle(Theme.text)
+                            .lineLimit(1)
                     } else {
                         Text(entry.name)
                             .font(.system(size: 13.5, weight: .medium))
@@ -260,6 +271,9 @@ struct WebDAVBrowserView: View {
                             if let resolution = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath).resolution {
                                 Text(resolution)
                             }
+                        } else if let work = metadataWork(for: entry), let overview = work.overview, !overview.isEmpty {
+                            Text(overview).lineLimit(1)
+                            if let year = work.year { Text(String(year)) }
                         } else {
                             Text(byteString(entry.size))
                             if let modified = entry.modifiedAt {
@@ -351,11 +365,53 @@ struct WebDAVBrowserView: View {
         entries.contains { !$0.isDirectory && $0.isPlayableVideo }
     }
 
+    private func metadataWork(for entry: RemoteEntry) -> DirectoryWorkMetadata? {
+        guard let directoryMetadata else { return nil }
+        if directoryMetadata.movieWorks?.isEmpty == false {
+            return directoryMetadata.work(for: entry.path)
+        }
+        return nil
+    }
+
     private func metadataEpisode(for entry: RemoteEntry) -> DirectoryEpisodeMetadata? {
         guard entry.isPlayableVideo, let directoryMetadata else { return nil }
         let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath)
         guard let season = parsed.season, let episode = parsed.episode else { return nil }
         return directoryMetadata.episode(season: season, number: episode)
+    }
+
+    private func openMatchEditor() {
+        matchTitle = directoryMetadata?.work.title ?? (currentPath as NSString).lastPathComponent
+        matchYear = directoryMetadata?.work.year.map(String.init) ?? ""
+        showMatchEditor = true
+    }
+
+    private var matchEditor: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("重新匹配影视资料")
+                .font(.system(size: 17, weight: .semibold))
+            Text("输入正确的片名与年份；保存后会清除本目录缓存并重新匹配，选择会按来源和目录持久化。")
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            TextField("片名", text: $matchTitle)
+            TextField("年份（可选）", text: $matchYear)
+            HStack {
+                Spacer()
+                Button("取消") { showMatchEditor = false }
+                Button("保存并重新匹配") {
+                    let year = Int(matchYear.trimmingCharacters(in: .whitespaces))
+                    model.setDirectoryMatch(source: source, path: currentPath, title: matchTitle, year: year)
+                    showMatchEditor = false
+                    Task { await refreshMetadata() }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(matchTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 440)
+        .background(Theme.background)
     }
 
     private func refreshMetadata() async {
@@ -372,8 +428,9 @@ private struct DirectoryMetadataHeader: View {
     var onRefresh: () -> Void
 
     var body: some View {
+        let multiMovie = (metadata.movieWorks?.count ?? 0) > 1
         HStack(alignment: .top, spacing: 14) {
-            if let poster = metadata.work.posterURL, let url = URL(string: poster) {
+            if !multiMovie, let poster = metadata.work.posterURL, let url = URL(string: poster) {
                 AsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fill)
                 } placeholder: {
@@ -384,16 +441,16 @@ private struct DirectoryMetadataHeader: View {
             }
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    Text(metadata.work.title)
+                    Text(multiMovie ? "影片文件夹" : metadata.work.title)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Theme.text)
-                    if let year = metadata.work.year {
+                    if !multiMovie, let year = metadata.work.year {
                         Text(String(year))
                             .font(.system(size: 12))
                             .foregroundStyle(Theme.secondary)
                     }
                 }
-                if !metadata.work.allRatings.isEmpty {
+                if !multiMovie, !metadata.work.allRatings.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(metadata.work.allRatings, id: \.self) { rating in
                             Text(rating)
@@ -405,17 +462,19 @@ private struct DirectoryMetadataHeader: View {
                         }
                     }
                 }
-                if let overview = metadata.work.overview, !overview.isEmpty {
+                if !multiMovie, let overview = metadata.work.overview, !overview.isEmpty {
                     Text(overview)
                         .font(.system(size: 11))
                         .foregroundStyle(Theme.secondary)
                         .lineLimit(2)
                 }
                 HStack(spacing: 10) {
-                    Button(metadata.work.kind == .movie ? "影片详情" : "剧集详情") { onDetail() }
+                    if !multiMovie {
+                        Button(metadata.work.kind == .movie ? "影片详情" : "剧集详情") { onDetail() }
                         .buttonStyle(.plain)
                         .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(Theme.accent)
+                    }
                     Button {
                         onRefresh()
                     } label: {
@@ -426,7 +485,7 @@ private struct DirectoryMetadataHeader: View {
                     .foregroundStyle(Theme.secondary)
                     .disabled(loading)
                     Spacer()
-                    Text(metadata.work.kind == .movie ? "影片" : "剧集")
+                    Text(multiMovie ? "\(metadata.movieWorks?.count ?? 0) 部影片" : (metadata.work.kind == .movie ? "影片" : "剧集"))
                         .font(.system(size: 10))
                         .foregroundStyle(Theme.secondary.opacity(0.7))
                 }
@@ -540,6 +599,7 @@ private struct DirectoryDetailPanel: View {
     var onClose: () -> Void
 
     var body: some View {
+        let multiMovie = (metadata.movieWorks?.count ?? 0) > 1
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(metadata.work.kind == .movie ? "影片详情" : "剧集详情")
@@ -574,7 +634,7 @@ private struct DirectoryDetailPanel: View {
                                     .foregroundStyle(Theme.secondary)
                             }
                             .font(.system(size: 12))
-                            if !metadata.work.allRatings.isEmpty {
+                            if !multiMovie, !metadata.work.allRatings.isEmpty {
                                 HStack(spacing: 6) {
                                     ForEach(metadata.work.allRatings, id: \.self) { rating in
                                         Text(rating)
@@ -590,7 +650,7 @@ private struct DirectoryDetailPanel: View {
                                     .font(.system(size: 10, design: .monospaced))
                                     .foregroundStyle(Theme.secondary.opacity(0.7))
                             }
-                            if let overview = metadata.work.overview, !overview.isEmpty {
+                            if !multiMovie, let overview = metadata.work.overview, !overview.isEmpty {
                                 Text(overview)
                                     .font(.system(size: 12))
                                     .foregroundStyle(Theme.secondary)

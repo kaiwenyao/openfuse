@@ -850,3 +850,17 @@
 | 2160p 版本 | seed + 参数 | 4.5 GB / 3840×2160 / 24 fps，版本与目标一致 | `movie-2160/` | 通过（seed） |
 | 缺图/缺评分 | 无图样片 | 主题底色 Hero，评分/演职员省略 | `missing-art/` | 通过 |
 | 全屏详情 | AXFullScreen | 1512 宽全屏布局 | `e2-fullscreen/` | 通过 |
+
+### M7i 0.7.0 零配置资料/继续观看/加载页（2026-11-21，实机 fixture）
+
+| 测试 | 素材 | 结果 | 证据 | 状态 |
+| --- | --- | --- | --- | --- |
+| AoT E01/E02 零 key 资料 | TVmaze + zh Wikipedia | 中文剧名/2013、不同集简介与剧照 | `build/0.7.0/webdav-aot.png` | 通过 |
+| 同目录多电影 | Inception/Interstellar | 每片独立标题/简介/年份 | `webdav-movies.png` | 通过 |
+| NFO 父目录 | 无公开匹配标题 | NFO 标题/年份/简介独立显示 | `webdav-nfo.png` | 通过 |
+| 首页 4 项 | 17 条历史 | 排除完成/零进度/重复、同剧一集、倒序 4 项 | `home-17-history.png` | 通过 |
+| 延迟加载页 | PROPFIND 3 s | 点击立即离开首页，显示片名/集号/取消 | `loading-delayed.png` | 通过 |
+| 加载失败页 | 缺密码/路径不存在 | 错误 + 重试/返回 | `loading-error.png` | 通过 |
+| 旧同步配置 | defaults + env | 0 请求，url key 删除 | `sync-removal.txt` | 通过 |
+| 字幕偏移 | 顶部/底栏共用 | 三功能回归、持久化 | `build/three-features` | 通过（底栏未截图） |
+| Jellyfin 零 key | 服务器 fixture | 资料/图片/详情 | `build/0.7.0/jellyfin` | 通过 |
