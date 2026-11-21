@@ -72,6 +72,13 @@ enum LibraryWatchState: Sendable {
     case watched
 }
 
+struct JellyfinDetailSelection: Codable, Hashable, Sendable {
+    var detailItemID: String
+    var seasonID: String?
+    var episodeID: String?
+    var mediaSourceID: String?
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     static let shared = AppModel()
@@ -110,6 +117,7 @@ final class AppModel: ObservableObject {
     @Published var windowScaleContentSize = ""
     @Published var metadataKeyStatus: String?
     @Published var metadataBusy = false
+    @Published var jellyfinDetailSelections: [String: JellyfinDetailSelection] = [:]
     private var windowStateObservers: [NSObjectProtocol] = []
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
@@ -1040,9 +1048,69 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func jellyfinImageURL(source: JellyfinSource, item: JellyfinItem, maxWidth: Int = 480) -> URL? {
+    func jellyfinImageURL(
+        source: JellyfinSource,
+        item: JellyfinItem,
+        type: String = "Primary",
+        tag: String? = nil,
+        index: Int = 0,
+        maxWidth: Int = 480
+    ) -> URL? {
         guard let client = jellyfinClient(for: source) else { return nil }
-        return client.imageURL(itemID: item.id, tag: item.primaryImageTag, maxWidth: maxWidth)
+        let resolvedTag: String?
+        switch type {
+        case "Backdrop": resolvedTag = tag ?? item.backdropImageTag
+        default: resolvedTag = tag ?? item.primaryImageTag
+        }
+        return client.imageURL(itemID: item.id, tag: resolvedTag, type: type, index: index, maxWidth: maxWidth)
+    }
+
+    func jellyfinPersonImageURL(source: JellyfinSource, person: JellyfinPerson, maxWidth: Int = 160) -> URL? {
+        guard let client = jellyfinClient(for: source), let id = person.personID else { return nil }
+        return client.imageURL(itemID: id, tag: person.primaryImageTag, maxWidth: maxWidth)
+    }
+
+    func jellyfinExternalRatings(for item: JellyfinItem) async -> [String] {
+        guard let imdbID = item.imdbID, let omdb = omdbClient() else { return [] }
+        guard let ratings = await omdb.ratings(imdbID: imdbID) else { return [] }
+        return ratings.labels
+    }
+
+    // MARK: - Jellyfin detail selection (restored after the player closes)
+
+    func jellyfinDetailItemID(for source: JellyfinSource) -> String? {
+        jellyfinDetailSelections[source.id]?.detailItemID
+    }
+
+    func jellyfinSelectedEpisodeID(for source: JellyfinSource) -> String? {
+        jellyfinDetailSelections[source.id]?.episodeID
+    }
+
+    func jellyfinSelectedSeasonID(for source: JellyfinSource) -> String? {
+        jellyfinDetailSelections[source.id]?.seasonID
+    }
+
+    func jellyfinSelectedMediaSourceID(for source: JellyfinSource) -> String? {
+        jellyfinDetailSelections[source.id]?.mediaSourceID
+    }
+
+    func setJellyfinDetailSelection(
+        source: JellyfinSource,
+        detailItemID: String?,
+        seasonID: String? = nil,
+        episodeID: String? = nil,
+        mediaSourceID: String? = nil
+    ) {
+        if let detailItemID {
+            jellyfinDetailSelections[source.id] = JellyfinDetailSelection(
+                detailItemID: detailItemID,
+                seasonID: seasonID,
+                episodeID: episodeID,
+                mediaSourceID: mediaSourceID
+            )
+        } else {
+            jellyfinDetailSelections.removeValue(forKey: source.id)
+        }
     }
 
     func jellyfinClient(for source: JellyfinSource) -> JellyfinClient? {

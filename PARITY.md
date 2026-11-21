@@ -835,3 +835,18 @@
 | 电影资料 | mock | 盗梦空间 2010、IMDb 8.8/烂番茄 87%/Metacritic 74 | `build/three-features/movie` | 通过 |
 | 断网/无密钥 | 同上 | 目录仍显示“未匹配到影视资料”，开片/选集正常 | `build/three-features/offline` | 通过 |
 | Jellyfin 本季列表 | 无服务器 | 代码路径已接，未实测 | — | 未测 |
+
+### M7h 0.6.1 Jellyfin 网格与详情页（2026-11-21，本机 fixture）
+
+| 测试 | 素材 | 结果 | 证据 | 状态 |
+| --- | --- | --- | --- | --- |
+| 媒体库网格 1180 宽 | 三个库入口 | 16:9 卡片各自列内、无跨列、文件夹中文标签 | `build/jellyfin-macos/grid/ui.png` | 通过 |
+| 媒体库网格 980 宽 | 同上 | 3 列仍不越界 | `grid-narrow/ui.png` | 通过 |
+| 卡片/间距命中 | AX hit test | 卡1 为 AXButton、间距为 AXOpaqueProviderGroup、卡2 为 AXButton | `ax-grid/hit-test.txt` | 通过 |
+| 点库入口 | AXPress 百度网盘电影 | 进入电影库，两张 2:3 海报 | `ax-grid/movie-library.png` | 通过 |
+| Fargo S1E1→E2 | AXPress S01E02 | 标题/选集/评分/播放目标/参数切到 E2 | `e2-click/`、`e2/Acceptance` | 通过 |
+| 点播放 | AXPress 播放 | 播放器标题“公鸡王子”，position>0 | `play-e2/report.json` | 通过 |
+| 退出播放器恢复 | E2 播放后 Esc | 详情恢复 E2 | 手动 debug | 通过（目视/JSON） |
+| 2160p 版本 | seed + 参数 | 4.5 GB / 3840×2160 / 24 fps，版本与目标一致 | `movie-2160/` | 通过（seed） |
+| 缺图/缺评分 | 无图样片 | 主题底色 Hero，评分/演职员省略 | `missing-art/` | 通过 |
+| 全屏详情 | AXFullScreen | 1512 宽全屏布局 | `e2-fullscreen/` | 通过 |

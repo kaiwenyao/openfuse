@@ -427,3 +427,7 @@ Esc → isFullScreen=false
 - 播放器选集列表复用同一缓存：`configureFolderVideos` 命中 `directoryMetadataCache` 时立即替换集名/概要/剧照，否则异步拉取后更新；剧照缺图时回退作品海报。
 - `SettingsView` 新增 TMDB/OMDb 密钥（Keychain，账号 `tmdb-api-key`/`omdb-api-key`，环境变量优先），保存/验证；`--validate-metadata` 验收路径输出“TMDB 正常；OMDb：IMDb 9.2/10 · 烂番茄 89% · Metacritic 86/100”。
 - 证据：`Scripts/run-three-features.sh` 用本地 mock TMDB/OMDb 验证 GoT S1（E1/E2/E10、评分、剧照）、AoT S03E13“地下室”、电影《盗梦空间》，以及无密钥时目录/开片/选集回退；截图见 `build/three-features/{got,aot,movie,offline}`。
+
+## 16. 0.6.1：Jellyfin macOS 网格与详情
+
+见 [JELLYFIN-MACOS.md](JELLYFIN-MACOS.md)。要点：卡片比例按类型固定（库/分集 16:9，电影/剧集 2:3）；窗口内 Hero 详情 + 季集选择；社区/影评人/OMDb 评分与 People；当前 MediaSource 的大小/编码/分辨率/音轨/总码率/23.976 fps 与展开参数；AX 点击与间距命中验收。

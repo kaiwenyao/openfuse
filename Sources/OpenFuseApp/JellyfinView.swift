@@ -10,7 +10,8 @@ struct JellyfinBrowserView: View {
     @State private var entries: [JellyfinItem] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var selectedItem: JellyfinItem?
+    @State private var detailItemID: String?
+    @State private var detailEpisodeID: String?
 
     private var currentParentID: String? { path.last?.id }
 
@@ -18,34 +19,50 @@ struct JellyfinBrowserView: View {
         VStack(spacing: 0) {
             header
             Divider().overlay(Theme.stroke)
-            content
+            if let detailItemID {
+                JellyfinDetailPage(
+                    source: source,
+                    itemID: detailItemID,
+                    initialEpisodeID: detailEpisodeID,
+                    onBack: {
+                        self.detailItemID = nil
+                        self.detailEpisodeID = nil
+                        model.setJellyfinDetailSelection(source: source, detailItemID: nil)
+                    }
+                )
+            } else {
+                content
+            }
         }
         .background(Theme.background.ignoresSafeArea())
         .onAppear {
             path = model.jellyfinPath(for: source)
+            detailItemID = model.jellyfinDetailItemID(for: source)
+            detailEpisodeID = model.jellyfinSelectedEpisodeID(for: source)
         }
         .onChange(of: path) { _, newValue in
             model.setJellyfinPath(newValue, for: source)
         }
         .task(id: currentParentID ?? "root") {
+            guard detailItemID == nil else { return }
             await load()
-        }
-        .sheet(item: $selectedItem) { item in
-            JellyfinDetailView(source: source, item: item)
-                .environmentObject(model)
         }
     }
 
     private var header: some View {
         HStack(spacing: 14) {
             Button {
-                if path.isEmpty {
+                if detailItemID != nil {
+                    detailItemID = nil
+                    detailEpisodeID = nil
+                    model.setJellyfinDetailSelection(source: source, detailItemID: nil)
+                } else if path.isEmpty {
                     model.route = .home
                 } else {
                     path.removeLast()
                 }
             } label: {
-                Image(systemName: path.isEmpty ? "xmark" : "chevron.left")
+                Image(systemName: (detailItemID == nil && path.isEmpty) ? "xmark" : "chevron.left")
                     .font(.system(size: 13, weight: .bold))
                     .frame(width: 30, height: 30)
                     .background(Theme.elevated, in: Circle())
@@ -69,12 +86,16 @@ struct JellyfinBrowserView: View {
             Spacer()
 
             HStack(spacing: 4) {
-                Button(source.name) { path = [] }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.secondary)
+                Button(source.name) {
+                    detailItemID = nil
+                    path = []
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.secondary)
                 ForEach(Array(path.enumerated()), id: \.element.id) { index, item in
                     Text("/").foregroundStyle(Theme.secondary.opacity(0.6))
                     Button(item.name) {
+                        detailItemID = nil
                         path = Array(path.prefix(through: index))
                     }
                     .buttonStyle(.plain)
@@ -131,9 +152,9 @@ struct JellyfinBrowserView: View {
         } else {
             ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: 20)],
+                    columns: [GridItem(.adaptive(minimum: 190, maximum: 240), spacing: 20)],
                     alignment: .leading,
-                    spacing: 22
+                    spacing: 24
                 ) {
                     ForEach(entries) { entry in
                         card(entry)
@@ -145,37 +166,63 @@ struct JellyfinBrowserView: View {
         }
     }
 
+    /// Library entries and episodes use 16:9 art; movies and show posters use
+    /// 2:3. The aspect container belongs to the grid cell so an AsyncImage's
+    /// intrinsic size can never stretch across neighbouring columns.
+    private func cardAspect(_ entry: JellyfinItem) -> CGFloat {
+        switch entry.itemType {
+        case "Movie", "Series", "Season":
+            return 2.0 / 3.0
+        default:
+            return 16.0 / 9.0
+        }
+    }
+
     private func card(_ entry: JellyfinItem) -> some View {
         Button {
             if entry.isFolder {
                 guard !isLoading, path.last?.id != entry.id else { return }
                 path.append(entry)
             } else if entry.isPlayable {
-                selectedItem = entry
+                detailItemID = entry.id
+                detailEpisodeID = entry.itemType == "Episode" ? entry.id : nil
+                model.setJellyfinDetailSelection(
+                    source: source,
+                    detailItemID: entry.id,
+                    seasonID: entry.seasonID,
+                    episodeID: detailEpisodeID
+                )
             }
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Theme.elevated)
-                    if let imageURL = model.jellyfinImageURL(source: source, item: entry) {
+                    if let imageURL = model.jellyfinImageURL(
+                        source: source,
+                        item: entry,
+                        maxWidth: entry.itemType == "Movie" || entry.itemType == "Series" ? 400 : 640
+                    ) {
                         AsyncImage(url: imageURL) { phase in
                             switch phase {
                             case .success(let image):
-                                image.resizable().aspectRatio(contentMode: .fill)
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .clipped()
+                            case .failure:
+                                placeholderIcon(entry)
                             default:
-                                Image(systemName: entry.isFolder ? "folder.fill" : "film.fill")
-                                    .font(.system(size: 30))
-                                    .foregroundStyle(Theme.secondary)
+                                ProgressView().controlSize(.small)
                             }
                         }
                     } else {
-                        Image(systemName: entry.isFolder ? "folder.fill" : "film.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(Theme.secondary)
+                        placeholderIcon(entry)
                     }
                 }
-                .aspectRatio(2 / 3, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(cardAspect(entry), contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(alignment: .bottomLeading) {
                     if entry.isPlayable {
@@ -188,21 +235,33 @@ struct JellyfinBrowserView: View {
                             .padding(9)
                     }
                 }
+                .clipped()
 
                 Text(entry.name)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(Theme.text)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text(entry.subtitle)
                     .font(.system(size: 10.5))
                     .foregroundStyle(Theme.secondary)
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!entry.isFolder && !entry.isPlayable)
+        .accessibilityLabel("\(entry.name) \(entry.subtitle)")
+    }
+
+    @ViewBuilder
+    private func placeholderIcon(_ entry: JellyfinItem) -> some View {
+        Image(systemName: entry.isFolder ? "folder.fill" : "film.fill")
+            .font(.system(size: 28))
+            .foregroundStyle(Theme.secondary)
     }
 
     private func load() async {
@@ -219,158 +278,6 @@ struct JellyfinBrowserView: View {
             entries = []
         }
         isLoading = false
-    }
-}
-
-struct JellyfinDetailView: View {
-    @EnvironmentObject private var model: AppModel
-    @Environment(\.dismiss) private var dismiss
-
-    let source: JellyfinSource
-    let item: JellyfinItem
-
-    @State private var detail: JellyfinItem?
-    @State private var playback: JellyfinPlaybackInfo?
-    @State private var selectedSourceID: String?
-    @State private var isBusy = false
-    @State private var errorMessage: String?
-
-    private var currentDetail: JellyfinItem { detail ?? item }
-    private var currentSource: JellyfinMediaSource? {
-        guard let playback, !playback.mediaSources.isEmpty else { return nil }
-        return playback.mediaSources.first { $0.id == selectedSourceID } ?? playback.mediaSources[0]
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 18) {
-                poster
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(currentDetail.name)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Theme.text)
-                    if let label = currentDetail.episodeLabel {
-                        Text([label, currentDetail.seriesName].compactMap { $0 }.joined(separator: " · "))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Theme.secondary)
-                    }
-                    if let year = currentDetail.productionYear {
-                        Text("\(year)")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Theme.secondary)
-                    }
-                    if let runtime = currentDetail.runTimeTicks, runtime > 0 {
-                        Text(Timecode.long(JellyfinTicks.seconds(runtime)))
-                            .font(.system(size: 11.5, design: .monospaced))
-                            .foregroundStyle(Theme.secondary)
-                    }
-                    if let overview = currentDetail.overview, !overview.isEmpty {
-                        Text(overview)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Theme.secondary)
-                            .lineLimit(5)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                Spacer()
-                Button("关闭") { dismiss() }
-            }
-
-            if let playback, playback.mediaSources.count > 1 {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("版本")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.secondary)
-                    Picker("版本", selection: Binding(
-                        get: { selectedSourceID ?? playback.mediaSources[0].id },
-                        set: { selectedSourceID = $0 }
-                    )) {
-                        ForEach(playback.mediaSources) { media in
-                            Text(versionLabel(media)).tag(media.id)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-            }
-
-            if let currentSource {
-                Text("\(currentSource.name) · \(currentSource.container?.uppercased() ?? "—") · \(versionMethod(currentSource))")
-                    .font(.system(size: 10.5, design: .monospaced))
-                    .foregroundStyle(Theme.secondary)
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.red)
-            }
-
-            HStack {
-                Spacer()
-                if isBusy { ProgressView().controlSize(.small) }
-                Button("播放") {
-                    Task { await play() }
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(isBusy || playback == nil)
-            }
-        }
-        .padding(22)
-        .frame(width: 640)
-        .background(Theme.background)
-        .task { await loadDetail() }
-    }
-
-    private var poster: some View {
-        Group {
-            if let url = model.jellyfinImageURL(source: source, item: currentDetail, maxWidth: 220) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image): image.resizable().aspectRatio(contentMode: .fill)
-                    default: Color.black
-                    }
-                }
-            } else {
-                Color.black
-            }
-        }
-        .frame(width: 150, height: 225)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private func versionLabel(_ media: JellyfinMediaSource) -> String {
-        var parts = [media.name]
-        if let container = media.container { parts.append(container.uppercased()) }
-        return parts.joined(separator: " · ")
-    }
-
-    private func versionMethod(_ media: JellyfinMediaSource) -> String {
-        if media.supportsDirectPlay == true { return "直连" }
-        if media.supportsDirectStream == true { return "重封装" }
-        return "转码"
-    }
-
-    private func loadDetail() async {
-        isBusy = true
-        do {
-            async let detailTask = model.loadJellyfinItem(source: source, itemID: item.id)
-            async let playbackTask = model.loadJellyfinPlaybackInfo(source: source, itemID: item.id)
-            detail = try await detailTask
-            playback = try await playbackTask
-            selectedSourceID = playback?.mediaSources.first?.id
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isBusy = false
-    }
-
-    private func play() async {
-        guard let playback, let selectedSourceID else { return }
-        isBusy = true
-        await model.openJellyfinItem(source: source, itemID: item.id, preferredMediaSourceID: selectedSourceID)
-        isBusy = false
-        dismiss()
     }
 }
 

@@ -475,6 +475,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ?? (isEmby ? "Emby" : "Jellyfin")
             let itemID = self.value(after: "--jellyfin-item", in: arguments)
             let mediaID = self.value(after: "--jellyfin-media", in: arguments)
+            let detailID = self.value(after: "--jellyfin-detail", in: arguments)
+            let detailEpisodeID = self.value(after: "--jellyfin-episode", in: arguments)
+            let detailSeasonID = self.value(after: "--jellyfin-season", in: arguments)
             Task { @MainActor in
                 guard let source = await model.addJellyfinSource(
                     name: name,
@@ -491,7 +494,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.finishLibraryLaunch(model: model, arguments: arguments)
                     return
                 }
-                if let itemID, !arguments.contains("--jellyfin-browse") {
+                if let detailID {
+                    model.setJellyfinDetailSelection(
+                        source: source,
+                        detailItemID: detailID,
+                        seasonID: detailSeasonID,
+                        episodeID: detailEpisodeID,
+                        mediaSourceID: mediaID
+                    )
+                    model.browseJellyfin(source)
+                } else if let itemID, !arguments.contains("--jellyfin-browse") {
                     await model.openJellyfinItem(source: source, itemID: itemID, preferredMediaSourceID: mediaID)
                 } else {
                     model.browseJellyfin(source)

@@ -97,6 +97,15 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
     public var userData: JellyfinUserData?
     public var dateCreated: String?
     public var mediaSources: [JellyfinMediaSource]?
+    public var premiereDate: String?
+    public var communityRating: Double?
+    public var criticRating: Double?
+    public var officialRating: String?
+    public var genres: [String]?
+    public var people: [JellyfinPerson]?
+    public var providerIDs: [String: String]?
+    public var backdropImageTags: [String]?
+    public var seriesPrimaryImageTag: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -116,6 +125,71 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         case userData = "UserData"
         case dateCreated = "DateCreated"
         case mediaSources = "MediaSources"
+        case premiereDate = "PremiereDate"
+        case communityRating = "CommunityRating"
+        case criticRating = "CriticRating"
+        case officialRating = "OfficialRating"
+        case genres = "Genres"
+        case people = "People"
+        case providerIDs = "ProviderIds"
+        case backdropImageTags = "BackdropImageTags"
+        case seriesPrimaryImageTag = "SeriesPrimaryImageTag"
+    }
+
+    public init(
+        id: String = "",
+        name: String = "",
+        itemType: String? = nil,
+        collectionType: String? = nil,
+        parentID: String? = nil,
+        seriesID: String? = nil,
+        seriesName: String? = nil,
+        seasonID: String? = nil,
+        indexNumber: Int? = nil,
+        parentIndexNumber: Int? = nil,
+        productionYear: Int? = nil,
+        overview: String? = nil,
+        runTimeTicks: Int64? = nil,
+        imageTags: [String: String]? = nil,
+        userData: JellyfinUserData? = nil,
+        dateCreated: String? = nil,
+        mediaSources: [JellyfinMediaSource]? = nil,
+        premiereDate: String? = nil,
+        communityRating: Double? = nil,
+        criticRating: Double? = nil,
+        officialRating: String? = nil,
+        genres: [String]? = nil,
+        people: [JellyfinPerson]? = nil,
+        providerIDs: [String: String]? = nil,
+        backdropImageTags: [String]? = nil,
+        seriesPrimaryImageTag: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.itemType = itemType
+        self.collectionType = collectionType
+        self.parentID = parentID
+        self.seriesID = seriesID
+        self.seriesName = seriesName
+        self.seasonID = seasonID
+        self.indexNumber = indexNumber
+        self.parentIndexNumber = parentIndexNumber
+        self.productionYear = productionYear
+        self.overview = overview
+        self.runTimeTicks = runTimeTicks
+        self.imageTags = imageTags
+        self.userData = userData
+        self.dateCreated = dateCreated
+        self.mediaSources = mediaSources
+        self.premiereDate = premiereDate
+        self.communityRating = communityRating
+        self.criticRating = criticRating
+        self.officialRating = officialRating
+        self.genres = genres
+        self.people = people
+        self.providerIDs = providerIDs
+        self.backdropImageTags = backdropImageTags
+        self.seriesPrimaryImageTag = seriesPrimaryImageTag
     }
 
     public var isPlayable: Bool {
@@ -126,7 +200,26 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         ["Series", "Season", "Folder", "CollectionFolder", "BoxSet"].contains(itemType ?? "")
     }
 
-    public var primaryImageTag: String? { imageTags?["Primary"] }
+    public var primaryImageTag: String? { imageTags?["Primary"] ?? seriesPrimaryImageTag }
+    public var backdropImageTag: String? { backdropImageTags?.first }
+    public var imdbID: String? { providerIDs?["Imdb"] ?? providerIDs?["IMDB"] ?? providerIDs?["imdb"] }
+
+    public var communityRatingLabel: String? {
+        guard let communityRating else { return nil }
+        return String(format: "社区评分 %.1f/10", communityRating)
+    }
+
+    public var criticRatingLabel: String? {
+        guard let criticRating else { return nil }
+        return String(format: "影评人 %.0f%%", criticRating)
+    }
+
+    public var releaseLabel: String? {
+        if let premiereDate, premiereDate.count >= 10 {
+            return String(premiereDate.prefix(10))
+        }
+        return productionYear.map(String.init)
+    }
 
     public var episodeLabel: String? {
         guard itemType == "Episode", let index = indexNumber else { return nil }
@@ -144,15 +237,39 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
             return "电视剧"
         case "Season":
             return ["第 \(indexNumber ?? 1) 季", seriesName].compactMap { $0 }.joined(separator: " · ")
-        case "CollectionFolder":
+        case "CollectionFolder", "Folder":
             switch collectionType {
             case "movies": return "电影库"
             case "tvshows": return "电视剧库"
-            default: return "媒体库"
+            default: return "文件夹"
+            }
+        case "UserView":
+            switch collectionType {
+            case "movies": return "电影库"
+            case "tvshows": return "电视剧库"
+            default: return "文件夹"
             }
         default:
-            return itemType ?? "条目"
+            return "文件夹"
         }
+    }
+}
+
+public struct JellyfinPerson: Codable, Hashable, Sendable, Identifiable {
+    public var personID: String?
+    public var name: String
+    public var role: String?
+    public var type: String?
+    public var primaryImageTag: String?
+
+    public var id: String { personID ?? name }
+
+    enum CodingKeys: String, CodingKey {
+        case personID = "Id"
+        case name = "Name"
+        case role = "Role"
+        case type = "Type"
+        case primaryImageTag = "PrimaryImageTag"
     }
 }
 
@@ -172,6 +289,14 @@ public struct JellyfinMediaStream: Codable, Hashable, Sendable {
     public var profile: String?
     public var videoRange: String?
     public var videoRangeType: String?
+    public var bitRate: Int64?
+    public var frameRate: Double?
+    public var bitDepth: Int?
+    public var colorSpace: String?
+    public var colorTransfer: String?
+    public var colorPrimaries: String?
+    public var channelLayout: String?
+    public var codecTag: String?
 
     enum CodingKeys: String, CodingKey {
         case type = "Type"
@@ -189,6 +314,14 @@ public struct JellyfinMediaStream: Codable, Hashable, Sendable {
         case profile = "Profile"
         case videoRange = "VideoRange"
         case videoRangeType = "VideoRangeType"
+        case bitRate = "BitRate"
+        case frameRate = "FrameRate"
+        case bitDepth = "BitDepth"
+        case colorSpace = "ColorSpace"
+        case colorTransfer = "ColorTransfer"
+        case colorPrimaries = "ColorPrimaries"
+        case channelLayout = "ChannelLayout"
+        case codecTag = "CodecTag"
     }
 }
 
@@ -202,6 +335,8 @@ public struct JellyfinMediaSource: Codable, Identifiable, Hashable, Sendable {
     public var directStreamURL: String?
     public var transcodingURL: String?
     public var mediaStreams: [JellyfinMediaStream]?
+    public var size: Int64?
+    public var bitrate: Int64?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -213,6 +348,8 @@ public struct JellyfinMediaSource: Codable, Identifiable, Hashable, Sendable {
         case directStreamURL = "DirectStreamUrl"
         case transcodingURL = "TranscodingUrl"
         case mediaStreams = "MediaStreams"
+        case size = "Size"
+        case bitrate = "Bitrate"
     }
 }
 
@@ -482,10 +619,15 @@ public actor JellyfinClient {
 
     public func item(id: String) async throws -> JellyfinItem {
         guard let userID = source.userID else { throw JellyfinError.unauthorized }
-        return try await perform(
-            request(url(path: "Users/\(userID)/Items/\(id)")),
-            as: JellyfinItem.self
+        var components = URLComponents(
+            url: url(path: "Users/\(userID)/Items/\(id)"),
+            resolvingAgainstBaseURL: false
         )
+        components?.queryItems = [
+            URLQueryItem(name: "Fields", value: "People,ProviderIds,BackdropImageTags,CommunityRating,CriticRating,OfficialRating,Genres,PremiereDate,MediaSources,MediaStreams,SeriesPrimaryImageTag,Overview,RunTimeTicks,ProductionYear,SeriesName,IndexNumber,ParentIndexNumber,SeasonId,SeriesId,ImageTags,UserData"),
+        ]
+        guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
+        return try await perform(request(requestURL), as: JellyfinItem.self)
     }
 
     public func playbackInfo(itemID: String) async throws -> JellyfinPlaybackInfo {
@@ -540,8 +682,18 @@ public actor JellyfinClient {
         return components?.url
     }
 
-    public nonisolated func imageURL(itemID: String, tag: String?, maxWidth: Int = 480) -> URL? {
-        var components = URLComponents(url: url(path: "Items/\(itemID)/Images/Primary"), resolvingAgainstBaseURL: false)
+    public nonisolated func imageURL(
+        itemID: String,
+        tag: String?,
+        type: String = "Primary",
+        index: Int = 0,
+        maxWidth: Int = 480
+    ) -> URL? {
+        let suffix = index > 0 ? "/\(index)" : ""
+        var components = URLComponents(
+            url: url(path: "Items/\(itemID)/Images/\(type)\(suffix)"),
+            resolvingAgainstBaseURL: false
+        )
         var query = [
             URLQueryItem(name: "maxWidth", value: String(maxWidth)),
             URLQueryItem(name: "quality", value: "90"),
