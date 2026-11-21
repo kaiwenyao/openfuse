@@ -48,6 +48,7 @@ def ensure_assets(video_source):
         "p1": ("200x200", "0x5b4a3a", "MARTIN"),
         "p2": ("200x200", "0x3a4a5b", "BILLY"),
         "p3": ("200x200", "0x4a5b3a", "ADAM"),
+        "trickplay": ("640x180", "0x2a3a5a", "TRICK"),
     }
     for name, (size, color, label) in specs.items():
         path = os.path.join(IMG, name + ".png")
@@ -146,6 +147,8 @@ DETAILS = {
         "Genres": ["科幻", "动作"], "ProviderIds": {"Imdb": "tt1375666"},
         "ImageTags": {"Primary": "inception"}, "BackdropImageTags": ["inception-bd"],
         "People": PEOPLE,
+        "Trickplay": {"src-inception-1080": {"Width": 320, "Height": 180, "TileWidth": 2,
+                                              "TileHeight": 1, "Interval": 5000, "ThumbnailCount": 2}},
     },
 }
 for ep in EPISODES:
@@ -301,6 +304,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path.startswith("/videos/"):
             self.stream(); return
+        trick_match = re.match(r"/Items/([^/]+)/Trickplay/(\d+)/(\d+)\.jpg", path)
+        if trick_match:
+            self.image("trickplay.png"); return
         image_match = re.match(r"/Items/([^/]+)/Images/(Primary|Backdrop)(?:/(\d+))?", path)
         if image_match:
             self.image(image_for(image_match.group(1), image_match.group(2))); return

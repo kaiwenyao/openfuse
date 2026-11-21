@@ -106,6 +106,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
     public var providerIDs: [String: String]?
     public var backdropImageTags: [String]?
     public var seriesPrimaryImageTag: String?
+    public var trickplay: [String: JellyfinTrickplay]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -134,6 +135,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         case providerIDs = "ProviderIds"
         case backdropImageTags = "BackdropImageTags"
         case seriesPrimaryImageTag = "SeriesPrimaryImageTag"
+        case trickplay = "Trickplay"
     }
 
     public init(
@@ -162,7 +164,8 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         people: [JellyfinPerson]? = nil,
         providerIDs: [String: String]? = nil,
         backdropImageTags: [String]? = nil,
-        seriesPrimaryImageTag: String? = nil
+        seriesPrimaryImageTag: String? = nil,
+        trickplay: [String: JellyfinTrickplay]? = nil
     ) {
         self.id = id
         self.name = name
@@ -190,6 +193,7 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         self.providerIDs = providerIDs
         self.backdropImageTags = backdropImageTags
         self.seriesPrimaryImageTag = seriesPrimaryImageTag
+        self.trickplay = trickplay
     }
 
     public var isPlayable: Bool {
@@ -252,6 +256,47 @@ public struct JellyfinItem: Codable, Identifiable, Hashable, Sendable {
         default:
             return "文件夹"
         }
+    }
+}
+
+public struct JellyfinTrickplay: Codable, Hashable, Sendable {
+    public var width: Int
+    public var height: Int
+    public var tileWidth: Int
+    public var tileHeight: Int
+    public var interval: Int
+    public var thumbnailCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case width = "Width"
+        case height = "Height"
+        case tileWidth = "TileWidth"
+        case tileHeight = "TileHeight"
+        case interval = "Interval"
+        case thumbnailCount = "ThumbnailCount"
+    }
+
+    public init(width: Int, height: Int, tileWidth: Int, tileHeight: Int, interval: Int, thumbnailCount: Int) {
+        self.width = width
+        self.height = height
+        self.tileWidth = tileWidth
+        self.tileHeight = tileHeight
+        self.interval = interval
+        self.thumbnailCount = thumbnailCount
+    }
+}
+
+public struct JellyfinTrickplaySource: Sendable {
+    public var info: JellyfinTrickplay
+    public var itemID: String
+    public var baseURL: URL
+    public var token: String
+
+    public init(info: JellyfinTrickplay, itemID: String, baseURL: URL, token: String) {
+        self.info = info
+        self.itemID = itemID
+        self.baseURL = baseURL
+        self.token = token
     }
 }
 
@@ -624,7 +669,7 @@ public actor JellyfinClient {
             resolvingAgainstBaseURL: false
         )
         components?.queryItems = [
-            URLQueryItem(name: "Fields", value: "People,ProviderIds,BackdropImageTags,CommunityRating,CriticRating,OfficialRating,Genres,PremiereDate,MediaSources,MediaStreams,SeriesPrimaryImageTag,Overview,RunTimeTicks,ProductionYear,SeriesName,IndexNumber,ParentIndexNumber,SeasonId,SeriesId,ImageTags,UserData"),
+            URLQueryItem(name: "Fields", value: "People,ProviderIds,BackdropImageTags,CommunityRating,CriticRating,OfficialRating,Genres,PremiereDate,MediaSources,MediaStreams,SeriesPrimaryImageTag,Overview,RunTimeTicks,ProductionYear,SeriesName,IndexNumber,ParentIndexNumber,SeasonId,SeriesId,ImageTags,UserData,Trickplay"),
         ]
         guard let requestURL = components?.url else { throw JellyfinError.invalidURL }
         return try await perform(request(requestURL), as: JellyfinItem.self)

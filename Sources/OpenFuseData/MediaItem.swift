@@ -219,6 +219,7 @@ public struct JellyfinPlaybackContext: Sendable {
     public var runtime: Double
     public var startPosition: Double
     public var mediaStreams: [JellyfinMediaStream]
+    public var trickplay: JellyfinTrickplay?
 
     public init(
         sourceID: String,
@@ -232,7 +233,8 @@ public struct JellyfinPlaybackContext: Sendable {
         playSessionID: String?,
         runtime: Double,
         startPosition: Double,
-        mediaStreams: [JellyfinMediaStream] = []
+        mediaStreams: [JellyfinMediaStream] = [],
+        trickplay: JellyfinTrickplay? = nil
     ) {
         self.sourceID = sourceID
         self.serverKind = serverKind
@@ -246,6 +248,7 @@ public struct JellyfinPlaybackContext: Sendable {
         self.runtime = runtime
         self.startPosition = startPosition
         self.mediaStreams = mediaStreams
+        self.trickplay = trickplay
     }
 }
 
@@ -299,7 +302,8 @@ public extension MediaItem {
             playSessionID: playbackInfo.playSessionID,
             runtime: runtime,
             startPosition: start,
-            mediaStreams: mediaSource.mediaStreams ?? []
+            mediaStreams: mediaSource.mediaStreams ?? [],
+            trickplay: item.trickplay?[mediaSource.id] ?? item.trickplay?.values.first
         )
         let fingerprint = MediaFingerprint(
             path: "\(source.kind)://\(source.id)/\(item.id)/\(mediaSource.id)",

@@ -169,7 +169,7 @@ cold_p50=$(report "$dir/report.json" thumbnailBenchmarkP50)
 cold_p95=$(report "$dir/report.json" thumbnailBenchmarkP95)
 hot_p95=$(report "$dir/report.json" thumbnailBenchmarkHotP95)
 samples=$(report "$dir/report.json" thumbnailBenchmarkSamples)
-check "$samples" "15" "benchmark samples"
+check "$samples" "30" "benchmark samples"
 echo "thumbnail benchmark: cold P50=${cold_p50}ms P95=${cold_p95}ms hot P95=${hot_p95}ms"
 
 # --- fullscreen -----------------------------------------------------------

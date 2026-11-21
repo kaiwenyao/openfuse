@@ -2813,7 +2813,12 @@ final class PlayerModel: ObservableObject {
             itemKey: item.fingerprint.resumeKey,
             url: item.playbackURL,
             headers: item.httpHeaders,
-            cacheDirectory: supportDirectory?.appendingPathComponent("ThumbnailCache", isDirectory: true)
+            cacheDirectory: supportDirectory?.appendingPathComponent("ThumbnailCache", isDirectory: true),
+            trickplay: item.jellyfinContext.flatMap { context in
+                context.trickplay.map {
+                    JellyfinTrickplaySource(info: $0, itemID: context.itemID, baseURL: context.baseURL, token: context.token)
+                }
+            }
         )
         let storedVolume = UserDefaults.standard.object(forKey: PlayerModel.volumeDefaultsKey) as? Double
         let initialVolume = VolumeMath.clamp(storedVolume ?? 100)
@@ -3705,14 +3710,14 @@ final class PlayerModel: ObservableObject {
             Task { @MainActor in
                 var cold: [Double] = []
                 var hot: [Double] = []
-                let times = (0..<30).map { index in
-                    self.duration * (0.08 + 0.8 * Double(index % 15) / 15.0)
+                let times = (0..<60).map { index in
+                    self.duration * (0.05 + 0.9 * Double(index % 30) / 30.0)
                 }
                 for (index, time) in times.enumerated() {
                     let started = CFAbsoluteTimeGetCurrent()
                     _ = await self.thumbnails.image(for: time)
                     let ms = (CFAbsoluteTimeGetCurrent() - started) * 1000
-                    if index < 15 { cold.append(ms) } else { hot.append(ms) }
+                    if index < 30 { cold.append(ms) } else { hot.append(ms) }
                 }
                 func percentile(_ values: [Double], _ p: Double) -> Int {
                     guard !values.isEmpty else { return 0 }

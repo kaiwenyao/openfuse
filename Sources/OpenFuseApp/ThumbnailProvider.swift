@@ -1,5 +1,6 @@
 import AppKit
 import OpenFuseCore
+import OpenFuseData
 
 /// Generates scrubber hover previews with a private, audio-less libmpv engine
 /// that writes one decoded frame as a PNG (`vo=image`, `frames=1`). The
@@ -43,6 +44,7 @@ final class ThumbnailProvider {
     private var cacheOrder: [String] = []
     private var failures: Set<String> = []
     private var diskDirectory: URL?
+    private var trickplay: JellyfinTrickplaySource?
     private(set) var lastSource = ""
     private(set) var lastElapsedMs = 0
     private(set) var diskHits = 0
@@ -64,7 +66,17 @@ final class ThumbnailProvider {
         try? FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
     }
 
-    func configure(itemKey: String, url: URL, headers: [String], cacheDirectory: URL? = nil) {
+    func configure(
+        itemKey: String,
+        url: URL,
+        headers: [String],
+        cacheDirectory: URL? = nil,
+        trickplay: JellyfinTrickplaySource? = nil
+    ) {
+        self.trickplay = trickplay
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+            print("[thumb] configure trickplay=\(trickplay != nil) item=\(itemKey)")
+        }
         if let cacheDirectory {
             diskDirectory = cacheDirectory
             try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
@@ -153,6 +165,22 @@ final class ThumbnailProvider {
         if failures.contains(key) { return nil }
         if let disk = await cachedOrDiskImage(for: time) { return disk }
         let started = CFAbsoluteTimeGetCurrent()
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+            print("[thumb] try trickplay=\(trickplay != nil) bucket=\(bucket)")
+        }
+        if let trickplay, let image = await trickplayImage(for: time, source: trickplay, key: key) {
+            insert(image, key: key)
+            lastSource = "trickplay"
+            lastElapsedMs = Int((CFAbsoluteTimeGetCurrent() - started) * 1000)
+            if let directory = diskDirectory,
+               let tiff = image.tiffRepresentation,
+               let rep = NSBitmapImageRep(data: tiff),
+               let data = rep.representation(using: .png, properties: [:]) {
+                let file = Self.diskURL(directory: directory, item: config.itemKey, bucket: bucket)
+                try? data.write(to: file, options: .atomic)
+            }
+            return image
+        }
 
         let start = ThumbnailMath.bucketTime(bucket)
         let gen = generation
@@ -191,6 +219,42 @@ final class ThumbnailProvider {
             Self.pruneDisk(directory: directory)
         }
         return image
+    }
+
+    private func trickplayImage(for time: Double, source: JellyfinTrickplaySource, key: String) async -> NSImage? {
+        let info = source.info
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+            print("[thumb] trickplay start time=\(time) item=\(source.itemID)")
+        }
+        guard info.interval > 0, info.width > 0, info.height > 0,
+              info.tileWidth > 0, info.tileHeight > 0 else { return nil }
+        let index = Int((max(0, time) * 1000) / Double(info.interval))
+        guard index >= 0, index < info.thumbnailCount else { return nil }
+        let path = "Items/\(source.itemID)/Trickplay/\(info.width)/\(index).jpg"
+        let url = source.baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.setValue(source.token, forHTTPHeaderField: "X-Emby-Token")
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let tile = NSImage(data: data) else {
+            if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+                print("[thumb] trickplay fetch failed \(url.absoluteString)")
+            }
+            return nil
+        }
+        var rect = CGRect.zero
+        if let cg = tile.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
+            let col = index % info.tileWidth
+            let row = index / info.tileWidth
+            let crop = CGRect(x: col * info.width, y: row * info.height, width: info.width, height: info.height)
+            if let cropped = cg.cropping(to: crop) {
+                if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1" {
+                    print("[thumb] trickplay index=\(index) tile=\(url.lastPathComponent)")
+                }
+                return NSImage(cgImage: cropped, size: NSSize(width: info.width, height: info.height))
+            }
+        }
+        return tile
     }
 
     private static func key(item: String, bucket: Int) -> String {
