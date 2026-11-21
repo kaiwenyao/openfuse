@@ -114,6 +114,16 @@ struct OpenFuseApp: App {
                             }
                         }
                     }
+                    Divider()
+                    Text("字幕偏移：\(model.player?.subtitleDelaySummary ?? "同步（0 秒）")")
+                    Button("提前 0.1 秒") { model.player?.adjustSubtitleDelay(by: -0.1) }
+                        .disabled(model.player?.selectedSubtitleID == nil)
+                    Button("延后 0.1 秒") { model.player?.adjustSubtitleDelay(by: 0.1) }
+                        .disabled(model.player?.selectedSubtitleID == nil)
+                    Button("输入秒数…") { model.player?.beginSubtitleDelayInput() }
+                        .disabled(model.player?.selectedSubtitleID == nil)
+                    Button("重置为 0") { model.player?.resetSubtitleDelay() }
+                        .disabled(model.player?.selectedSubtitleID == nil)
                 }
                 .disabled(model.player == nil)
                 Menu("音轨") {
@@ -235,6 +245,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
+        }
+        if arguments.contains("--validate-metadata") {
+            Task { @MainActor in
+                await model.validateMetadataKeys()
+                if let status = model.metadataKeyStatus {
+                    let dir = model.acceptanceDirectory()
+                    try? status.write(to: dir.appendingPathComponent("metadata-status.txt"), atomically: true, encoding: .utf8)
+                }
+            }
         }
         if arguments.contains("--show-settings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -585,6 +604,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            let delay = value(after: "--switch-after", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 model.open(url: URL(fileURLWithPath: switchPath))
+            }
+        }
+        if arguments.contains("--folder-list") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                model.player?.showFolderList = true
+            }
+        }
+        if let needle = value(after: "--folder-select", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                if let video = model.player?.folderVideos.first(where: { $0.fileName.contains(needle) }) {
+                    model.player?.onSelectFolderVideo?(video)
+                }
+            }
+        }
+        if let delay = value(after: "--sub-delay", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                model.player?.setSubtitleDelay(delay)
             }
         }
         if let seek = value(after: "--seek", in: arguments).flatMap(Double.init) {

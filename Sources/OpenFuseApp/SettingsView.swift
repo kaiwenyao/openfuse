@@ -8,6 +8,8 @@ struct SettingsView: View {
     @AppStorage(AppTheme.storageKey) private var appearance = AppTheme.light.rawValue
     @State private var switchTarget: JellyfinSource?
     @State private var showCAImporter = false
+    @State private var tmdbKey = ""
+    @State private var omdbKey = ""
 
     private var appearanceBinding: Binding<String> {
         Binding(
@@ -59,6 +61,35 @@ struct SettingsView: View {
                                 Button("切换用户…") { switchTarget = source }
                             }
                         }
+                    }
+                }
+                Section("影视资料") {
+                    SecureField("TMDB API key（留空保持已保存值）", text: $tmdbKey)
+                    SecureField("OMDb API key（可选，留空保持）", text: $omdbKey)
+                    Text("密钥保存在登录 Keychain；TMDB 用于影片/剧集资料，OMDb 用于 IMDb、烂番茄和 Metacritic 评分。只发送片名、年份和公开 ID。")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(Theme.secondary)
+                    HStack {
+                        if model.metadataBusy { ProgressView().controlSize(.small) }
+                        if let status = model.metadataKeyStatus {
+                            Text(status)
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(Theme.secondary)
+                                .lineLimit(2)
+                        }
+                        Spacer()
+                        Button("保存") {
+                            model.saveMetadataKeys(tmdb: tmdbKey, omdb: omdbKey)
+                            tmdbKey = ""
+                            omdbKey = ""
+                        }
+                        Button("保存并验证") {
+                            model.saveMetadataKeys(tmdb: tmdbKey, omdb: omdbKey)
+                            tmdbKey = ""
+                            omdbKey = ""
+                            Task { await model.validateMetadataKeys() }
+                        }
+                        .disabled(model.metadataBusy)
                     }
                 }
                 Section("进度同步") {

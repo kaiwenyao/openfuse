@@ -400,3 +400,30 @@ Esc → isFullScreen=false
 截图：`build/window-management/fullscreen/window.png`。80 个单元测试（WindowScaleMath 4 个）全部通过；缩略图、交互、控制栏、缓存、播放管线回归通过。
 
 已知边界：未实现 IINA 的画中画（⌃⌘P）与 Music Mode（libmpv 渲染路径）；窗口管理作用于唯一的播放器窗口，不支持多窗口。
+
+## 15. 0.6.0：字幕偏移、同文件夹选集、WebDAV 影视资料
+
+### 15.1 字幕时间偏移
+
+- `SubtitleOffsetText` 负责方向文案与解析：`+1.5 → 延后 1.5 秒`、`-1 → 提前 1 秒`，0 → 同步；`parse` 接受 `1.5`、`+1.5`、`-1`、`1,5`、带数字的短语。
+- `SubtitleOffsetStore` 独立存 `subtitle-offsets.json`，键为 `mediaKey|trackID`，不修改 `playback.json`，旧播放记录无需迁移。媒体键是 `MediaFingerprint.resumeKey`，字幕键是轨道稳定 ID（外挂为路径/URL，内嵌为 mpv 轨道 ID）。
+- `PlayerModel.selectSubtitle` 设置轨道后立即 `restoreSubtitleDelay`；`setSubtitleDelay` 在 mpv `sub-delay` 上即时生效并写回当前轨道。菜单显示“字幕偏移：延后 1.5 秒”，提供 ±0.1、输入、重置；输入面板同时显示方向说明；修改后 HUD 提示 1.4 s。
+- 证据：`Scripts/run-three-features.sh` 用 10.0 s cue 的样片验证 +1.5 → 12.0 s 可见、10.2 s 隐藏、-1.0 → 9.5 s 可见；AoT S03E13 简繁 ASS 分别保存 1.5/2.0，重开与来回切换保持。
+- 兼容内嵌/外挂 SRT/ASS：偏移只依赖 `sub-delay` 与稳定轨道 ID；重新打开/拖动不会重置。自动下一集是新 PlayerModel，读取下一集自己的键，无记录默认 0。
+
+### 15.2 同文件夹选集
+
+- `FolderVideoBuilder` 只列当前文件直接父目录：本地枚举一层目录；WebDAV 直接复用 `openRemote(entry:siblings:)` 的 PROPFIND 结果；过滤非视频（字幕/图片/NFO）与子目录；按路径去重。
+- `VideoNaming` 解析 `SxxExx`、`1x02`、年份、清晰度与版本标签；`folderTitles` 形如 `S1 · E2 — The Kingsroad`；同集多文件保留两份，并追加 `1080p`/`2160p` 等区分；排序按季、集、标题自然序（E2 < E10）。
+- 控制栏按钮打开 `FolderListOverlay`（窗口/全屏同一 SwiftUI 层），当前项勾选并通过 `ScrollViewReader` 定位；点击调用 `AppModel.switchToFolderVideo`：先保存进度，再走现有 `open`/`openRemote`/`openJellyfinItem`；`sessionGeneration` 令牌保证快速连点以最后一次为准；窗口不重建，全屏状态保持。
+- WebDAV 从浏览进入或续播时都带 siblings，因此“继续观看”打开也得到同一列表。Jellyfin 若能通过 `libraryEpisodes` 定位同季，则显示“本季剧集”。
+- 证据：本地 4 项排序/多版本/勾选、切 E10；WebDAV 切 E10 并保持全屏；播放器列表使用 TMDB 集名/剧照（见 15.3）。
+
+### 15.3 WebDAV 目录影视资料
+
+- `TMDBClient` 新增 `details`（movie/tv + external_ids）与 `season`（整季一次）；`OMDbClient` 通过 IMDb ID 取实际 IMDb/烂番茄/Metacritic；`RemoteMetadataService` 从目录内文件名/父目录/Season 目录推断作品与季，先按年份选候选，再拉详情与整季，按 `sourceID+标题+季` 缓存 24 h（`MetadataCache/*.json`）。
+- 目录资料只发送片名/年份/IMDb ID，不发送 WebDAV 地址、路径或凭据。NFO（`tvshow.nfo`/`movie.nfo`/`<video>.nfo`）与 `LibraryOverride` 逐字段优先，TMDB 只补缺失字段。无密钥/断网/失败时 `loadDirectoryMetadata` 返回 nil，浏览、开片、选集不受影响。
+- 浏览页头部显示海报、标题、年份、简介、评分与“影片详情/剧集详情”；每集行显示 SxxEyy、集名、本集概要、剧照与清晰度；详情浮层显示整剧/电影资料、评分来源与单集列表（含单集 TMDB 评分，未返回则留空）。
+- 播放器选集列表复用同一缓存：`configureFolderVideos` 命中 `directoryMetadataCache` 时立即替换集名/概要/剧照，否则异步拉取后更新；剧照缺图时回退作品海报。
+- `SettingsView` 新增 TMDB/OMDb 密钥（Keychain，账号 `tmdb-api-key`/`omdb-api-key`，环境变量优先），保存/验证；`--validate-metadata` 验收路径输出“TMDB 正常；OMDb：IMDb 9.2/10 · 烂番茄 89% · Metacritic 86/100”。
+- 证据：`Scripts/run-three-features.sh` 用本地 mock TMDB/OMDb 验证 GoT S1（E1/E2/E10、评分、剧照）、AoT S03E13“地下室”、电影《盗梦空间》，以及无密钥时目录/开片/选集回退；截图见 `build/three-features/{got,aot,movie,offline}`。

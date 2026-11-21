@@ -14,6 +14,9 @@ struct WebDAVBrowserView: View {
     /// Identifies the in-flight listing so a slow response for a directory the
     /// user already left cannot overwrite the newer one.
     @State private var loadToken = UUID()
+    @State private var directoryMetadata: DirectoryMetadata?
+    @State private var metadataLoading = false
+    @State private var showMetadataDetail = false
 
     private var pathStack: [String] { nav.stack }
     private var currentPath: String { nav.path }
@@ -34,6 +37,22 @@ struct WebDAVBrowserView: View {
         }
         .task(id: currentPath) {
             await load(path: currentPath)
+        }
+        .overlay {
+            if showMetadataDetail, let directoryMetadata {
+                ZStack {
+                    Color.black.opacity(0.28)
+                        .ignoresSafeArea()
+                        .onTapGesture { showMetadataDetail = false }
+                    DirectoryDetailPanel(
+                        metadata: directoryMetadata,
+                        onClose: { showMetadataDetail = false }
+                    )
+                    .frame(width: 680, height: 600)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .shadow(color: .black.opacity(0.35), radius: 24, y: 10)
+                }
+            }
         }
     }
 
@@ -146,15 +165,52 @@ struct WebDAVBrowserView: View {
                 .foregroundStyle(Theme.secondary)
             Spacer()
         } else {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(entries) { entry in
-                        row(entry)
-                        Divider().overlay(Theme.stroke.opacity(0.5))
+            VStack(spacing: 0) {
+                if let metadata = directoryMetadata {
+                    DirectoryMetadataHeader(
+                        metadata: metadata,
+                        loading: metadataLoading,
+                        onDetail: { showMetadataDetail = true },
+                        onRefresh: { Task { await refreshMetadata() } }
+                    )
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+                } else if metadataLoading, hasVideos {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("正在匹配影视资料…")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Theme.secondary)
+                        Spacer()
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 10)
+                } else if hasVideos {
+                    HStack {
+                        Text("未匹配到影视资料，单击仍可播放")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.secondary)
+                        Spacer()
+                        Button("重新匹配") { Task { await refreshMetadata() } }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 8)
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 8)
+
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(entries) { entry in
+                            row(entry)
+                            Divider().overlay(Theme.stroke.opacity(0.5))
+                        }
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                }
             }
         }
     }
@@ -172,15 +228,38 @@ struct WebDAVBrowserView: View {
             }
         } label: {
             HStack(spacing: 12) {
-                entryIcon(entry)
+                if entry.isPlayableVideo, let episode = metadataEpisode(for: entry),
+                   let still = episode.stillURL ?? directoryMetadata?.work.posterURL {
+                    AsyncImage(url: URL(string: still)) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 5).fill(Theme.elevated)
+                    }
+                    .frame(width: 80, height: 45)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                } else {
+                    entryIcon(entry)
+                }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(entry.name)
-                        .font(.system(size: 13.5, weight: .medium))
-                        .foregroundStyle(entry.isDirectory || entry.isPlayableVideo ? Theme.text : Theme.secondary)
-                        .lineLimit(1)
+                    if let episode = metadataEpisode(for: entry) {
+                        Text("\(episode.label) — \(episode.title)")
+                            .font(.system(size: 13.5, weight: .medium))
+                            .foregroundStyle(Theme.text)
+                            .lineLimit(1)
+                    } else {
+                        Text(entry.name)
+                            .font(.system(size: 13.5, weight: .medium))
+                            .foregroundStyle(entry.isDirectory || entry.isPlayableVideo ? Theme.text : Theme.secondary)
+                            .lineLimit(1)
+                    }
                     HStack(spacing: 8) {
                         if entry.isDirectory {
                             Text("文件夹")
+                        } else if let episode = metadataEpisode(for: entry), let overview = episode.overview, !overview.isEmpty {
+                            Text(overview).lineLimit(1)
+                            if let resolution = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath).resolution {
+                                Text(resolution)
+                            }
                         } else {
                             Text(byteString(entry.size))
                             if let modified = entry.modifiedAt {
@@ -243,6 +322,120 @@ struct WebDAVBrowserView: View {
         }
         guard loadToken == token else { return }
         isLoading = false
+        directoryMetadata = nil
+        if hasVideos {
+            metadataLoading = true
+            Task {
+                let metadata = await model.loadDirectoryMetadata(source: source, path: path, entries: entries)
+                guard loadToken == token else { return }
+                directoryMetadata = metadata
+                metadataLoading = false
+                if let metadata,
+                   ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_METADATA"] == "1" {
+                    let dir = AppModel.shared.acceptanceDirectory()
+                    if let data = try? JSONEncoder.openFuse.encode(metadata) {
+                        try? data.write(to: dir.appendingPathComponent("metadata.json"), options: .atomic)
+                    }
+                }
+                if metadata != nil,
+                   ProcessInfo.processInfo.environment["OPENFUSE_SHOW_METADATA_DETAIL"] == "1" {
+                    showMetadataDetail = true
+                }
+            }
+        } else {
+            metadataLoading = false
+        }
+    }
+
+    private var hasVideos: Bool {
+        entries.contains { !$0.isDirectory && $0.isPlayableVideo }
+    }
+
+    private func metadataEpisode(for entry: RemoteEntry) -> DirectoryEpisodeMetadata? {
+        guard entry.isPlayableVideo, let directoryMetadata else { return nil }
+        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath)
+        guard let season = parsed.season, let episode = parsed.episode else { return nil }
+        return directoryMetadata.episode(season: season, number: episode)
+    }
+
+    private func refreshMetadata() async {
+        metadataLoading = true
+        directoryMetadata = await model.refreshDirectoryMetadata(source: source, path: currentPath, entries: entries)
+        metadataLoading = false
+    }
+}
+
+private struct DirectoryMetadataHeader: View {
+    let metadata: DirectoryMetadata
+    let loading: Bool
+    var onDetail: () -> Void
+    var onRefresh: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            if let poster = metadata.work.posterURL, let url = URL(string: poster) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 8).fill(Theme.elevated)
+                }
+                .frame(width: 62, height: 93)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Text(metadata.work.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.text)
+                    if let year = metadata.work.year {
+                        Text(String(year))
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.secondary)
+                    }
+                }
+                if !metadata.work.allRatings.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(metadata.work.allRatings, id: \.self) { rating in
+                            Text(rating)
+                                .font(.system(size: 10, weight: .semibold))
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Theme.elevated, in: Capsule())
+                                .foregroundStyle(Theme.text)
+                        }
+                    }
+                }
+                if let overview = metadata.work.overview, !overview.isEmpty {
+                    Text(overview)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.secondary)
+                        .lineLimit(2)
+                }
+                HStack(spacing: 10) {
+                    Button(metadata.work.kind == .movie ? "影片详情" : "剧集详情") { onDetail() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                    Button {
+                        onRefresh()
+                    } label: {
+                        if loading { ProgressView().controlSize(.small) } else { Text("刷新资料") }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.secondary)
+                    .disabled(loading)
+                    Spacer()
+                    Text(metadata.work.kind == .movie ? "影片" : "剧集")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.secondary.opacity(0.7))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.stroke, lineWidth: 1))
     }
 }
 
@@ -338,5 +531,113 @@ struct AddSourceSheet: View {
         } else {
             errorMessage = model.statusMessage ?? "连接失败"
         }
+    }
+}
+
+
+private struct DirectoryDetailPanel: View {
+    let metadata: DirectoryMetadata
+    var onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(metadata.work.kind == .movie ? "影片详情" : "剧集详情")
+                    .font(.system(size: 17, weight: .semibold))
+                Spacer()
+                Button("关闭") { onClose() }
+            }
+            .padding(18)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 16) {
+                        if let poster = metadata.work.posterURL, let url = URL(string: poster) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 10).fill(Theme.elevated)
+                            }
+                            .frame(width: 120, height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(metadata.work.title)
+                                .font(.system(size: 20, weight: .semibold))
+                            HStack(spacing: 8) {
+                                if let year = metadata.work.year {
+                                    Text(String(year)).foregroundStyle(Theme.secondary)
+                                }
+                                Text(metadata.work.kind == .movie ? "电影" : "电视剧")
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                            .font(.system(size: 12))
+                            if !metadata.work.allRatings.isEmpty {
+                                HStack(spacing: 6) {
+                                    ForEach(metadata.work.allRatings, id: \.self) { rating in
+                                        Text(rating)
+                                            .font(.system(size: 10.5, weight: .semibold))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Theme.elevated, in: Capsule())
+                                    }
+                                }
+                            }
+                            if let imdbID = metadata.work.imdbID {
+                                Text("IMDb ID \(imdbID)")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(Theme.secondary.opacity(0.7))
+                            }
+                            if let overview = metadata.work.overview, !overview.isEmpty {
+                                Text(overview)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    if !metadata.episodes.isEmpty {
+                        Text("剧集")
+                            .font(.system(size: 14, weight: .semibold))
+                        LazyVStack(spacing: 10) {
+                            ForEach(metadata.episodes.sorted { ($0.season, $0.number) < ($1.season, $1.number) }, id: \.key) { episode in
+                                HStack(alignment: .top, spacing: 10) {
+                                    if let still = episode.stillURL, let url = URL(string: still) {
+                                        AsyncImage(url: url) { image in
+                                            image.resizable().aspectRatio(contentMode: .fill)
+                                        } placeholder: {
+                                            RoundedRectangle(cornerRadius: 6).fill(Theme.elevated)
+                                        }
+                                        .frame(width: 96, height: 54)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    }
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("\(episode.label) — \(episode.title)")
+                                            .font(.system(size: 12.5, weight: .medium))
+                                        if let overview = episode.overview, !overview.isEmpty {
+                                            Text(overview)
+                                                .font(.system(size: 10.5))
+                                                .foregroundStyle(Theme.secondary)
+                                                .lineLimit(2)
+                                        }
+                                        if let rating = episode.rating {
+                                            Text("TMDB \(String(format: "%.1f", rating))/10")
+                                                .font(.system(size: 9.5, weight: .semibold))
+                                                .foregroundStyle(Theme.secondary)
+                                        }
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(18)
+            }
+        }
+        .background(Theme.background)
     }
 }

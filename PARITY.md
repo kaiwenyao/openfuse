@@ -818,3 +818,20 @@
 | Esc 退出全屏 | 同上 | 同上 | ⌘3 后 Esc：`isFullScreen=false` | `build/window-management/esc/` | 通过 |
 | ⌃⌘F | 同上 | 同上 | `isFullScreen=true` | `build/window-management/ctrlcmdf/` | 通过 |
 | 总在最前 | 同上 | 同上 | ⌃⌘T：`alwaysOnTop=true`、`windowLevel=3`；再按：false、0 | `build/window-management/ontop-*` | 通过 |
+
+### M7g 0.6.0 字幕偏移 / 同文件夹选集 / WebDAV 资料（2026-11-21，本机）
+
+| 测试 | 素材 | 步骤与结果 | 证据 | 状态 |
+| --- | --- | --- | --- | --- |
+| 字幕 10 s cue +1.5 | 15 s 样片 + zh-Hans SRT | 12.0 s 显示 OFFSET-MARKER；10.2 s 不显示 | `build/three-features/offset-late` | 通过 |
+| 字幕 10 s cue -1.0 | 同上 | 9.5 s 显示 OFFSET-MARKER | `build/three-features/offset-early` | 通过 |
+| 偏移持久化 | 同上 | 重开 `subDelay=1.5`、摘要“延后 1.5 秒” | `build/three-features/offset-late/reopen.json` | 通过 |
+| AoT S03E13 简繁独立 | zh-Hans/zh-Hant ASS | 简 1.5、繁 2.0，来回切换保持 | `build/three-features/aot-offsets` | 通过 |
+| 本地同文件夹 | GoT S1 4 个视频 + 字幕/图片/NFO/子目录 | 4 项、E1,E2,E2,E10、1080p/2160p、当前勾选 | `build/three-features/folder-local.png` | 通过 |
+| 本地选集切换 | 同上 | 切 E10 后 current=E10、position>0 | `folder-switch.json` | 通过 |
+| WebDAV 选集 + 全屏 | 同上 | 4 项、切 E10、`isFullScreen=true`、4 张剧照 | `folder-dav.json/png` | 通过 |
+| GoT 资料 | TMDB/OMDb mock | 标题/年份、TMDB+IMDb+烂番茄+Metacritic、E1/E2/E10 标题 | `build/three-features/got` | 通过 |
+| AoT S03E13 资料 | mock | 进击的巨人、S03E13“地下室” | `build/three-features/aot` | 通过 |
+| 电影资料 | mock | 盗梦空间 2010、IMDb 8.8/烂番茄 87%/Metacritic 74 | `build/three-features/movie` | 通过 |
+| 断网/无密钥 | 同上 | 目录仍显示“未匹配到影视资料”，开片/选集正常 | `build/three-features/offline` | 通过 |
+| Jellyfin 本季列表 | 无服务器 | 代码路径已接，未实测 | — | 未测 |

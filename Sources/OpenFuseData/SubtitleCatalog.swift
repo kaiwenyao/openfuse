@@ -79,11 +79,29 @@ public enum SubtitleCatalog {
         public var forced: Bool
     }
 
-    public static func matchSubtitleName(_ name: String, videoBase: String) -> NameMatch? {
-        if name == videoBase { return NameMatch(language: nil, forced: false) }
-        guard name.hasPrefix(videoBase + ".") else { return nil }
+    static func baseWithoutQuality(_ base: String) -> String {
+        base.replacingOccurrences(
+            of: #"(?i)([._ -])(2160p|1080p|720p|480p|576p|4k|uhd|bluray|blu-ray|web-?dl|webrip|remux|x26[45]|h\.?26[45]|hevc|av1|aac|dts|truehd|atmos|repack|proper|extended)([._ -].*)?$"#,
+            with: "",
+            options: .regularExpression
+        )
+    }
 
-        let remainder = name.dropFirst(videoBase.count + 1)
+    public static func matchSubtitleName(_ name: String, videoBase: String) -> NameMatch? {
+        // Sidecars are commonly named after the release without its quality
+        // tags ("Show.S01E02.zh-Hans.srt" next to "Show.S01E02.1080p.mkv").
+        let bases = [videoBase, baseWithoutQuality(videoBase)]
+        var matchedBase: String?
+        for base in bases where !base.isEmpty {
+            if name == base { return NameMatch(language: nil, forced: false) }
+            if name.hasPrefix(base + ".") {
+                matchedBase = base
+                break
+            }
+        }
+        guard let matchedBase else { return nil }
+
+        let remainder = name.dropFirst(matchedBase.count + 1)
         let tokens = remainder.split(separator: ".").map(String.init)
         guard !tokens.isEmpty else { return nil }
 

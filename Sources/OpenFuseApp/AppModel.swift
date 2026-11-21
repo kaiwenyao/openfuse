@@ -108,6 +108,8 @@ final class AppModel: ObservableObject {
     @Published var isAlwaysOnTop = false
     @Published var windowScaleLastAction = ""
     @Published var windowScaleContentSize = ""
+    @Published var metadataKeyStatus: String?
+    @Published var metadataBusy = false
     private var windowStateObservers: [NSObjectProtocol] = []
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
@@ -121,10 +123,13 @@ final class AppModel: ObservableObject {
     @Published var webdavPaths: [String: [String]] = [:]
     @Published var jellyfinPaths: [String: [JellyfinItem]] = [:]
     private var playerReturnRoute: AppRoute?
+    private var metadataServiceInstance: RemoteMetadataService?
+    private var directoryMetadataCache: [String: DirectoryMetadata] = [:]
     private var activeScanToken: ScanCancellationToken?
     private var activeScanTask: Task<Void, Never>?
 
     let supportDirectory: URL
+    let subtitleOffsets: SubtitleOffsetStore?
     let store: PlaybackStore
     let sourceStore: SourceStore
     let jellyfinStore: JellyfinSourceStore
@@ -164,6 +169,7 @@ final class AppModel: ObservableObject {
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
         self.supportDirectory = directory
+        self.subtitleOffsets = try? SubtitleOffsetStore(directory: directory)
         do {
             self.store = try PlaybackStore(directory: directory)
             self.sourceStore = try SourceStore(directory: directory)
@@ -338,7 +344,8 @@ final class AppModel: ObservableObject {
     private func startPlayer(
         with item: MediaItem,
         serverStart: Double = 0,
-        serverLastPlayedAt: Date? = nil
+        serverLastPlayedAt: Date? = nil,
+        folderSiblings: [RemoteEntry]? = nil
     ) {
         PlaybackTrace.mark("startPlayer.begin \(item.title)")
         smbStreamServer?.stop()
@@ -367,7 +374,12 @@ final class AppModel: ObservableObject {
         if route != .player {
             playerReturnRoute = route
         }
-        let model = PlayerModel(item: item, startAt: startAt, store: store)
+        let model = PlayerModel(
+            item: item,
+            startAt: startAt,
+            store: store,
+            subtitleOffsets: subtitleOffsets
+        )
         PlaybackTrace.mark("startPlayer.modelReady")
         // Keep the menu bar's 播放/字幕/音轨 items in sync with the player without
         // republishing every position tick.
@@ -404,6 +416,7 @@ final class AppModel: ObservableObject {
                 next()
             }
         }
+        configureFolderVideos(for: model, item: item, siblings: folderSiblings)
         player = model
         route = .player
         playerWindow?.contentMinSize = NSSize(width: 320, height: 180)
@@ -550,7 +563,7 @@ final class AppModel: ObservableObject {
         guard sessionIsCurrent(token) else { return }
         let subtitles = WebDAVClient.subtitleTracks(for: entry, siblings: directoryEntries)
         let item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
-        startPlayer(with: item)
+        startPlayer(with: item, folderSiblings: directoryEntries)
         if let next = PlaylistOrder.nextPlayableEntry(after: entry, among: directoryEntries) {
             autoplayDebugLog("webdav next=\(next.name) owner=\(entry.path) siblings=\(directoryEntries.count)")
             pendingNextOwner = entry.path
@@ -1252,7 +1265,7 @@ final class AppModel: ObservableObject {
     }
 
     var tmdbAvailable: Bool {
-        !(ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"] ?? "").isEmpty
+        metadataAPIKey(account: "tmdb-api-key", env: "OPENFUSE_TMDB_API_KEY") != nil
     }
 
     func tmdbImageURL(path: String?) -> URL? {
@@ -1264,8 +1277,18 @@ final class AppModel: ObservableObject {
         return await client.candidates(title: title, year: year, kind: kind)
     }
 
+    func metadataAPIKey(account: String, env: String) -> String? {
+        if let value = ProcessInfo.processInfo.environment[env], !value.isEmpty { return value }
+        switch CredentialStore.loadDetailed(account: account, service: "com.openfuse.metadata", interactive: false) {
+        case .found(let value):
+            return value
+        default:
+            return nil
+        }
+    }
+
     private func tmdbClient() -> TMDBClient? {
-        guard let key = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_API_KEY"], !key.isEmpty else {
+        guard let key = metadataAPIKey(account: "tmdb-api-key", env: "OPENFUSE_TMDB_API_KEY") else {
             return nil
         }
         let base = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_BASE_URL"].flatMap(URL.init(string:))
@@ -1273,6 +1296,116 @@ final class AppModel: ObservableObject {
         let image = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_IMAGE_BASE"].flatMap(URL.init(string:))
             ?? URL(string: "https://image.tmdb.org/t/p/w500")!
         return TMDBClient(apiKey: key, baseURL: base, imageBaseURL: image)
+    }
+
+    private func omdbClient() -> OMDbClient? {
+        guard let key = metadataAPIKey(account: "omdb-api-key", env: "OPENFUSE_OMDB_API_KEY") else {
+            return nil
+        }
+        let base = ProcessInfo.processInfo.environment["OPENFUSE_OMDB_BASE_URL"].flatMap(URL.init(string:))
+            ?? URL(string: "https://www.omdbapi.com/")!
+        return OMDbClient(apiKey: key, baseURL: base)
+    }
+
+    private func metadataService() -> RemoteMetadataService {
+        if let metadataServiceInstance { return metadataServiceInstance }
+        let service = RemoteMetadataService(
+            tmdb: tmdbClient(),
+            omdb: omdbClient(),
+            cacheDirectory: supportDirectory.appendingPathComponent("MetadataCache", isDirectory: true)
+        )
+        metadataServiceInstance = service
+        return service
+    }
+
+    /// Resolve the current WebDAV directory to TMDB/OMDb data. The request only
+    /// contains the title/year/imdbID; the WebDAV URL, path and credentials are
+    /// never sent to a metadata service.
+    func loadDirectoryMetadata(
+        source: WebDAVSource,
+        path: String,
+        entries: [RemoteEntry],
+        force: Bool = false
+    ) async -> DirectoryMetadata? {
+        let key = "\(source.id)|\(path)"
+        if !force, let cached = directoryMetadataCache[key] { return cached }
+        guard let client = webdavClient(for: source) else { return nil }
+        if force { directoryMetadataCache.removeValue(forKey: key) }
+
+        // NFO is optional and local to the directory; failures are ignored so
+        // browsing never depends on metadata.
+        var nfo: NFOMetadata?
+        let firstVideo = entries.first { !$0.isDirectory && $0.isPlayableVideo }
+        var candidates = ["tvshow.nfo", "movie.nfo"]
+        if let firstVideo {
+            candidates.append((firstVideo.name as NSString).deletingPathExtension + ".nfo")
+        }
+        for candidate in candidates {
+            let nfoPath = path.isEmpty ? candidate : path + "/" + candidate
+            if let (data, _) = try? await client.fetch(path: nfoPath),
+               let parsed = NFOReader.parse(data: data, baseURL: client.url(for: path, isDirectory: true)) {
+                nfo = parsed
+                break
+            }
+        }
+        let override = libraryOverrides["webdav:\(source.id):\(path)"]
+        let metadata = await metadataService().metadata(
+            sourceID: source.id,
+            directoryPath: path,
+            entries: entries,
+            nfo: nfo,
+            override: override
+        )
+        if let metadata {
+            directoryMetadataCache[key] = metadata
+        }
+        return metadata
+    }
+
+    func refreshDirectoryMetadata(source: WebDAVSource, path: String, entries: [RemoteEntry]) async -> DirectoryMetadata? {
+        directoryMetadataCache.removeValue(forKey: "\(source.id)|\(path)")
+        await metadataService().clearCache(sourceID: source.id, directoryPath: path)
+        return await loadDirectoryMetadata(source: source, path: path, entries: entries, force: true)
+    }
+
+    func saveMetadataKeys(tmdb: String, omdb: String) {
+        let trimmedTMDB = tmdb.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedOMDb = omdb.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            if !trimmedTMDB.isEmpty {
+                try CredentialStore.save(password: trimmedTMDB, account: "tmdb-api-key", service: "com.openfuse.metadata")
+            }
+            if !trimmedOMDb.isEmpty {
+                try CredentialStore.save(password: trimmedOMDb, account: "omdb-api-key", service: "com.openfuse.metadata")
+            }
+            metadataServiceInstance = nil
+            metadataKeyStatus = "已保存到 Keychain"
+        } catch {
+            metadataKeyStatus = error.localizedDescription
+        }
+    }
+
+    func validateMetadataKeys() async {
+        metadataBusy = true
+        defer { metadataBusy = false }
+        guard let tmdb = tmdbClient() else {
+            metadataKeyStatus = "未配置 TMDB API key"
+            return
+        }
+        let match = await tmdb.match(title: "Game of Thrones", year: 2011, kind: .series)
+        guard match != nil else {
+            metadataKeyStatus = "TMDB 验证失败：没有返回结果"
+            return
+        }
+        if let omdb = omdbClient() {
+            if let ratings = await omdb.ratings(imdbID: "tt0944947") {
+                metadataKeyStatus = "TMDB 正常；OMDb：\(ratings.labels.joined(separator: " · "))"
+            } else {
+                metadataKeyStatus = "TMDB 正常；OMDb 未返回评分"
+            }
+        } else {
+            metadataKeyStatus = "TMDB 正常（未配置 OMDb）"
+        }
     }
 
     private func enrichWithTMDB(_ library: ScannedLibrary) async -> (library: ScannedLibrary, matched: Int) {
@@ -2089,6 +2222,17 @@ final class AppModel: ObservableObject {
             "audioDeviceActive": player.engine.getPropertyString("audio-device") ?? "",
             "screenEDR": NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1,
             "selectedSubtitle": player.selectedSubtitleID ?? "off",
+            "subDelay": player.subtitleDelay,
+            "subDelaySummary": player.subtitleDelaySummary,
+            "subDelayTrack": player.selectedSubtitleID ?? "off",
+            "folderCount": player.folderVideos.count,
+            "folderLabel": player.folderLabel,
+            "folderShowList": player.showFolderList,
+            "currentFolderVideoID": player.currentFolderVideoID ?? "",
+            "folderTitles": player.folderVideos.map(\.rowTitle),
+            "folderSubtitles": player.folderVideos.map(\.subtitle),
+            "folderThumbnails": player.folderVideos.compactMap(\.thumbnailURL),
+            "folderOverviews": player.folderVideos.compactMap(\.overview),
             "mpvSid": player.engine.getPropertyString("sid") ?? "nil",
             "subVisibility": player.engine.getPropertyString("sub-visibility") ?? "nil",
             "subText": player.engine.getPropertyString("sub-text") ?? "",
@@ -2238,6 +2382,121 @@ final class AppModel: ObservableObject {
         PlaybackTrace.mark("window.scale \(action.rawValue) \(windowScaleContentSize)")
     }
 
+    /// Builds the same-folder list at player start. Local files scan their
+    /// direct parent; WebDAV reuses the siblings PROPFIND already returned by
+    /// the open path. No network request is made here.
+    private func configureFolderVideos(for model: PlayerModel, item: MediaItem, siblings: [RemoteEntry]?) {
+        var videos: [FolderVideo] = []
+        var label = ""
+        switch item.origin {
+        case .local(let url):
+            videos = FolderVideoBuilder.local(currentURL: url)
+            label = "同文件夹 · \(videos.count) 个视频"
+        case .webdav:
+            if let siblings {
+                videos = FolderVideoBuilder.webdav(
+                    entries: siblings,
+                    currentPath: item.remotePath ?? "",
+                    sourceID: item.sourceID
+                )
+                label = "同文件夹 · \(videos.count) 个视频"
+            }
+        case .jellyfin:
+            if let context = item.jellyfinContext {
+                let all = libraryWorks.flatMap { libraryEpisodes(workID: $0.id) }
+                if let match = all.first(where: {
+                    $0.serverID == context.itemID
+                        || $0.remotePath?.split(separator: "|").first.map(String.init) == context.itemID
+                }), let work = work(id: match.workID) {
+                    let season = libraryEpisodes(workID: work.id, seasonID: match.seasonID)
+                    videos = FolderVideoBuilder.jellyfin(episodes: season, currentID: match.id)
+                    label = "本季剧集 · \(videos.count) 集"
+                }
+            }
+        case .plex, .smb:
+            videos = []
+        }
+        model.folderVideos = videos
+        model.folderLabel = label
+        if case .webdav = item.origin, let siblings {
+            let directory = ((item.remotePath ?? "") as NSString).deletingLastPathComponent
+            let key = "\(item.sourceID ?? "")|\(directory)"
+            if let metadata = directoryMetadataCache[key] {
+                applyDirectoryMetadata(metadata, to: model, directory: directory)
+            } else if let sourceID = item.sourceID,
+                      let source = sources.first(where: { $0.id == sourceID }) {
+                Task {
+                    guard let metadata = await loadDirectoryMetadata(
+                        source: source,
+                        path: directory,
+                        entries: siblings
+                    ) else { return }
+                    applyDirectoryMetadata(metadata, to: model, directory: directory)
+                }
+            }
+        }
+        model.onSelectFolderVideo = { [weak self, weak model] video in
+            guard let self, let model else { return }
+            model.saveProgress()
+            self.switchToFolderVideo(video, from: model, siblings: siblings)
+        }
+    }
+
+    private func applyDirectoryMetadata(_ metadata: DirectoryMetadata, to model: PlayerModel, directory: String) {
+        var videos = model.folderVideos
+        for index in videos.indices {
+            let parsed = VideoNaming.parse(
+                fileName: videos[index].fileName,
+                parentFolder: directory
+            )
+            guard let season = parsed.season, let number = parsed.episode,
+                  let episode = metadata.episode(season: season, number: number) else { continue }
+            let duplicate = videos.filter { $0.episodeLabel == videos[index].episodeLabel }.count > 1
+            videos[index].displayTitle = duplicate
+                ? "\(episode.title) · \(videos[index].resolution ?? videos[index].versionLabel ?? "")"
+                : episode.title
+            videos[index].overview = episode.overview
+            videos[index].thumbnailURL = episode.stillURL ?? metadata.work.posterURL
+            var subtitle = [metadata.work.title]
+            if let resolution = videos[index].resolution { subtitle.append(resolution) }
+            if let version = videos[index].versionLabel { subtitle.append(version) }
+            videos[index].subtitle = subtitle.joined(separator: " · ")
+        }
+        model.folderVideos = videos
+    }
+
+    private func switchToFolderVideo(_ video: FolderVideo, from model: PlayerModel, siblings: [RemoteEntry]?) {
+        let token = beginPlaybackSession()
+        switch video.sourceKind {
+        case "local":
+            if let url = video.fileURL {
+                open(url: url)
+            }
+        case "webdav":
+            guard let sourceID = video.sourceID,
+                  let source = sources.first(where: { $0.id == sourceID }),
+                  let entry = video.remoteEntry else { return }
+            Task {
+                guard sessionIsCurrent(token) else { return }
+                await openRemote(source: source, entry: entry, siblings: siblings ?? [entry])
+            }
+        case "jellyfin", "emby":
+            guard let sourceID = video.sourceID,
+                  let source = jellyfinSources.first(where: { $0.id == sourceID }),
+                  let itemID = video.jellyfinItemID else { return }
+            Task {
+                guard sessionIsCurrent(token) else { return }
+                await openJellyfinItem(
+                    source: source,
+                    itemID: itemID,
+                    preferredMediaSourceID: video.jellyfinMediaSourceID
+                )
+            }
+        default:
+            break
+        }
+    }
+
     func resetPlayerWindowBehavior() {
         if let window = playerWindow {
             window.level = .normal
@@ -2259,6 +2518,7 @@ final class PlayerModel: ObservableObject {
     var fingerprint: MediaFingerprint { item.fingerprint }
     let engine: MPVEngine
     private let store: PlaybackStore
+    private let subtitleOffsets: SubtitleOffsetStore?
     private let initialPosition: Double
 
     /// Raw mpv playhead for resume/reporting. Deliberately not `@Published`:
@@ -2272,6 +2532,15 @@ final class PlayerModel: ObservableObject {
     @Published var subtitleTracks: [SubtitleTrack] = []
     @Published var audioTracks: [AudioTrack] = []
     @Published var selectedSubtitleID: String?
+    @Published var subtitleDelay: Double = 0
+    @Published var subtitleDelaySummary = SubtitleOffsetText.summary(0)
+    @Published var subtitleDelayNotice: String?
+    @Published var showSubtitleDelayPrompt = false
+    @Published var subtitleDelayInput = ""
+    @Published var folderVideos: [FolderVideo] = []
+    @Published var folderLabel = ""
+    @Published var showFolderList = false
+    var onSelectFolderVideo: ((FolderVideo) -> Void)?
     @Published var selectedAudioID: String?
     @Published var audioDevices: [AudioDeviceInfo] = []
     @Published var selectedAudioDeviceID = "auto"
@@ -2331,6 +2600,7 @@ final class PlayerModel: ObservableObject {
     private var reconnectPosition: Double?
     private var cacheStalenessTimer: Timer?
     private var volumeHUDWorkItem: DispatchWorkItem?
+    private var subtitleNoticeWorkItem: DispatchWorkItem?
     private(set) var userPaused = false
     private var lastAudibleVolume: Double = 100
     private var lastMouseNote: TimeInterval = 0
@@ -2347,11 +2617,17 @@ final class PlayerModel: ObservableObject {
     private var hasReportedStop = false
     private var hasReportedStart = false
 
-    init(item: MediaItem, startAt: Double, store: PlaybackStore) {
+    init(
+        item: MediaItem,
+        startAt: Double,
+        store: PlaybackStore,
+        subtitleOffsets: SubtitleOffsetStore? = nil
+    ) {
         PlaybackTrace.mark("player.init.begin")
         self.item = item
         self.initialPosition = startAt
         self.store = store
+        self.subtitleOffsets = subtitleOffsets
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
         self.thumbnails.configure(
@@ -2404,6 +2680,26 @@ final class PlayerModel: ObservableObject {
 
     var displayPosition: Double {
         min(max(position, 0), duration > 0 ? duration : position)
+    }
+
+    /// Stable id of the file currently playing, used to check/scroll the
+    /// same-folder list.
+    var currentFolderVideoID: String? {
+        switch item.origin {
+        case .local(let url):
+            return url.standardizedFileURL.path
+        case .webdav(_, let path, _), .smb(_, let path, _):
+            return path
+        case .jellyfin(_, let itemID, _):
+            return item.remotePath ?? itemID
+        case .plex(_, let partKey, _):
+            return partKey
+        }
+    }
+
+    func toggleFolderList() {
+        showFolderList.toggle()
+        showControlsTemporarily()
     }
 
     func start() {
@@ -2962,6 +3258,9 @@ final class PlayerModel: ObservableObject {
             selectedSubtitleID = nil
             savedSubtitleID = nil
             engine.setSubtitleTrack(id: nil)
+            engine.setSubtitleDelay(0)
+            subtitleDelay = 0
+            subtitleDelaySummary = "字幕已关闭"
             showControlsTemporarily()
             return
         }
@@ -2970,7 +3269,69 @@ final class PlayerModel: ObservableObject {
         if let engineID = track.engineID {
             engine.setSubtitleTrack(id: engineID)
         }
+        restoreSubtitleDelay(for: track)
         showControlsTemporarily()
+    }
+
+    // MARK: - Subtitle timing
+
+    /// Restores the offset stored for this video + subtitle track. External and
+    /// embedded tracks have stable IDs, so switching back re-applies its own
+    /// value; a track without a record defaults to 0.
+    private func restoreSubtitleDelay(for track: SubtitleTrack) {
+        let value = subtitleOffsets?.offset(
+            media: item.fingerprint.resumeKey,
+            track: track.id
+        ) ?? 0
+        subtitleDelay = value
+        subtitleDelaySummary = SubtitleOffsetText.summary(value)
+        engine.setSubtitleDelay(value)
+        debugTimeline("subtitle offset \(track.id) = \(value)")
+    }
+
+    func setSubtitleDelay(_ seconds: Double) {
+        guard let track = subtitleTracks.first(where: { $0.id == selectedSubtitleID }) else {
+            statusMessage = "请先选择一条字幕轨"
+            return
+        }
+        let value = min(max(seconds, -600), 600)
+        subtitleDelay = value
+        subtitleDelaySummary = SubtitleOffsetText.summary(value)
+        engine.setSubtitleDelay(value)
+        subtitleOffsets?.setOffset(value, media: item.fingerprint.resumeKey, track: track.id)
+        showSubtitleDelayNotice()
+        showControlsTemporarily()
+    }
+
+    func adjustSubtitleDelay(by delta: Double) {
+        setSubtitleDelay(subtitleDelay + delta)
+    }
+
+    func resetSubtitleDelay() {
+        setSubtitleDelay(0)
+    }
+
+    func beginSubtitleDelayInput() {
+        subtitleDelayInput = String(format: "%.1f", subtitleDelay)
+        showSubtitleDelayPrompt = true
+    }
+
+    @discardableResult
+    func submitSubtitleDelayInput() -> Bool {
+        guard let value = SubtitleOffsetText.parse(subtitleDelayInput) else {
+            statusMessage = "请输入秒数，例如 1.5（延后）或 -1（提前）"
+            return false
+        }
+        setSubtitleDelay(value)
+        return true
+    }
+
+    private func showSubtitleDelayNotice() {
+        subtitleNoticeWorkItem?.cancel()
+        subtitleDelayNotice = "字幕偏移 \(subtitleDelaySummary)"
+        let work = DispatchWorkItem { [weak self] in self?.subtitleDelayNotice = nil }
+        subtitleNoticeWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4, execute: work)
     }
 
     func selectAudio(_ track: AudioTrack) {

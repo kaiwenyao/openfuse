@@ -41,6 +41,8 @@ public actor TMDBClient {
     private let language: String
     private var cache: [String: TMDBMatch?] = [:]
     private let session: URLSession
+    private var detailsCache: [String: TMDBWorkDetails] = [:]
+    private var seasonCache: [String: [TMDBEpisodeDetails]] = [:]
 
     public init(
         apiKey: String,
@@ -62,7 +64,7 @@ public actor TMDBClient {
         guard let path, !path.isEmpty else { return nil }
         if let url = URL(string: path), url.scheme != nil { return url }
         let cleaned = path.hasPrefix("/") ? String(path.dropFirst()) : path
-        return URL(string: cleaned, relativeTo: imageBaseURL)?.absoluteURL
+        return imageBaseURL.appendingPathComponent(cleaned).absoluteURL
     }
 
     public func candidates(title: String, year: Int?, kind: LibraryKind, limit: Int = 5) async -> [TMDBMatch] {
@@ -161,5 +163,145 @@ public enum LibraryMetadata {
             ScannedLibrary(sourceKind: library.sourceKind, sourceID: library.sourceID, sourceName: library.sourceName, works: works),
             matched
         )
+    }
+}
+
+// MARK: - Details and season data for directory metadata
+
+public struct TMDBWorkDetails: Sendable {
+    public var id: Int
+    public var kind: LibraryKind
+    public var title: String
+    public var year: Int?
+    public var overview: String?
+    public var posterPath: String?
+    public var backdropPath: String?
+    /// TMDB vote average, 0–10.
+    public var rating: Double?
+    public var voteCount: Int?
+    public var imdbID: String?
+    public var seasons: [TMDBSeasonSummary]
+
+    public init(
+        id: Int, kind: LibraryKind, title: String, year: Int?, overview: String?,
+        posterPath: String?, backdropPath: String?, rating: Double?, voteCount: Int?,
+        imdbID: String?, seasons: [TMDBSeasonSummary] = []
+    ) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.year = year
+        self.overview = overview
+        self.posterPath = posterPath
+        self.backdropPath = backdropPath
+        self.rating = rating
+        self.voteCount = voteCount
+        self.imdbID = imdbID
+        self.seasons = seasons
+    }
+}
+
+public struct TMDBSeasonSummary: Sendable {
+    public var seasonNumber: Int
+    public var name: String
+    public var episodeCount: Int
+    public var posterPath: String?
+}
+
+public struct TMDBEpisodeDetails: Sendable {
+    public var season: Int
+    public var number: Int
+    public var title: String
+    public var overview: String?
+    public var stillPath: String?
+    public var runtime: Double
+    public var airDate: String?
+    public var rating: Double?
+}
+
+extension TMDBClient {
+    public func details(kind: LibraryKind, id: Int) async -> TMDBWorkDetails? {
+        let key = "details|\(kind.rawValue)|\(id)"
+        if let cached = detailsCache[key] { return cached }
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent(kind == .movie ? "movie/\(id)" : "tv/\(id)"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: language),
+            URLQueryItem(name: "append_to_response", value: "external_ids"),
+        ]
+        guard let url = components?.url,
+              let data = try? await data(from: url),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        let title = (object["title"] as? String) ?? (object["name"] as? String) ?? ""
+        let date = (object["release_date"] as? String) ?? (object["first_air_date"] as? String) ?? ""
+        let seasons = (object["seasons"] as? [[String: Any]] ?? []).compactMap { season -> TMDBSeasonSummary? in
+            guard let number = season["season_number"] as? Int else { return nil }
+            return TMDBSeasonSummary(
+                seasonNumber: number,
+                name: season["name"] as? String ?? "第 \(number) 季",
+                episodeCount: season["episode_count"] as? Int ?? 0,
+                posterPath: season["poster_path"] as? String
+            )
+        }
+        let details = TMDBWorkDetails(
+            id: id,
+            kind: kind,
+            title: title,
+            year: Int(date.prefix(4)),
+            overview: object["overview"] as? String,
+            posterPath: object["poster_path"] as? String,
+            backdropPath: object["backdrop_path"] as? String,
+            rating: (object["vote_average"] as? NSNumber)?.doubleValue,
+            voteCount: object["vote_count"] as? Int,
+            imdbID: (object["external_ids"] as? [String: Any])?["imdb_id"] as? String,
+            seasons: seasons
+        )
+        detailsCache[key] = details
+        return details
+    }
+
+    public func season(tvID: Int, season: Int) async -> [TMDBEpisodeDetails] {
+        let key = "season|\(tvID)|\(season)"
+        if let cached = seasonCache[key] { return cached }
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("tv/\(tvID)/season/\(season)"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: language),
+        ]
+        guard let url = components?.url,
+              let data = try? await data(from: url),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let episodes = object["episodes"] as? [[String: Any]]
+        else { return [] }
+        let result = episodes.compactMap { ep -> TMDBEpisodeDetails? in
+            guard let number = ep["episode_number"] as? Int else { return nil }
+            return TMDBEpisodeDetails(
+                season: ep["season_number"] as? Int ?? season,
+                number: number,
+                title: ep["name"] as? String ?? "第 \(number) 集",
+                overview: ep["overview"] as? String,
+                stillPath: ep["still_path"] as? String,
+                runtime: (ep["runtime"] as? NSNumber)?.doubleValue ?? 0,
+                airDate: ep["air_date"] as? String,
+                rating: (ep["vote_average"] as? NSNumber)?.doubleValue
+            )
+        }
+        seasonCache[key] = result
+        return result
+    }
+
+    private func data(from url: URL) async throws -> Data {
+        let (data, response) = try await session.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw TMDBError.httpStatus((response as? HTTPURLResponse)?.statusCode ?? -1)
+        }
+        return data
     }
 }

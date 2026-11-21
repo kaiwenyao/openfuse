@@ -37,6 +37,11 @@ struct PlayerView: View {
                     .transition(.opacity)
             }
 
+            if player.showFolderList {
+                FolderListOverlay(player: player)
+                    .transition(.opacity)
+            }
+
             PlayerCacheHUD(player: player)
                 .animation(.easeInOut(duration: 0.18), value: player.isBuffering)
                 .animation(.easeInOut(duration: 0.18), value: player.isOpening)
@@ -46,6 +51,17 @@ struct PlayerView: View {
                 Spacer()
                 PlayerVolumeHUD(player: player)
                     .padding(.bottom, 132)
+                if let notice = player.subtitleDelayNotice {
+                    Text(notice)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.black.opacity(0.72), in: Capsule())
+                        .overlay(Capsule().stroke(.white.opacity(0.14), lineWidth: 1))
+                        .padding(.bottom, 14)
+                        .allowsHitTesting(false)
+                }
             }
             .animation(.easeInOut(duration: 0.16), value: player.showVolumeHUD)
 
@@ -90,6 +106,9 @@ struct PlayerView: View {
             if case .active = phase {
                 player.noteMouseActivity()
             }
+        }
+        .sheet(isPresented: $player.showSubtitleDelayPrompt) {
+            SubtitleDelaySheet(player: player)
         }
     }
 
@@ -185,6 +204,10 @@ struct PlayerView: View {
                 player.skip(10)
                 return nil
             case 53:
+                if player.showFolderList {
+                    player.showFolderList = false
+                    return nil
+                }
                 if NSApp.keyWindow?.styleMask.contains(.fullScreen) == true {
                     NSApp.keyWindow?.toggleFullScreen(nil)
                 } else {
@@ -334,6 +357,17 @@ struct PlayerChrome: View {
 
                 Spacer()
 
+                Button {
+                    player.toggleFolderList()
+                } label: {
+                    Image(systemName: "list.bullet.rectangle")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .help("同文件夹视频")
+                .disabled(player.folderVideos.isEmpty)
+
                 Menu {
                     Button {
                         player.selectSubtitle(nil)
@@ -478,5 +512,172 @@ struct PlayerChrome: View {
         .padding(20)
         .frame(width: 720, height: 420)
         .background(Theme.background)
+    }
+}
+
+
+private struct SubtitleDelaySheet: View {
+    @ObservedObject var player: PlayerModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var error: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("字幕时间偏移")
+                .font(.system(size: 16, weight: .semibold))
+            Text("正数让字幕延后，负数让字幕提前。当前：\(player.subtitleDelaySummary)")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+            TextField("例如 1.5 或 -1", text: $player.subtitleDelayInput)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 280)
+                .onSubmit(apply)
+            if let error {
+                Text(error)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red)
+            }
+            HStack {
+                Spacer()
+                Button("取消") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("应用", action: apply)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(player.selectedSubtitleID == nil)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
+    }
+
+    private func apply() {
+        if player.submitSubtitleDelayInput() {
+            dismiss()
+        } else {
+            error = "请输入数字，例如 1.5（延后）或 -1（提前）"
+        }
+    }
+}
+
+
+private struct FolderListOverlay: View {
+    @ObservedObject var player: PlayerModel
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { player.showFolderList = false }
+
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image(systemName: "list.bullet.rectangle")
+                        .font(.system(size: 14, weight: .semibold))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("同文件夹视频")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(player.folderLabel.isEmpty ? "\(player.folderVideos.count) 个视频" : player.folderLabel)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                    Spacer()
+                    Button { player.showFolderList = false } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .frame(width: 26, height: 26)
+                            .background(.white.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .foregroundStyle(.white)
+
+                Divider().overlay(.white.opacity(0.12))
+
+                if player.folderVideos.isEmpty {
+                    Spacer()
+                    Text("这个文件夹没有可播放的视频")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.55))
+                    Spacer()
+                } else {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(player.folderVideos) { video in
+                                    row(video)
+                                        .id(video.id)
+                                    Divider().overlay(.white.opacity(0.08))
+                                }
+                            }
+                        }
+                        .onAppear {
+                            if let id = player.currentFolderVideoID {
+                                proxy.scrollTo(id, anchor: .center)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(width: 470, height: 520)
+            .background(.black.opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(.white.opacity(0.16), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+        }
+        .transition(.opacity)
+    }
+
+    private func row(_ video: FolderVideo) -> some View {
+        let isCurrent = video.id == player.currentFolderVideoID
+        return Button {
+            player.showFolderList = false
+            player.onSelectFolderVideo?(video)
+        } label: {
+            HStack(spacing: 10) {
+                if let thumbnail = video.thumbnailURL, let url = URL(string: thumbnail) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 5).fill(.white.opacity(0.10))
+                    }
+                    .frame(width: 64, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                    .overlay(alignment: .topLeading) {
+                        if isCurrent {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Theme.accent)
+                                .padding(2)
+                        }
+                    }
+                } else {
+                    Image(systemName: isCurrent ? "checkmark.circle.fill" : "play.circle")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isCurrent ? Theme.accent : .white.opacity(0.55))
+                        .frame(width: 18)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(video.rowTitle)
+                        .font(.system(size: 13, weight: isCurrent ? .semibold : .medium))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(video.subtitle)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+            .background(isCurrent ? Theme.accent.opacity(0.12) : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 }
