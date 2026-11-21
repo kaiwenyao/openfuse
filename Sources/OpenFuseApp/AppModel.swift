@@ -120,6 +120,7 @@ final class AppModel: ObservableObject {
     @Published var jellyfinDetailSelections: [String: JellyfinDetailSelection] = [:]
     @Published var loadingTitle = ""
     @Published var loadingSubtitle = ""
+    @Published var sidebarDestination: SidebarDestination = .home
     @Published var loadingError: String?
     @Published var isLoadingPlayback = false
     private var loadingGeneration = 0
@@ -135,6 +136,7 @@ final class AppModel: ObservableObject {
     /// Directory/episode position per source, so closing the player returns to
     /// the same folder or season instead of the home screen.
     @Published var webdavPaths: [String: [String]] = [:]
+    @Published var webdavEpisodeSelections: [String: String] = [:]
     @Published var jellyfinPaths: [String: [JellyfinItem]] = [:]
     private var playerReturnRoute: AppRoute?
     private var metadataServiceInstance: RemoteMetadataService?
@@ -428,6 +430,10 @@ final class AppModel: ObservableObject {
 
     // MARK: - WebDAV sources
 
+    func webdavClientForUI(source: WebDAVSource) -> WebDAVClient? {
+        webdavClient(for: source)
+    }
+
     func password(for source: WebDAVSource) -> String? {
         if let override = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"], !override.isEmpty {
             return override
@@ -517,6 +523,7 @@ final class AppModel: ObservableObject {
     }
 
     func browse(_ source: WebDAVSource) {
+        sidebarDestination = .files
         browsingSource = source
         route = .browser(source)
     }
@@ -530,6 +537,16 @@ final class AppModel: ObservableObject {
         // Persisted stacks from earlier builds may contain the same path
         // several times (a click during loading used to append it again).
         webdavPaths[source.id] = RemotePathState.canonical(path.isEmpty ? [""] : path)
+    }
+
+    func webdavEpisodeSelection(for source: WebDAVSource) -> String? {
+        webdavEpisodeSelections["\(source.id)|\(webdavPaths[source.id]?.joined(separator: "/") ?? "")"]
+    }
+
+    func setWebDAVEpisodeSelection(_ path: String?, for source: WebDAVSource) {
+        let key = "\(source.id)|\(webdavPaths[source.id]?.joined(separator: "/") ?? "")"
+        if let path { webdavEpisodeSelections[key] = path }
+        else { webdavEpisodeSelections.removeValue(forKey: key) }
     }
 
     func jellyfinPath(for source: JellyfinSource) -> [JellyfinItem] {
@@ -1078,10 +1095,12 @@ final class AppModel: ObservableObject {
     }
 
     func browseJellyfin(_ source: JellyfinSource) {
+        sidebarDestination = .files
         route = .jellyfinBrowser(source)
     }
 
     func browsePlex(_ source: PlexSource) {
+        sidebarDestination = .files
         route = .plexBrowser(source)
     }
 
@@ -2882,6 +2901,31 @@ final class PlayerModel: ObservableObject {
         case .plex(_, let partKey, _):
             return partKey
         }
+    }
+
+    var canPlayPreviousEpisode: Bool {
+        adjacentFolderVideo(offset: -1) != nil
+    }
+
+    var canPlayNextEpisode: Bool {
+        adjacentFolderVideo(offset: 1) != nil
+    }
+
+    func playPreviousEpisode() { playAdjacentEpisode(offset: -1) }
+    func playNextEpisode() { playAdjacentEpisode(offset: 1) }
+
+    private func adjacentFolderVideo(offset: Int) -> FolderVideo? {
+        guard let current = currentFolderVideoID,
+              let index = folderVideos.firstIndex(where: { $0.id == current || $0.path == current }) else { return nil }
+        let target = index + offset
+        guard folderVideos.indices.contains(target) else { return nil }
+        return folderVideos[target]
+    }
+
+    private func playAdjacentEpisode(offset: Int) {
+        guard let video = adjacentFolderVideo(offset: offset) else { return }
+        showControlsTemporarily()
+        onSelectFolderVideo?(video)
     }
 
     func toggleFolderList() {

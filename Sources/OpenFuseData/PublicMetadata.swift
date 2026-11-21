@@ -85,7 +85,11 @@ public actor PublicMetadataService: PublicMetadataProviding {
             episodes = await tvmazeEpisodes(showID: show.id, season: season)
         }
         var title = wiki.map { language.localizedTitle($0.title) } ?? show.name
-        var overview = wiki?.extract ?? Self.stripHTML(show.summary)
+        let wikiOverview = wiki?.extract
+        let disambiguation = wikiOverview?.lowercased().contains("usually refers to") == true
+            || wikiOverview?.lowercased().contains("may refer to") == true
+            || wikiOverview?.contains("可以指") == true
+        var overview = disambiguation ? Self.stripHTML(show.summary) : (wikiOverview ?? Self.stripHTML(show.summary))
         var titleLanguage = wiki?.language
         var overviewLanguage = wiki?.extract != nil ? wiki?.language : "en"
         if language.isChinese || language.identifier == "ja" {

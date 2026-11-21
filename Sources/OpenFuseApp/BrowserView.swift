@@ -2,6 +2,8 @@ import AppKit
 import OpenFuseCore
 import SwiftUI
 
+enum BrowserLayout { case grid, list }
+
 struct WebDAVBrowserView: View {
     @EnvironmentObject private var model: AppModel
     let source: WebDAVSource
@@ -20,6 +22,11 @@ struct WebDAVBrowserView: View {
     @State private var showMatchEditor = false
     @State private var matchTitle = ""
     @State private var matchYear = ""
+    @State private var layout: BrowserLayout = .grid
+    @State private var selectedEpisodePath: String?
+    @State private var showRawFiles = false
+    @State private var seasonPreview: DirectoryMetadata?
+    @State private var seasonPreviewEntry: RemoteEntry?
 
     private var pathStack: [String] { nav.stack }
     private var currentPath: String { nav.path }
@@ -34,6 +41,7 @@ struct WebDAVBrowserView: View {
         .onAppear {
             nav = RemotePathState(stack: model.webdavPath(for: source))
             model.setWebDAVPath(nav.stack, for: source)
+            selectedEpisodePath = model.webdavEpisodeSelection(for: source)
         }
         .onChange(of: nav.stack) { _, newValue in
             model.setWebDAVPath(newValue, for: source)
@@ -170,6 +178,10 @@ struct WebDAVBrowserView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.secondary)
             Spacer()
+        } else if isSeasonDetail && !showRawFiles {
+            seasonDetailPage
+        } else if let preview = seasonPreview, let seasonEntry = seasonPreviewEntry, !showRawFiles {
+            singleSeasonPoster(preview: preview, seasonEntry: seasonEntry)
         } else {
             VStack(spacing: 0) {
                 if let metadata = directoryMetadata {
@@ -207,18 +219,246 @@ struct WebDAVBrowserView: View {
                     .padding(.vertical, 8)
                 }
 
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(entries) { entry in
-                            row(entry)
-                            Divider().overlay(Theme.stroke.opacity(0.5))
-                        }
+                HStack {
+                    Spacer()
+                    Picker("布局", selection: $layout) {
+                        Image(systemName: "square.grid.2x2").tag(BrowserLayout.grid)
+                        Image(systemName: "list.bullet").tag(BrowserLayout.list)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
+                    .pickerStyle(.segmented)
+                    .frame(width: 92)
+                    .labelsHidden()
+                }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 4)
+
+                ScrollView {
+                    if layout == .grid {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 170, maximum: 230), spacing: 18)], spacing: 20) {
+                            ForEach(entries) { entry in card(entry) }
+                        }
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 12)
+                    } else {
+                        LazyVStack(spacing: 0) {
+                            ForEach(entries) { entry in
+                                row(entry)
+                                Divider().overlay(Theme.stroke.opacity(0.5))
+                            }
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                    }
                 }
             }
         }
+    }
+
+    private var isSeasonDetail: Bool {
+        guard let metadata = directoryMetadata, metadata.work.kind == .series,
+              !episodeEntries.isEmpty else { return false }
+        return VideoNaming.seasonNumber(fromFolder: (currentPath as NSString).lastPathComponent) != nil
+    }
+
+    private var episodeEntries: [RemoteEntry] {
+        entries.filter { $0.isPlayableVideo }.sorted {
+            let a = VideoNaming.parse(fileName: $0.name, parentFolder: currentPath)
+            let b = VideoNaming.parse(fileName: $1.name, parentFolder: currentPath)
+            return (a.episode ?? 0) < (b.episode ?? 0)
+        }
+    }
+
+    private var selectedEpisodeEntry: RemoteEntry? {
+        episodeEntries.first { $0.path == selectedEpisodePath } ?? episodeEntries.first
+    }
+
+    @ViewBuilder
+    private var seasonDetailPage: some View {
+        if let metadata = directoryMetadata {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 20) {
+                        poster(url: metadata.work.posterURL, width: 150, height: 225)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(metadata.work.title).font(.system(size: 26, weight: .bold))
+                            Text("\(seasonLabel) · \(metadata.work.year.map(String.init) ?? "")")
+                                .font(.system(size: 12)).foregroundStyle(Theme.secondary)
+                            if let overview = metadata.work.overview {
+                                Text(overview).font(.system(size: 12)).foregroundStyle(Theme.secondary)
+                                    .lineLimit(4)
+                            }
+                            ratingChips(metadata.work.allRatings)
+                            if let entry = selectedEpisodeEntry {
+                                Button {
+                                    Task { await play(entry) }
+                                } label: {
+                                    Label("播放 \(episodeTitle(entry, metadata: metadata))", systemImage: "play.fill")
+                                        .font(.system(size: 12.5, weight: .semibold))
+                                        .padding(.horizontal, 14).padding(.vertical, 8)
+                                        .background(Theme.accent, in: Capsule())
+                                        .foregroundStyle(Theme.background)
+                                }
+                                .buttonStyle(.plain)
+                                Text(technicalLine(for: entry))
+                                    .font(.system(size: 10.5, design: .monospaced))
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+
+                    HStack {
+                        Text("剧集").font(.system(size: 14, weight: .semibold))
+                        Spacer()
+                        Button("查看文件") { showRawFiles = true }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .padding(.horizontal, 24)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 12) {
+                            ForEach(episodeEntries) { entry in
+                                episodeCard(entry, metadata: metadata)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    if let selected = selectedEpisodeEntry {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("当前选集").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.secondary)
+                            Text(episodeTitle(selected, metadata: metadata))
+                                .font(.system(size: 13, weight: .medium))
+                            Text(selected.name).font(.system(size: 10, design: .monospaced)).foregroundStyle(Theme.secondary)
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                }
+                .padding(.vertical, 18)
+            }
+        }
+    }
+
+    private func singleSeasonPoster(preview: DirectoryMetadata, seasonEntry: RemoteEntry) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Button { openFolder(seasonEntry) } label: {
+                    HStack(alignment: .top, spacing: 20) {
+                        poster(url: preview.work.posterURL, width: 190, height: 285)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(preview.work.title).font(.system(size: 28, weight: .bold))
+                            Text(RemotePath.displayName(seasonEntry.path))
+                                .font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.accent)
+                            Text(preview.work.year.map(String.init) ?? "").font(.system(size: 12)).foregroundStyle(Theme.secondary)
+                            if let overview = preview.work.overview {
+                                Text(overview).font(.system(size: 12)).foregroundStyle(Theme.secondary).lineLimit(4)
+                            }
+                            ratingChips(preview.work.allRatings)
+                        }
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 26)
+                HStack {
+                    Text("该季目录").font(.system(size: 13, weight: .semibold))
+                    Spacer()
+                    Button("查看文件") {
+                        openFolder(seasonEntry)
+                        showRawFiles = true
+                    }
+                        .buttonStyle(.plain).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Theme.accent)
+                }
+                .padding(.horizontal, 26)
+            }
+            .padding(.vertical, 20)
+        }
+    }
+
+    private func poster(url: String?, width: CGFloat, height: CGFloat) -> some View {
+        Group {
+            if let url, let parsed = URL(string: url) {
+                AsyncImage(url: parsed) { phase in
+                    if case .success(let image) = phase { image.resizable().scaledToFill() }
+                    else { Theme.elevated }
+                }
+            } else { Theme.elevated }
+        }
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func ratingChips(_ ratings: [String]) -> some View {
+        Group {
+            if !ratings.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(ratings, id: \.self) { rating in
+                        Text(rating).font(.system(size: 10.5, weight: .semibold))
+                            .padding(.horizontal, 8).padding(.vertical, 4)
+                            .background(Theme.elevated, in: Capsule())
+                    }
+                }
+            }
+        }
+    }
+
+    private var seasonLabel: String {
+        let parsed = VideoNaming.seasonNumber(fromFolder: (currentPath as NSString).lastPathComponent)
+        return parsed.map { String(format: "第 %02d 季", $0) } ?? "季"
+    }
+
+    private func episodeTitle(_ entry: RemoteEntry, metadata: DirectoryMetadata) -> String {
+        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath)
+        if let season = parsed.season, let number = parsed.episode,
+           let found = metadata.episode(season: season, number: number) {
+            return "\(found.label) — \(found.title)"
+        }
+        return entry.name
+    }
+
+    private func technicalLine(for entry: RemoteEntry) -> String {
+        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath)
+        return [byteString(entry.size), parsed.resolution].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    private func episodeCard(_ entry: RemoteEntry, metadata: DirectoryMetadata) -> some View {
+        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: currentPath)
+        let found = parsed.season.flatMap { season in parsed.episode.flatMap { metadata.episode(season: season, number: $0) } }
+        let selected = entry.path == selectedEpisodePath
+        return Button {
+            selectedEpisodePath = entry.path
+            model.setWebDAVEpisodeSelection(entry.path, for: source)
+        } label: {
+            VStack(alignment: .leading, spacing: 5) {
+                Group {
+                    if let still = found?.stillURL, let url = URL(string: still) {
+                        AsyncImage(url: url) { phase in
+                            if case .success(let image) = phase { image.resizable().scaledToFill() }
+                            else { Theme.elevated }
+                        }
+                    } else { Theme.elevated }
+                }
+                .frame(width: 168, height: 94)
+                .clipShape(RoundedRectangle(cornerRadius: 7))
+                .overlay(RoundedRectangle(cornerRadius: 7).stroke(selected ? Theme.accent : .clear, lineWidth: 2))
+                Text(found.map { "\($0.label) — \($0.title)" } ?? entry.name)
+                    .font(.system(size: 11, weight: selected ? .semibold : .medium))
+                    .foregroundStyle(selected ? Theme.accent : Theme.text)
+                    .lineLimit(1)
+            }
+            .frame(width: 168)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func play(_ entry: RemoteEntry) async {
+        opening = entry.path
+        await model.openRemote(source: source, entry: entry, siblings: entries)
+        opening = nil
     }
 
     private func row(_ entry: RemoteEntry) -> some View {
@@ -337,6 +577,8 @@ struct WebDAVBrowserView: View {
         guard loadToken == token else { return }
         isLoading = false
         directoryMetadata = nil
+        seasonPreview = nil
+        seasonPreviewEntry = nil
         if hasVideos {
             metadataLoading = true
             Task {
@@ -358,11 +600,69 @@ struct WebDAVBrowserView: View {
             }
         } else {
             metadataLoading = false
+            let seasons = entries.filter { $0.isDirectory && VideoNaming.seasonNumber(fromFolder: $0.name) != nil }
+            if seasons.count == 1, let season = seasons.first,
+               let client = model.webdavClientForUI(source: source),
+               let seasonEntries = try? await client.list(path: season.path) {
+                let metadata = await model.loadDirectoryMetadata(source: source, path: season.path, entries: seasonEntries)
+                guard loadToken == token else { return }
+                if metadata?.work.kind == .series, metadata?.work.posterURL != nil {
+                    seasonPreview = metadata
+                    seasonPreviewEntry = season
+                }
+            }
         }
     }
 
     private var hasVideos: Bool {
         entries.contains { !$0.isDirectory && $0.isPlayableVideo }
+    }
+
+    private func card(_ entry: RemoteEntry) -> some View {
+        Button {
+            if entry.isDirectory { openFolder(entry) }
+            else if entry.isPlayableVideo {
+                Task { await play(entry) }
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                Group {
+                    if entry.isDirectory {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8).fill(Theme.elevated)
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 30, weight: .regular))
+                                .foregroundStyle(Theme.accent.opacity(0.78))
+                        }
+                    } else if let episode = metadataEpisode(for: entry),
+                              let still = episode.stillURL ?? directoryMetadata?.work.posterURL,
+                              let url = URL(string: still) {
+                        AsyncImage(url: url) { phase in
+                            if case .success(let image) = phase { image.resizable().scaledToFill() }
+                            else { Theme.elevated }
+                        }
+                    } else {
+                        ZStack {
+                            Theme.elevated
+                            Image(systemName: "film").font(.system(size: 26)).foregroundStyle(Theme.secondary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .aspectRatio(entry.isDirectory ? 16/9 : (metadataEpisode(for: entry) != nil ? 16/9 : 16/9), contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                Text(entry.isDirectory ? RemotePath.displayName(entry.path) :
+                        (metadataEpisode(for: entry).map { "\($0.label) — \($0.title)" } ?? entry.name))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(entry.isDirectory ? "文件夹" : byteString(entry.size))
+                    .font(.system(size: 10.5)).foregroundStyle(Theme.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func metadataWork(for entry: RemoteEntry) -> DirectoryWorkMetadata? {

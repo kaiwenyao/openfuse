@@ -32,6 +32,7 @@ struct PlayerScrubber: View {
     @State private var previewFailed = false
     @State private var previewTask: Task<Void, Never>?
     @State private var hoverBeganAt = CFAbsoluteTimeGetCurrent()
+    @State private var autoHovered = false
 
     private let trackHeight: CGFloat = 4
     private let knobSize: CGFloat = 11
@@ -105,6 +106,17 @@ struct PlayerScrubber: View {
                     )
                     .allowsHitTesting(false)
                     .transition(.opacity)
+                }
+            }
+            .onAppear {
+                guard ProcessInfo.processInfo.environment["OPENFUSE_HOVER_SCRUBBER"] == "1",
+                      !autoHovered else { return }
+                autoHovered = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    updateHover(x: width * 0.25, width: width)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    updateHover(x: width * 0.70, width: width)
                 }
             }
             .onContinuousHover { phase in

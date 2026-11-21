@@ -244,6 +244,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if arguments.contains("--home") {
+            if let sidebar = value(after: "--sidebar", in: arguments),
+               let destination = SidebarDestination(rawValue: sidebar) {
+                model.sidebarDestination = destination
+            }
             model.route = .home
             scheduleAutomation(model: model, arguments: arguments, reopen: {})
             return
@@ -725,7 +729,7 @@ struct RootView: View {
         Group {
             switch model.route {
             case .home:
-                HomeView()
+                MainShellView { HomeView(destination: model.sidebarDestination) }
             case .player:
                 if let player = model.player {
                     PlayerView(player: player)
@@ -735,13 +739,13 @@ struct RootView: View {
             case .loading:
                 PlayerLoadingView()
             case .browser(let source):
-                WebDAVBrowserView(source: source)
+                MainShellView { WebDAVBrowserView(source: source) }
             case .jellyfinBrowser(let source):
-                JellyfinBrowserView(source: source)
+                MainShellView { JellyfinBrowserView(source: source) }
             case .plexBrowser(let source):
-                PlexBrowserView(source: source)
+                MainShellView { PlexBrowserView(source: source) }
             case .library(let work):
-                LibraryDetailView(work: work)
+                MainShellView { LibraryDetailView(work: work) }
             }
         }
         .background(Theme.background)
@@ -778,6 +782,7 @@ struct SeekPromptSheet: View {
 
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
+    var destination: SidebarDestination = .home
     @AppStorage("openfuse.spoilerProtection") private var spoilerProtection = false
     @State private var isDropTarget = false
     @State private var showAllHistory = false
@@ -798,26 +803,23 @@ struct HomeView: View {
             .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                header
+                pageHeader
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
-                        if model.recent.isEmpty && model.libraryWorks.isEmpty {
-                            emptyState
-                        } else if !model.recent.isEmpty {
-                            continueWatching
-                        }
-                        mediaLibrary
-                        if !model.sources.isEmpty {
-                            networkSources
-                        }
-                        if !model.jellyfinSources.isEmpty {
-                            jellyfinSourcesSection
-                        }
-                        if !model.plexSources.isEmpty {
-                            plexSourcesSection
-                        }
-                        if !model.smbSources.isEmpty {
-                            smbSourcesSection
+                        switch destination {
+                        case .home:
+                            if model.recent.isEmpty { emptyState } else { continueWatching }
+                        case .library:
+                            mediaLibrary
+                        case .files:
+                            if !model.sources.isEmpty { networkSources }
+                            if !model.jellyfinSources.isEmpty { jellyfinSourcesSection }
+                            if !model.plexSources.isEmpty { plexSourcesSection }
+                            if !model.smbSources.isEmpty { smbSourcesSection }
+                            if model.sources.isEmpty && model.jellyfinSources.isEmpty
+                                && model.plexSources.isEmpty && model.smbSources.isEmpty {
+                                emptyState
+                            }
                         }
                         engineCard
                     }
@@ -839,10 +841,6 @@ struct HomeView: View {
             handleDrop(providers)
         }
         .animation(.easeInOut(duration: 0.2), value: isDropTarget)
-        .sheet(isPresented: $model.showAddSource) {
-            AddSourceSheet()
-                .environmentObject(model)
-        }
         .sheet(isPresented: $showAddJellyfin) {
             AddJellyfinSheet()
                 .environmentObject(model)
@@ -855,10 +853,80 @@ struct HomeView: View {
             AddSMBSheet()
                 .environmentObject(model)
         }
-        .sheet(isPresented: $model.showSettings) {
-            SettingsView()
-                .environmentObject(model)
+    }
+
+    private var pageHeader: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(destination.title)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                Text(destinationSubtitle)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Theme.secondary)
+            }
+            Spacer()
+            if destination == .files {
+                Button {
+                    showAddSourceSheet()
+                } label: {
+                    Label("添加来源", systemImage: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(Theme.accent.opacity(0.14), in: Capsule())
+                        .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(.plain)
+                scanMenu
+            } else if destination == .library {
+                scanMenu
+            }
         }
+        .padding(.horizontal, 32)
+        .padding(.top, 26)
+        .padding(.bottom, 22)
+    }
+
+    private var destinationSubtitle: String {
+        switch destination {
+        case .home: return "最近观看 · 最多 4 项"
+        case .library: return "按作品浏览、搜索和筛选"
+        case .files: return "已连接的媒体来源"
+        }
+    }
+
+    private var scanMenu: some View {
+        Menu {
+            Button("添加并扫描文件夹…") { chooseFolderToScan() }
+            if !model.localRoots.isEmpty {
+                Button("扫描全部本地根目录（\(model.localRoots.count)）") { model.scanAllLocalRoots() }
+            }
+            if !model.sources.isEmpty {
+                Divider()
+                ForEach(model.sources) { source in
+                    Button("扫描 WebDAV：\(source.name)") { model.startWebDAVScan(source) }
+                }
+            }
+            if !model.jellyfinSources.isEmpty {
+                Divider()
+                ForEach(model.jellyfinSources) { source in
+                    Button("扫描 Jellyfin：\(source.name)") { model.startJellyfinScan(source) }
+                }
+            }
+        } label: {
+            Label("扫描", systemImage: "arrow.triangle.2.circlepath")
+                .font(.system(size: 12, weight: .medium))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Theme.elevated, in: Capsule())
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
+    private func showAddSourceSheet() {
+        model.showAddSource = true
     }
 
     private var header: some View {

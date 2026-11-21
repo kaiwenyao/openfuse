@@ -245,7 +245,7 @@ struct PlayerChrome: View {
         VStack(spacing: 0) {
             topBar
             Spacer(minLength: 0)
-            bottomBar
+            floatingPanel
         }
         .background {
             VStack(spacing: 0) {
@@ -342,6 +342,84 @@ struct PlayerChrome: View {
         .padding(.top, 18)
     }
 
+    private var floatingPanel: some View {
+        GeometryReader { proxy in
+            HStack {
+                Spacer(minLength: 8)
+                Group {
+                    if proxy.size.width < 560 {
+                        compactBottomBar
+                    } else {
+                        bottomBar
+                    }
+                }
+                .padding(proxy.size.width < 560 ? 8 : 14)
+                .background(.black.opacity(0.68), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.10), lineWidth: 1)
+                )
+                .frame(maxWidth: 980)
+                Spacer(minLength: 8)
+            }
+            .padding(.horizontal, proxy.size.width < 560 ? 6 : 18)
+            .padding(.bottom, proxy.size.width < 560 ? 8 : 18)
+        }
+        .frame(height: 205)
+    }
+
+    private var compactBottomBar: some View {
+        VStack(spacing: 6) {
+            PlayerTimeRow(
+                clock: player.clock,
+                duration: player.duration,
+                thumbnails: player.thumbnails,
+                dragValue: $scrubValue,
+                onScrubBegan: { player.beginScrub() },
+                onScrubEnded: { target in
+                    player.endScrub(at: target)
+                    scrubValue = nil
+                }
+            )
+            .padding(.horizontal, 6)
+            HStack(spacing: 12) {
+                Button { player.togglePlayPause() } label: {
+                    Image(systemName: player.isPaused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.92), in: Circle())
+                        .foregroundStyle(.black)
+                }
+                .buttonStyle(.plain)
+                Button { player.skip(-10) } label: { Image(systemName: "gobackward.10").font(.system(size: 15)) }
+                    .buttonStyle(.plain)
+                Button { player.skip(10) } label: { Image(systemName: "goforward.10").font(.system(size: 15)) }
+                    .buttonStyle(.plain)
+                Button { showSubtitleMenu.toggle() } label: {
+                    Image(systemName: "captions.bubble").font(.system(size: 15))
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showSubtitleMenu, arrowEdge: .bottom) { subtitleMenuContent }
+                Menu {
+                    ForEach(player.audioTracks) { track in
+                        Button(track.displayName) { player.selectAudio(track) }
+                    }
+                    Divider()
+                    ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
+                        Button(String(format: "%.2fx", speed)) { player.setSpeed(speed) }
+                    }
+                    Divider()
+                    Button("同文件夹视频") { player.toggleFolderList() }
+                    Button("全屏") { player.toggleFullScreen() }
+                } label: {
+                    Image(systemName: "ellipsis.circle").font(.system(size: 16))
+                }
+                .menuStyle(.borderlessButton)
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     private var bottomBar: some View {
         VStack(spacing: 14) {
             PlayerTimeRow(
@@ -358,6 +436,15 @@ struct PlayerChrome: View {
             .padding(.horizontal, 24)
 
             HStack(spacing: 20) {
+                Button { player.playPreviousEpisode() } label: {
+                    Image(systemName: "backward.end.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(player.canPlayPreviousEpisode ? .white : .white.opacity(0.3))
+                }
+                .buttonStyle(.plain)
+                .disabled(!player.canPlayPreviousEpisode)
+                .help("上一集")
+
                 Button { player.skip(-10) } label: {
                     Image(systemName: "gobackward.10")
                         .font(.system(size: 20, weight: .medium))
@@ -379,6 +466,15 @@ struct PlayerChrome: View {
                 }
                 .buttonStyle(.plain)
 
+                Button { player.playNextEpisode() } label: {
+                    Image(systemName: "forward.end.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(player.canPlayNextEpisode ? .white : .white.opacity(0.3))
+                }
+                .buttonStyle(.plain)
+                .disabled(!player.canPlayNextEpisode)
+                .help("下一集")
+
                 Spacer()
 
                 Button {
@@ -398,11 +494,13 @@ struct PlayerChrome: View {
                     HStack(spacing: 5) {
                         Image(systemName: "captions.bubble")
                         Text(selectedSubtitleName ?? "字幕")
+                            .lineLimit(1)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 8, weight: .bold))
                     }
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.white)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
                 .buttonStyle(.plain)
                 .help("字幕与字幕偏移")

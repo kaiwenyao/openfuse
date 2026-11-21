@@ -53,7 +53,7 @@ luma() {
     -f null - 2>&1 | sed -n 's/.*YAVG=\([0-9.]*\).*/\1/p' | head -1
 }
 
-MENU_STRIP="760:46:1230:1400"
+MENU_STRIP="600:200:300:1150"
 LIGHT=$(luma "$OUT/light.png" "$MENU_STRIP")
 DARK=$(luma "$OUT/dark.png" "$MENU_STRIP")
 RESTORE=$(luma "$OUT/restore.png" "200:200:60:200")

@@ -441,3 +441,6 @@ Esc → isFullScreen=false
 
 ## 19. 0.8.2：Trickplay、预取与缩略图基准
 见 [0.8.2-THUMBNAILS.md](0.8.2-THUMBNAILS.md)。
+
+## 20. 0.9.0：macOS 浏览与播放界面改版
+见 [0.9.0-UI.md](0.9.0-UI.md)。

@@ -141,11 +141,11 @@ sleep 6
 PID=$(app_pid)
 if [[ -n "$PID" ]]; then
   {
-    ax_hit "$PID" 249 227
-    ax_hit "$PID" 380 227
-    ax_hit "$PID" 432 227
+    ax_hit "$PID" 382 227
+    ax_hit "$PID" 1100 650
+    ax_hit "$PID" 652 227
   } >"$OUT/ax-grid/hit-test.txt"
-  if grep -q "AXOpaqueProviderGroup" "$OUT/ax-grid/hit-test.txt"; then
+  if ! sed -n '2p' "$OUT/ax-grid/hit-test.txt" | grep -q "AXButton"; then
     echo "ok   gap between cards is not a button"
   else
     echo "FAIL gap between cards hits a button"
