@@ -2394,6 +2394,7 @@ final class AppModel: ObservableObject {
             "thumbnailLastElapsedMs": player.thumbnails.lastElapsedMs,
             "thumbnailDiskHits": player.thumbnails.diskHits,
             "thumbnailTrickplayHits": player.thumbnails.trickplayHits,
+            "thumbnailMergedRequests": player.thumbnails.mergedRequests,
             "thumbnailBenchmarkSamples": player.thumbnailBenchmarkSamples,
             "thumbnailBenchmarkP50": player.thumbnailBenchmarkP50,
             "thumbnailBenchmarkP95": player.thumbnailBenchmarkP95,

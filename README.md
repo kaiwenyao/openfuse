@@ -13,7 +13,7 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.8.2（2026-11-21）
+## 当前版本 0.8.3（2026-11-21）
 
 - **底栏字幕菜单整行交互。** 「关闭字幕」、每条字幕轨和字幕偏移动作都改为原生 Button 的行式布局：文字、勾选标记与右侧空白同属一个完整宽度的矩形命中区；悬停整行高亮，移出清除，当前轨仍勾选，禁用动作不响应。保留键盘与 VoiceOver 标签。
 - **⌘3 最大化窗口。** 以播放器所在屏幕 `visibleFrame` 设置整个窗口 frame，保留标题栏/红黄绿按钮和菜单栏/Dock 预留区；不会进入原生全屏，视频比例不变、必要时黑边。从原生全屏按 ⌘3 会先退出全屏，收到 AppKit 退出通知后再最大化；⌘4 适合屏幕、⌃⌘F 原生全屏保持原行为。

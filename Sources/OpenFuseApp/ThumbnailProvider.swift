@@ -49,6 +49,8 @@ final class ThumbnailProvider {
     private(set) var lastElapsedMs = 0
     private(set) var diskHits = 0
     private(set) var trickplayHits = 0
+    private(set) var mergedRequests = 0
+    private var inFlight: [String: Task<NSImage?, Never>] = [:]
 
     private(set) var lastTime: Double?
     private(set) var lastBytes = 0
@@ -89,6 +91,7 @@ final class ThumbnailProvider {
         cache.removeAll()
         cacheOrder.removeAll()
         failures.removeAll()
+        inFlight.removeAll()
         lastTime = nil
         lastBytes = 0
         lastSource = ""
@@ -107,6 +110,7 @@ final class ThumbnailProvider {
         cache.removeAll()
         cacheOrder.removeAll()
         failures.removeAll()
+        inFlight.removeAll()
         lastTime = nil
         lastBytes = 0
         lastSource = ""
@@ -164,6 +168,21 @@ final class ThumbnailProvider {
         guard let config else { return nil }
         let bucket = ThumbnailMath.bucket(for: time)
         let key = Self.key(item: config.itemKey, bucket: bucket)
+        if let cached = cache[key] { lastSource = "memory"; touch(key); return cached }
+        if let existing = inFlight[key] {
+            mergedRequests += 1
+            return await existing.value
+        }
+        let task = Task { @MainActor in
+            await self.loadImage(for: time, key: key, bucket: bucket, config: config)
+        }
+        inFlight[key] = task
+        let result = await task.value
+        inFlight[key] = nil
+        return result
+    }
+
+    private func loadImage(for time: Double, key: String, bucket: Int, config: Config) async -> NSImage? {
         if let cached = cache[key] { lastSource = "memory"; touch(key); return cached }
         if failures.contains(key) { return nil }
         if let disk = await cachedOrDiskImage(for: time) { return disk }

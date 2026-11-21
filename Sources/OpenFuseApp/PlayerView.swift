@@ -261,6 +261,29 @@ struct PlayerChrome: View {
         .sheet(isPresented: $showLog) {
             logSheet
         }
+        .onAppear {
+            guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_CLICK_SUBTITLE_AT"] else { return }
+            let values = raw.split(separator: ",").compactMap { Double($0) }
+            guard values.count >= 3 else { return }
+            let x = values[0], y = values[1], width = values[2]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
+                for fraction in [0.03, 0.5, 0.97] {
+                    let point = CGPoint(x: x + width * fraction, y: y)
+                    let source = CGEventSource(stateID: .hidSystemState)
+                    let move = CGEvent(mouseEventSource: source, mouseType: .mouseMoved,
+                                       mouseCursorPosition: point, mouseButton: .left)
+                    let down = CGEvent(mouseEventSource: source, mouseType: .leftMouseDown,
+                                       mouseCursorPosition: point, mouseButton: .left)
+                    let up = CGEvent(mouseEventSource: source, mouseType: .leftMouseUp,
+                                     mouseCursorPosition: point, mouseButton: .left)
+                    down?.setIntegerValueField(.mouseEventClickState, value: 1)
+                    up?.setIntegerValueField(.mouseEventClickState, value: 1)
+                    move?.post(tap: .cghidEventTap)
+                    down?.post(tap: .cghidEventTap)
+                    up?.post(tap: .cghidEventTap)
+                }
+            }
+        }
     }
 
     private var topBar: some View {
