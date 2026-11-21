@@ -142,6 +142,36 @@ PY
 [[ -s "$dir/window.png" ]]; check "$?" "0" "WebDAV preview window capture"
 kill "$SERVER_PID" >/dev/null 2>&1 || true
 
+# --- cross-restart disk cache --------------------------------------------
+dir="$OUT/cache-restart"
+rm -rf "$dir"; mkdir -p "$dir"
+for pass in 1 2; do
+  OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
+    "$APP" --open "$FIXTURE" --report "$dir/report-$pass.json" --capture-after 7 --quit-after 9 \
+    >"$dir/app-$pass.log" 2>&1 &
+  pid=$!
+  sleep 2.4; activate_app
+  hover_bar 34
+  wait "$pid" || true
+done
+first_source=$(report "$dir/report-1.json" thumbnailLastSource)
+second_source=$(report "$dir/report-2.json" thumbnailLastSource)
+second_hits=$(report "$dir/report-2.json" thumbnailDiskHits)
+[[ "$second_hits" -ge 1 ]]; check "$?" "0" "restart reuses disk thumbnail ($second_hits hits, source=$second_source)"
+
+# --- cold/hot benchmark (15 cold + 15 hot samples) -----------------------
+dir="$OUT/benchmark"
+rm -rf "$dir"; mkdir -p "$dir"
+OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_THUMB_BENCHMARK=1 OPENFUSE_FORCE_CONTROLS=1 \
+  "$APP" --open "$FIXTURE" --report "$dir/report.json" --capture-after 15 --quit-after 18 \
+  >"$dir/app.log" 2>&1
+cold_p50=$(report "$dir/report.json" thumbnailBenchmarkP50)
+cold_p95=$(report "$dir/report.json" thumbnailBenchmarkP95)
+hot_p95=$(report "$dir/report.json" thumbnailBenchmarkHotP95)
+samples=$(report "$dir/report.json" thumbnailBenchmarkSamples)
+check "$samples" "15" "benchmark samples"
+echo "thumbnail benchmark: cold P50=${cold_p50}ms P95=${cold_p95}ms hot P95=${hot_p95}ms"
+
 # --- fullscreen -----------------------------------------------------------
 dir="$OUT/fullscreen"
 rm -rf "$dir"; mkdir -p "$dir" "$OUT/thumbs-fullscreen"

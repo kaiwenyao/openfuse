@@ -864,3 +864,15 @@
 | 旧同步配置 | defaults + env | 0 请求，url key 删除 | `sync-removal.txt` | 通过 |
 | 字幕偏移 | 顶部/底栏共用 | 三功能回归、持久化 | `build/three-features` | 通过（底栏未截图） |
 | Jellyfin 零 key | 服务器 fixture | 资料/图片/详情 | `build/0.7.0/jellyfin` | 通过 |
+
+### M8a 0.8.0 交互/语言/预览（2026-11-21，实机 fixture）
+
+| 测试 | 结果 | 证据 |
+| --- | --- | --- |
+| 底栏整行字幕行 | 完整宽度/内边距/矩形命中；hover 高亮截图；真实系统鼠标三点击未成功注入 | `build/0.8.0/subtitle-hover.png` |
+| ⌘3 最大化 | frame==visibleFrame，isFullScreen false；全屏→最大化通过 | `maximize-report.json`、`maximize.png` |
+| 中文资料 | AoT E01/E02 中文标题/剧照；电影“盗梦空间/星际穿越” | `aot-zh-Hans.png`、`movies-zh-Hans.png` |
+| Hant/日文 | 進擊的巨人/日文原题，字段回退英文简介 | `aot-zh-Hant.png` |
+| 语言缓存 | 同 support 切换语言产生独立缓存并更新结果 | 手动实测 |
+| 缩略图磁盘/LRU | 重启后 15 次 disk hit；冷 P50 166/P95 205 ms，热/盘 P95 0/1 ms | `thumbnail-*.json` |
+| 窗口/缩略图/三功能/Jellyfin | 回归通过 | build/* |

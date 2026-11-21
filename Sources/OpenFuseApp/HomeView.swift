@@ -41,8 +41,8 @@ struct OpenFuseApp: App {
             }
             CommandGroup(after: .windowSize) {
                 Divider()
-                Button(model.isPlayerFullScreen ? "退出全屏" : "进入全屏") {
-                    model.togglePlayerFullScreen()
+                Button("最大化窗口") {
+                    model.maximizePlayerWindow()
                 }
                 .keyboardShortcut("3", modifiers: .command)
                 .disabled(model.player == nil)

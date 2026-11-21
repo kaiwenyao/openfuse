@@ -31,6 +31,7 @@ struct PlayerScrubber: View {
     @State private var previewLoading = false
     @State private var previewFailed = false
     @State private var previewTask: Task<Void, Never>?
+    @State private var hoverBeganAt = CFAbsoluteTimeGetCurrent()
 
     private let trackHeight: CGFloat = 4
     private let knobSize: CGFloat = 11
@@ -89,7 +90,7 @@ struct PlayerScrubber: View {
                 if let hover, duration > 0 {
                     ThumbnailPreview(
                         image: previewImage,
-                        time: ThumbnailMath.bucketTime(hover.bucket),
+                        time: hover.time,
                         loading: previewLoading,
                         failed: previewFailed
                     )
@@ -133,25 +134,37 @@ struct PlayerScrubber: View {
         guard changedBucket else { return }
 
         previewTask?.cancel()
-        if let cached = thumbnails.cachedImage(for: time) {
-            previewImage = cached
-            previewLoading = false
-            previewFailed = false
-            return
-        }
         previewImage = nil
         previewLoading = true
         previewFailed = false
+        hoverBeganAt = CFAbsoluteTimeGetCurrent()
+        let debug = ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_THUMBS"] == "1"
         previewTask = Task { @MainActor in
-            // Small debounce so sweeping across the bar does not queue a
-            // thumbnail per pixel.
+            if let cached = thumbnails.cachedImage(for: time) {
+                guard !Task.isCancelled, hover?.bucket == bucket else { return }
+                previewImage = cached
+                previewLoading = false
+                if debug { print("[thumb] event=memory bucket=\(bucket) ms=\(Int((CFAbsoluteTimeGetCurrent() - hoverBeganAt) * 1000))") }
+                return
+            }
+            if let disk = await thumbnails.cachedOrDiskImage(for: time) {
+                guard !Task.isCancelled, hover?.bucket == bucket else { return }
+                previewImage = disk
+                previewLoading = false
+                if debug { print("[thumb] event=disk bucket=\(bucket) ms=\(Int((CFAbsoluteTimeGetCurrent() - hoverBeganAt) * 1000))") }
+                return
+            }
+            // Only uncached frames wait for the debounce; memory/disk hits show
+            // immediately even during a fast sweep.
             try? await Task.sleep(nanoseconds: 120_000_000)
             guard !Task.isCancelled else { return }
+            if debug { print("[thumb] event=decode-start bucket=\(bucket)") }
             let image = await thumbnails.image(for: time)
             guard !Task.isCancelled, hover?.bucket == bucket else { return }
             previewImage = image
             previewLoading = false
             previewFailed = image == nil
+            if debug { print("[thumb] event=shown bucket=\(bucket) source=\(thumbnails.lastSource) ms=\(Int((CFAbsoluteTimeGetCurrent() - hoverBeganAt) * 1000))") }
         }
     }
 

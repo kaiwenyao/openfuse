@@ -40,7 +40,12 @@ final class ThumbnailProvider {
     private var config: Config?
     private var generation = 0
     private var cache: [String: NSImage] = [:]
+    private var cacheOrder: [String] = []
     private var failures: Set<String> = []
+    private var diskDirectory: URL?
+    private(set) var lastSource = ""
+    private(set) var lastElapsedMs = 0
+    private(set) var diskHits = 0
 
     private(set) var lastTime: Double?
     private(set) var lastBytes = 0
@@ -59,15 +64,23 @@ final class ThumbnailProvider {
         try? FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
     }
 
-    func configure(itemKey: String, url: URL, headers: [String]) {
+    func configure(itemKey: String, url: URL, headers: [String], cacheDirectory: URL? = nil) {
+        if let cacheDirectory {
+            diskDirectory = cacheDirectory
+            try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        }
         let next = Config(itemKey: itemKey, url: url, headers: headers)
         guard next != config else { return }
         config = next
         generation &+= 1
         cache.removeAll()
+        cacheOrder.removeAll()
         failures.removeAll()
         lastTime = nil
         lastBytes = 0
+        lastSource = ""
+        lastElapsedMs = 0
+        diskHits = 0
         queue.async { [box] in
             box.engine?.stop()
             box.engine = nil
@@ -78,9 +91,13 @@ final class ThumbnailProvider {
         generation &+= 1
         config = nil
         cache.removeAll()
+        cacheOrder.removeAll()
         failures.removeAll()
         lastTime = nil
         lastBytes = 0
+        lastSource = ""
+        lastElapsedMs = 0
+        diskHits = 0
         queue.async { [box] in
             box.engine?.stop()
             box.engine = nil
@@ -89,15 +106,53 @@ final class ThumbnailProvider {
 
     func cachedImage(for time: Double) -> NSImage? {
         guard let config else { return nil }
-        return cache[Self.key(item: config.itemKey, bucket: ThumbnailMath.bucket(for: time))]
+        let key = Self.key(item: config.itemKey, bucket: ThumbnailMath.bucket(for: time))
+        guard let image = cache[key] else { return nil }
+        touch(key)
+        lastSource = "memory"
+        return image
+    }
+
+    /// Disk lookup is asynchronous and never touches libmpv. A hit is promoted
+    /// into the bounded LRU memory cache.
+    func cachedOrDiskImage(for time: Double) async -> NSImage? {
+        guard let config else { return nil }
+        let bucket = ThumbnailMath.bucket(for: time)
+        let key = Self.key(item: config.itemKey, bucket: bucket)
+        if let cached = cachedImage(for: time) { return cached }
+        guard let directory = diskDirectory else { return nil }
+        let file = Self.diskURL(directory: directory, item: config.itemKey, bucket: bucket)
+        let data = await Task.detached(priority: .userInitiated) { try? Data(contentsOf: file) }.value
+        guard let data, let image = NSImage(data: data) else { return nil }
+        guard config == self.config else { return nil }
+        insert(image, key: key)
+        diskHits += 1
+        lastSource = "disk"
+        return image
+    }
+
+    private func touch(_ key: String) {
+        cacheOrder.removeAll { $0 == key }
+        cacheOrder.append(key)
+    }
+
+    private func insert(_ image: NSImage, key: String) {
+        if cache[key] == nil, cache.count >= 80, let oldest = cacheOrder.first {
+            cache.removeValue(forKey: oldest)
+            cacheOrder.removeFirst()
+        }
+        cache[key] = image
+        touch(key)
     }
 
     func image(for time: Double) async -> NSImage? {
         guard let config else { return nil }
         let bucket = ThumbnailMath.bucket(for: time)
         let key = Self.key(item: config.itemKey, bucket: bucket)
-        if let cached = cache[key] { return cached }
+        if let cached = cache[key] { lastSource = "memory"; touch(key); return cached }
         if failures.contains(key) { return nil }
+        if let disk = await cachedOrDiskImage(for: time) { return disk }
+        let started = CFAbsoluteTimeGetCurrent()
 
         let start = ThumbnailMath.bucketTime(bucket)
         let gen = generation
@@ -123,15 +178,51 @@ final class ThumbnailProvider {
             failures.insert(key)
             return nil
         }
-        if cache.count >= 80 { cache.removeAll() }
-        cache[key] = image
+        insert(image, key: key)
         lastTime = start
         lastBytes = data.count
+        lastSource = "decode"
+        lastElapsedMs = Int((CFAbsoluteTimeGetCurrent() - started) * 1000)
+        if let directory = diskDirectory {
+            let file = Self.diskURL(directory: directory, item: config.itemKey, bucket: bucket)
+            await Task.detached(priority: .utility) {
+                try? data.write(to: file, options: .atomic)
+            }.value
+            Self.pruneDisk(directory: directory)
+        }
         return image
     }
 
     private static func key(item: String, bucket: Int) -> String {
         "\(item)#\(bucket)"
+    }
+
+    private static func stableHash(_ value: String) -> UInt64 {
+        var hash: UInt64 = 1469598103934665603
+        for byte in value.utf8 { hash = (hash ^ UInt64(byte)) &* 1099511628211 }
+        return hash
+    }
+
+    private static func diskURL(directory: URL, item: String, bucket: Int) -> URL {
+        directory.appendingPathComponent(String(format: "%016llx-%d.png", stableHash(item), bucket))
+    }
+
+    nonisolated private static func pruneDisk(directory: URL, maxFiles: Int = 400, maxBytes: Int64 = 64 * 1024 * 1024) {
+        let keys: [URLResourceKey] = [.fileSizeKey, .contentModificationDateKey]
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys)) ?? []
+        let sorted = files.sorted {
+            let a = (try? $0.resourceValues(forKeys: Set(keys)).contentModificationDate) ?? .distantPast
+            let b = (try? $1.resourceValues(forKeys: Set(keys)).contentModificationDate) ?? .distantPast
+            return a > b
+        }
+        var total: Int64 = 0
+        for (index, file) in sorted.enumerated() {
+            let size = Int64((try? file.resourceValues(forKeys: Set(keys)).fileSize) ?? 0)
+            total += size
+            if index >= maxFiles || total > maxBytes {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
     }
 
     // MARK: - Queue-only work

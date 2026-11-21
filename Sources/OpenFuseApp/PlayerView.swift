@@ -481,46 +481,54 @@ struct PlayerChrome: View {
     }
 
     private var subtitleMenuContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                player.selectSubtitle(nil)
-            } label: {
-                HStack {
-                    Text("关闭字幕")
-                    Spacer()
-                    if player.selectedSubtitleID == nil { Image(systemName: "checkmark") }
-                }
-            }
-            .buttonStyle(.plain)
-            Divider()
+        VStack(alignment: .leading, spacing: 2) {
+            SubtitleMenuRow(
+                title: "关闭字幕",
+                selected: player.selectedSubtitleID == nil,
+                action: { player.selectSubtitle(nil) }
+            )
+            Divider().padding(.vertical, 3)
             ForEach(player.subtitleTracks) { track in
-                Button {
-                    player.selectSubtitle(track)
-                } label: {
-                    HStack {
-                        Text(track.displayName)
-                        Spacer()
-                        if player.selectedSubtitleID == track.id { Image(systemName: "checkmark") }
-                    }
-                }
-                .buttonStyle(.plain)
+                SubtitleMenuRow(
+                    title: track.displayName,
+                    selected: player.selectedSubtitleID == track.id,
+                    action: { player.selectSubtitle(track) }
+                )
             }
-            Divider()
+            Divider().padding(.vertical, 3)
             Text("字幕偏移：\(player.subtitleDelaySummary)")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.secondary)
-            Button("提前 0.1 秒") { player.adjustSubtitleDelay(by: -0.1) }
-                .disabled(player.selectedSubtitleID == nil)
-            Button("延后 0.1 秒") { player.adjustSubtitleDelay(by: 0.1) }
-                .disabled(player.selectedSubtitleID == nil)
-            Button("输入秒数…") { player.beginSubtitleDelayInput() }
-                .disabled(player.selectedSubtitleID == nil)
-            Button("重置为 0") { player.resetSubtitleDelay() }
-                .disabled(player.selectedSubtitleID == nil)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+            SubtitleMenuRow(
+                title: "提前 0.1 秒",
+                selected: false,
+                disabled: player.selectedSubtitleID == nil,
+                action: { player.adjustSubtitleDelay(by: -0.1) }
+            )
+            SubtitleMenuRow(
+                title: "延后 0.1 秒",
+                selected: false,
+                disabled: player.selectedSubtitleID == nil,
+                action: { player.adjustSubtitleDelay(by: 0.1) }
+            )
+            SubtitleMenuRow(
+                title: "输入秒数…",
+                selected: false,
+                disabled: player.selectedSubtitleID == nil,
+                action: { player.beginSubtitleDelayInput() }
+            )
+            SubtitleMenuRow(
+                title: "重置为 0",
+                selected: false,
+                disabled: player.selectedSubtitleID == nil,
+                action: { player.resetSubtitleDelay() }
+            )
         }
         .buttonStyle(.plain)
         .font(.system(size: 12))
-        .padding(14)
+        .padding(10)
         .frame(width: 260)
     }
 
@@ -555,6 +563,49 @@ struct PlayerChrome: View {
     }
 }
 
+
+private struct SubtitleMenuRow: View {
+    let title: String
+    let selected: Bool
+    var disabled = false
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .foregroundStyle(disabled ? Theme.secondary.opacity(0.45) : Theme.text)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                if selected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                hovering && !disabled ? Theme.accent.opacity(0.14) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .onHover { hovering = $0 }
+        .onAppear {
+            if ProcessInfo.processInfo.environment["OPENFUSE_HOVER_SUBTITLE_ROW"] == title {
+                hovering = true
+            }
+        }
+        .accessibilityLabel(title)
+        .accessibilityValue(hovering ? "hovered" : "idle")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
 
 private struct SubtitleDelaySheet: View {
     @ObservedObject var player: PlayerModel

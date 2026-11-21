@@ -435,3 +435,6 @@ Esc → isFullScreen=false
 ## 17. 0.7.0：字幕偏移入口、零配置资料、继续观看与加载页
 
 见 [0.7.0-EXPERIENCE.md](0.7.0-EXPERIENCE.md)。要点：底栏字幕偏移复用顶部操作；WebDAV NFO + TVmaze/Wikipedia/Wikidata 零 key 匹配；首页 4 项继续观看与剧照/帧缩略图；点击后立即加载页、可取消/重试；独立进度同步及其凭据/入口移除。
+
+## 18. 0.8.0：整行字幕菜单、⌘3 最大化、资料语言与缩略图
+见 [0.8.0-EXPERIENCE.md](0.8.0-EXPERIENCE.md)。

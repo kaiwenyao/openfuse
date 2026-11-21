@@ -116,6 +116,7 @@ final class AppModel: ObservableObject {
     @Published var isAlwaysOnTop = false
     @Published var windowScaleLastAction = ""
     @Published var windowScaleContentSize = ""
+    private var pendingMaximizeAfterFullscreen = false
     @Published var jellyfinDetailSelections: [String: JellyfinDetailSelection] = [:]
     @Published var loadingTitle = ""
     @Published var loadingSubtitle = ""
@@ -244,7 +245,7 @@ final class AppModel: ObservableObject {
               let source = sources.first(where: { $0.id == sourceID }),
               let client = webdavClient(for: source) else { return nil }
         let directory = (path as NSString).deletingLastPathComponent
-        let key = "\(sourceID)|\(directory)"
+        let key = "\(sourceID)|\(directory)|\(MetadataLanguage.current().identifier)"
         if let cached = directoryMetadataCache[key] { return cached }
         if let cached = await metadataService().cachedMetadata(sourceID: sourceID, directoryPath: directory) {
             directoryMetadataCache[key] = cached
@@ -571,7 +572,10 @@ final class AppModel: ObservableObject {
         }
         guard sessionIsCurrent(token) else { return }
         let subtitles = WebDAVClient.subtitleTracks(for: entry, siblings: directoryEntries)
-        let item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
+        var item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
+        if let localized = localizedWebDAVTitle(source: source, entry: entry) {
+            item.title = localized
+        }
         startPlayer(with: item, folderSiblings: directoryEntries)
         if let next = PlaylistOrder.nextPlayableEntry(after: entry, among: directoryEntries) {
             autoplayDebugLog("webdav next=\(next.name) owner=\(entry.path) siblings=\(directoryEntries.count)")
@@ -582,6 +586,21 @@ final class AppModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func localizedWebDAVTitle(source: WebDAVSource, entry: RemoteEntry) -> String? {
+        let parent = (entry.path as NSString).deletingLastPathComponent
+        let key = "\(source.id)|\(parent)|\(MetadataLanguage.current().identifier)"
+        guard let metadata = directoryMetadataCache[key] else { return nil }
+        let parsed = VideoNaming.parse(fileName: entry.name, parentFolder: parent)
+        if let season = parsed.season, let number = parsed.episode,
+           let episode = metadata.episode(season: season, number: number) {
+            return "\(episode.label) — \(episode.title)"
+        }
+        if let title = metadata.work(for: entry.path).title as String?, !title.isEmpty {
+            return title
+        }
+        return nil
     }
 
     func openRemote(source: WebDAVSource, path: String) async {
@@ -1412,7 +1431,12 @@ final class AppModel: ObservableObject {
             ?? URL(string: "https://api.themoviedb.org/3")!
         let image = ProcessInfo.processInfo.environment["OPENFUSE_TMDB_IMAGE_BASE"].flatMap(URL.init(string:))
             ?? URL(string: "https://image.tmdb.org/t/p/w500")!
-        return TMDBClient(apiKey: key, baseURL: base, imageBaseURL: image)
+        return TMDBClient(
+            apiKey: key,
+            baseURL: base,
+            imageBaseURL: image,
+            language: MetadataLanguage.current().tmdb
+        )
     }
 
     private func omdbClient() -> OMDbClient? {
@@ -1426,10 +1450,13 @@ final class AppModel: ObservableObject {
 
     private func metadataService() -> RemoteMetadataService {
         if let metadataServiceInstance { return metadataServiceInstance }
+        let language = MetadataLanguage.current()
         let service = RemoteMetadataService(
             tmdb: tmdbClient(),
             omdb: omdbClient(),
-            cacheDirectory: supportDirectory.appendingPathComponent("MetadataCache", isDirectory: true)
+            cacheDirectory: supportDirectory.appendingPathComponent("MetadataCache", isDirectory: true),
+            publicResolver: PublicMetadataService(language: language),
+            language: language
         )
         metadataServiceInstance = service
         return service
@@ -1444,7 +1471,7 @@ final class AppModel: ObservableObject {
         entries: [RemoteEntry],
         force: Bool = false
     ) async -> DirectoryMetadata? {
-        let key = "\(source.id)|\(path)"
+        let key = "\(source.id)|\(path)|\(MetadataLanguage.current().identifier)"
         if !force, let cached = directoryMetadataCache[key] { return cached }
         guard let client = webdavClient(for: source) else { return nil }
         if force { directoryMetadataCache.removeValue(forKey: key) }
@@ -1501,7 +1528,7 @@ final class AppModel: ObservableObject {
     }
 
     func refreshDirectoryMetadata(source: WebDAVSource, path: String, entries: [RemoteEntry]) async -> DirectoryMetadata? {
-        directoryMetadataCache.removeValue(forKey: "\(source.id)|\(path)")
+        directoryMetadataCache.removeValue(forKey: "\(source.id)|\(path)|\(MetadataLanguage.current().identifier)")
         await metadataService().clearCache(sourceID: source.id, directoryPath: path)
         return await loadDirectoryMetadata(source: source, path: path, entries: entries, force: true)
     }
@@ -2264,10 +2291,17 @@ final class AppModel: ObservableObject {
 
     func captureUI(to url: URL, preferKeyWindow: Bool = false) {
         let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
+        let capturePopover = ProcessInfo.processInfo.environment["OPENFUSE_CAPTURE_POPOVER"] == "1"
         let window = (preferKeyWindow ? NSApp.keyWindow : nil)
+            ?? (capturePopover
+                ? visible.min(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
+                : nil)
             ?? visible.max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
             ?? NSApp.keyWindow ?? NSApp.windows.first
         guard let window, let view = window.contentView else { return }
+        if capturePopover {
+            print("[OpenFuse] popover frame=\(NSStringFromRect(window.frame)) number=\(window.windowNumber)")
+        }
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         if let data = rep.representation(using: .png, properties: [:]) {
@@ -2303,6 +2337,7 @@ final class AppModel: ObservableObject {
             "currentAO": player.engine.getPropertyString("current-ao") ?? "",
             "currentVO": player.engine.getPropertyString("current-vo") ?? "",
             "isFullScreen": NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false,
+            "screenVisibleFrame": NSStringFromRect(NSApp.keyWindow?.screen?.visibleFrame ?? .zero),
             "alwaysOnTop": self.isAlwaysOnTop,
             "windowLevel": NSApp.keyWindow?.level.rawValue ?? 0,
             "windowScaleLastAction": self.windowScaleLastAction,
@@ -2355,6 +2390,13 @@ final class AppModel: ObservableObject {
             "thumbnailCacheCount": player.thumbnails.cacheCount,
             "thumbnailLastTime": player.thumbnails.lastTime as Any,
             "thumbnailLastBytes": player.thumbnails.lastBytes,
+            "thumbnailLastSource": player.thumbnails.lastSource,
+            "thumbnailLastElapsedMs": player.thumbnails.lastElapsedMs,
+            "thumbnailDiskHits": player.thumbnails.diskHits,
+            "thumbnailBenchmarkSamples": player.thumbnailBenchmarkSamples,
+            "thumbnailBenchmarkP50": player.thumbnailBenchmarkP50,
+            "thumbnailBenchmarkP95": player.thumbnailBenchmarkP95,
+            "thumbnailBenchmarkHotP95": player.thumbnailBenchmarkHotP95,
             "currentVolumeProperty": player.engine.getPropertyString("volume") ?? "nil",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",
@@ -2431,6 +2473,38 @@ final class AppModel: ObservableObject {
         window.toggleFullScreen(nil)
     }
 
+    /// ⌘3: fill the current screen's visibleFrame with the whole player window.
+    /// This is not native fullscreen; title bar, traffic lights and the space
+    /// reserved for menu bar/Dock remain. From native fullscreen, wait for
+    /// AppKit's exit notification before applying the frame.
+    func maximizePlayerWindow() {
+        guard let window = playerWindow, let screen = window.screen ?? NSScreen.main else { return }
+        if window.styleMask.contains(.fullScreen) {
+            // Observe the concrete window rather than relying on the dynamic
+            // key-window lookup, which can point at another window during the
+            // fullscreen transition.
+            var observer: NSObjectProtocol?
+            observer = NotificationCenter.default.addObserver(
+                forName: NSWindow.didExitFullScreenNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                if let observer { NotificationCenter.default.removeObserver(observer) }
+                self?.pendingMaximizeAfterFullscreen = false
+                DispatchQueue.main.async { self?.maximizePlayerWindow() }
+            }
+            pendingMaximizeAfterFullscreen = true
+            window.toggleFullScreen(nil)
+            return
+        }
+        let visible = screen.visibleFrame
+        window.setFrame(visible, display: true, animate: false)
+        isPlayerFullScreen = false
+        windowScaleLastAction = "maximize"
+        windowScaleContentSize = "\(Int(visible.width))x\(Int(visible.height))"
+        PlaybackTrace.mark("window.maximize \(windowScaleContentSize)")
+    }
+
     func toggleAlwaysOnTop() {
         guard let window = playerWindow else { return }
         isAlwaysOnTop.toggle()
@@ -2438,8 +2512,8 @@ final class AppModel: ObservableObject {
     }
 
     /// IINA window-size commands: ⌘0 half, ⌘1 normal (native video size),
-    /// ⌘2 double, ⌘4 fit-to-screen (IINA uses ⌘3; this build reserves ⌘3 for
-    /// fullscreen at the user's request), ⌘- smaller, ⌘= bigger.
+    /// ⌘2 double, ⌘4 fit-to-screen, ⌘- smaller, ⌘= bigger. ⌘3 is handled by
+    /// maximizePlayerWindow() and is intentionally not a fullscreen toggle.
     func applyWindowScale(_ action: WindowScaleAction) {
         guard let window = playerWindow, let screen = window.screen ?? NSScreen.main else { return }
 
@@ -2691,6 +2765,10 @@ final class PlayerModel: ObservableObject {
     private var currentPosition: Double { seekTarget ?? position }
     private var progressTimer: Timer?
     private var controlsTimer: Timer?
+    private(set) var thumbnailBenchmarkP50 = 0
+    private(set) var thumbnailBenchmarkP95 = 0
+    private(set) var thumbnailBenchmarkSamples = 0
+    private(set) var thumbnailBenchmarkHotP95 = 0
     private var hasFinished = false
     private var hasStarted = false
     private var hasReportedFirstFrame = false
@@ -2734,7 +2812,8 @@ final class PlayerModel: ObservableObject {
         self.thumbnails.configure(
             itemKey: item.fingerprint.resumeKey,
             url: item.playbackURL,
-            headers: item.httpHeaders
+            headers: item.httpHeaders,
+            cacheDirectory: supportDirectory?.appendingPathComponent("ThumbnailCache", isDirectory: true)
         )
         let storedVolume = UserDefaults.standard.object(forKey: PlayerModel.volumeDefaultsKey) as? Double
         let initialVolume = VolumeMath.clamp(storedVolume ?? 100)
@@ -2841,6 +2920,7 @@ final class PlayerModel: ObservableObject {
         // plain text disappear in the 0.5.0 pipeline).
         engine.setProperty("sub-margin-y-offset", "72")
         scheduleRecentThumbnailCapture()
+        scheduleThumbnailBenchmark()
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -3616,6 +3696,35 @@ final class PlayerModel: ObservableObject {
     func finishSession() {
         saveProgress()
         reportJellyfinStop(wait: true)
+    }
+
+    private func scheduleThumbnailBenchmark() {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_THUMB_BENCHMARK"] == "1" else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self, self.duration > 10 else { return }
+            Task { @MainActor in
+                var cold: [Double] = []
+                var hot: [Double] = []
+                let times = (0..<30).map { index in
+                    self.duration * (0.08 + 0.8 * Double(index % 15) / 15.0)
+                }
+                for (index, time) in times.enumerated() {
+                    let started = CFAbsoluteTimeGetCurrent()
+                    _ = await self.thumbnails.image(for: time)
+                    let ms = (CFAbsoluteTimeGetCurrent() - started) * 1000
+                    if index < 15 { cold.append(ms) } else { hot.append(ms) }
+                }
+                func percentile(_ values: [Double], _ p: Double) -> Int {
+                    guard !values.isEmpty else { return 0 }
+                    let sorted = values.sorted()
+                    return Int(sorted[min(sorted.count - 1, Int(Double(sorted.count - 1) * p))])
+                }
+                self.thumbnailBenchmarkSamples = cold.count
+                self.thumbnailBenchmarkP50 = percentile(cold, 0.5)
+                self.thumbnailBenchmarkP95 = percentile(cold, 0.95)
+                self.thumbnailBenchmarkHotP95 = percentile(hot, 0.95)
+            }
+        }
     }
 
     private func scheduleRecentThumbnailCapture() {

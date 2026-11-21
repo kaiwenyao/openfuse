@@ -1,8 +1,8 @@
 #!/bin/bash
 # IINA-style window management acceptance for 0.6.0:
 #   ⌘0 half size, ⌘1 native size, ⌘2 double size, ⌘4 fit-to-screen,
-#   ⌘- smaller, ⌘= bigger, ⌘3 fullscreen, Esc exit fullscreen,
-#   ⌃⌘F fullscreen (standard shortcut), ⌃⌘T always-on-top on/off.
+#   ⌘- smaller, ⌘= bigger, ⌘3 maximize to screen visibleFrame (not fullscreen),
+#   ⌃⌘F fullscreen, Esc exit fullscreen, ⌃⌘T always-on-top on/off.
 #
 #   Scripts/run-window-management.sh
 set -euo pipefail
@@ -105,8 +105,8 @@ wait_report "$dir/report.json" || { echo "FAIL sizes report missing"; FAIL=1; }
 check "$(report "$dir/report.json" windowScaleLastAction)" "bigger" "last scale action recorded"
 wait "$pid" || true
 
-# --- ⌘3 fullscreen -------------------------------------------------------
-dir="$OUT/fullscreen"
+# --- ⌘3 maximize to visibleFrame (not fullscreen) -----------------------
+dir="$OUT/maximize"
 rm -rf "$dir"; mkdir -p "$dir"
 OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
   "$APP" --open "$SMALL" --capture-window "$dir/window.png" \
@@ -114,19 +114,50 @@ OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
 pid=$!
 sleep 2.4; activate_app
 press 3 "command down"
-wait_report "$dir/report.json" || { echo "FAIL fullscreen report missing"; FAIL=1; }
-check "$(report "$dir/report.json" isFullScreen)" "True" "⌘3 enters fullscreen"
-[[ -s "$dir/window.png" ]]; check "$?" "0" "fullscreen capture"
+sleep 1.0
+press 3 "command down"
+wait_report "$dir/report.json" || { echo "FAIL maximize report missing"; FAIL=1; }
+check "$(report "$dir/report.json" isFullScreen)" "False" "⌘3 does not enter fullscreen"
+check "$(report "$dir/report.json" windowScaleLastAction)" "maximize" "⌘3 records maximize"
+python3 - "$dir/report.json" <<'FRAMECHECK' && echo "ok   ⌘3 frame equals visibleFrame" || { echo "FAIL ⌘3 frame != visibleFrame"; FAIL=1; }
+import json, re, sys
+d = json.load(open(sys.argv[1]))
+def nums(value): return [int(x) for x in re.findall(r"-?\d+", value)]
+sys.exit(0 if nums(d["windowFrame"]) == nums(d["screenVisibleFrame"]) and d["isFullScreen"] is False else 1)
+FRAMECHECK
+[[ -s "$dir/window.png" ]]; check "$?" "0" "maximized capture"
 wait "$pid" || true
 
-# --- Esc leaves fullscreen ----------------------------------------------
+# --- from native fullscreen, ⌘3 exits then maximizes --------------------
+dir="$OUT/fullscreen-to-max"
+rm -rf "$dir"; mkdir -p "$dir"
+OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
+  "$APP" --open "$SMALL" --report "$dir/report.json" --capture-after 8 --quit-after 10 >"$dir/app.log" 2>&1 &
+pid=$!
+sleep 2.4; activate_app
+osascript -e 'tell application "System Events" to keystroke "f" using {control down, command down}' >/dev/null 2>&1
+sleep 1.2
+press 3 "command down"
+sleep 2.0
+wait_report "$dir/report.json" || { echo "FAIL fullscreen-to-max report missing"; FAIL=1; }
+check "$(report "$dir/report.json" isFullScreen)" "False" "⌘3 leaves native fullscreen"
+check "$(report "$dir/report.json" windowScaleLastAction)" "maximize" "⌘3 then maximizes"
+python3 - "$dir/report.json" <<'FRAMECHECK' && echo "ok   fullscreen→maximize frame equals visibleFrame" || { echo "FAIL fullscreen→maximize frame"; FAIL=1; }
+import json, re, sys
+d = json.load(open(sys.argv[1]))
+def nums(value): return [int(x) for x in re.findall(r"-?\d+", value)]
+sys.exit(0 if nums(d["windowFrame"]) == nums(d["screenVisibleFrame"]) and d["isFullScreen"] is False else 1)
+FRAMECHECK
+wait "$pid" || true
+
+# --- Esc leaves native fullscreen --------------------------------------
 dir="$OUT/esc"
 rm -rf "$dir"; mkdir -p "$dir"
 OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
   "$APP" --open "$SMALL" --report "$dir/report.json" --capture-after 7 --quit-after 9 >"$dir/app.log" 2>&1 &
 pid=$!
 sleep 2.4; activate_app
-press 3 "command down"
+osascript -e 'tell application "System Events" to keystroke "f" using {control down, command down}' >/dev/null 2>&1
 sleep 1.0
 press_key 53 ""
 wait_report "$dir/report.json" || { echo "FAIL esc report missing"; FAIL=1; }
@@ -179,5 +210,5 @@ if [[ "$FAIL" != "0" ]]; then
   echo "FAIL: window management"
   exit 1
 fi
-echo "PASS: IINA-style window sizes, ⌘3/⌃⌘F fullscreen, Esc, always-on-top"
+echo "PASS: IINA-style window sizes, ⌘3 maximize, ⌃⌘F fullscreen, Esc, always-on-top"
 echo "captures: $OUT"

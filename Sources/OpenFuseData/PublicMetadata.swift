@@ -19,12 +19,15 @@ public actor PublicMetadataService: PublicMetadataProviding {
     private var movieCache: [String: DirectoryWorkMetadata] = [:]
     private var wikiCache: [String: WikipediaSummary?] = [:]
     private var requestFailed = false
+    private let language: MetadataLanguage
 
     public func lastFailure() async -> Bool { requestFailed }
 
     private func fetch(_ url: URL) async -> Data? {
         do {
-            let (data, response) = try await session.data(from: url)
+            var request = URLRequest(url: url)
+            request.setValue("OpenFuse/1.0 (https://github.com/kaiwenyao/openfuse)", forHTTPHeaderField: "User-Agent")
+            let (data, response) = try await session.data(for: request)
             if let http = response as? HTTPURLResponse, http.statusCode >= 500 {
                 requestFailed = true
                 return nil
@@ -36,7 +39,8 @@ public actor PublicMetadataService: PublicMetadataProviding {
         }
     }
 
-    public init() {
+    public init(language: MetadataLanguage = .current()) {
+        self.language = language
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 12
         configuration.timeoutIntervalForResource = 20
@@ -52,7 +56,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
         season: Int?
     ) async -> (work: DirectoryWorkMetadata, episodes: [DirectoryEpisodeMetadata])? {
         requestFailed = false
-        let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)|\(season ?? 0)"
+        let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)|\(season ?? 0)|\(language.identifier)"
         if let cached = seriesCache[key] { return cached }
         var best: TVmazeShow?
         var bestScore = -1
@@ -74,19 +78,48 @@ public actor PublicMetadataService: PublicMetadataProviding {
 
         let wiki = await wikipediaSummary(
             queries: [show.name] + titleCandidates + ["\(show.name) 动画", "\(show.name) TV series"],
-            preferredLanguages: ["zh", "en"]
+            preferredLanguages: language.wikipedia
         )
-        let episodes: [DirectoryEpisodeMetadata]
+        var episodes: [DirectoryEpisodeMetadata] = []
         if let season {
             episodes = await tvmazeEpisodes(showID: show.id, season: season)
-        } else {
-            episodes = []
+        }
+        var title = wiki.map { language.localizedTitle($0.title) } ?? show.name
+        var overview = wiki?.extract ?? Self.stripHTML(show.summary)
+        var titleLanguage = wiki?.language
+        var overviewLanguage = wiki?.extract != nil ? wiki?.language : "en"
+        if language.isChinese || language.identifier == "ja" {
+            if let bangumi = await bangumiSubject(candidates: [show.name] + titleCandidates) {
+                let localizedTitle = language.identifier == "ja"
+                    ? bangumi.name
+                    : language.convert(bangumi.nameCN ?? bangumi.name)
+                if !localizedTitle.isEmpty {
+                    title = localizedTitle
+                    titleLanguage = language.identifier
+                }
+                if language.isChinese, let summary = bangumi.summary, Self.isChineseText(summary) {
+                    overview = language.convert(summary)
+                    overviewLanguage = language.identifier
+                }
+                if let season, season == 1, !episodes.isEmpty {
+                    let bangumiEpisodes = await bangumiEpisodes(subjectID: bangumi.id)
+                    for index in episodes.indices {
+                        guard let match = bangumiEpisodes[episodes[index].number] else { continue }
+                        let localized = language.identifier == "ja"
+                            ? match.name
+                            : language.convert(match.nameCN ?? match.name)
+                        episodes[index].title = localized
+                        episodes[index].titleLanguage = language.identifier
+                        episodes[index].overviewLanguage = episodes[index].overview == nil ? nil : "en"
+                    }
+                }
+            }
         }
         let work = DirectoryWorkMetadata(
             kind: .series,
-            title: wiki?.title ?? show.name,
+            title: title,
             year: show.premiered.flatMap { Int($0.prefix(4)) } ?? year,
-            overview: wiki?.extract ?? Self.stripHTML(show.summary),
+            overview: overview,
             posterURL: show.image?.original ?? wiki?.thumbnail,
             backdropURL: nil,
             tmdbRating: nil,
@@ -94,7 +127,9 @@ public actor PublicMetadataService: PublicMetadataProviding {
             imdbID: show.externals?.imdb,
             externalRatings: [],
             seasonNumbers: Array(Set(episodes.map(\.season))).sorted(),
-            ratingLabels: show.rating?.average.map { [String(format: "TVmaze %.1f/10", $0)] } ?? []
+            ratingLabels: show.rating?.average.map { [String(format: "TVmaze %.1f/10", $0)] } ?? [],
+            titleLanguage: titleLanguage,
+            overviewLanguage: overviewLanguage
         )
         let result = (work, episodes)
         seriesCache[key] = result
@@ -105,7 +140,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
 
     public func movie(titleCandidates: [String], year: Int?) async -> DirectoryWorkMetadata? {
         requestFailed = false
-        let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)"
+        let key = titleCandidates.joined(separator: "|") + "|\(year ?? 0)|\(language.identifier)"
         if let cached = movieCache[key] { return cached }
         let queries = titleCandidates.flatMap { candidate -> [String] in
             var values = [candidate]
@@ -115,7 +150,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
             }
             return values
         }
-        guard var summary = await wikipediaSummary(queries: queries, preferredLanguages: ["zh", "en"]) else {
+        guard var summary = await wikipediaSummary(queries: queries, preferredLanguages: language.wikipedia) else {
             return nil
         }
         let verified = await wikidataVerifyMovie(summary.wikibaseItem, year: year)
@@ -125,7 +160,7 @@ public actor PublicMetadataService: PublicMetadataProviding {
         }
         let work = DirectoryWorkMetadata(
             kind: .movie,
-            title: summary.title,
+            title: language.localizedTitle(summary.title),
             year: summary.year ?? verified.year ?? year,
             overview: summary.extract,
             posterURL: summary.thumbnail,
@@ -135,10 +170,85 @@ public actor PublicMetadataService: PublicMetadataProviding {
             imdbID: nil,
             externalRatings: [],
             seasonNumbers: [],
-            ratingLabels: []
+            ratingLabels: [],
+            titleLanguage: summary.language,
+            overviewLanguage: summary.language
         )
         movieCache[key] = work
         return work
+    }
+
+    // MARK: - Bangumi (public, zero key)
+
+    private struct BangumiSubject {
+        var id: Int
+        var name: String
+        var nameCN: String?
+        var summary: String?
+    }
+
+    private struct BangumiEpisode {
+        var sort: Int
+        var name: String
+        var nameCN: String?
+        var desc: String?
+    }
+
+    private func bangumiSubject(candidates: [String]) async -> BangumiSubject? {
+        for candidate in candidates where !candidate.isEmpty {
+            guard let encoded = candidate.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let url = URL(string: "https://api.bgm.tv/search/subject/\(encoded)?type=2&responseGroup=large"),
+                  let data = await fetch(url),
+                  let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let list = root["list"] as? [[String: Any]],
+                  let first = list.first,
+                  let id = first["id"] as? Int,
+                  let name = first["name"] as? String else {
+                continue
+            }
+            return BangumiSubject(
+                id: id,
+                name: name,
+                nameCN: first["name_cn"] as? String,
+                summary: first["summary"] as? String
+            )
+        }
+        return nil
+    }
+
+    private func bangumiEpisodes(subjectID: Int) async -> [Int: BangumiEpisode] {
+        guard let url = URL(string: "https://api.bgm.tv/v0/episodes?subject_id=\(subjectID)&type=0&limit=200"),
+              let data = await fetch(url),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let list = root["data"] as? [[String: Any]] else {
+            return [:]
+        }
+        var result: [Int: BangumiEpisode] = [:]
+        for item in list {
+            let sortValue = (item["sort"] as? Double) ?? (item["sort"] as? Int).map(Double.init)
+            guard let sortValue, let name = item["name"] as? String else { continue }
+            let number = Int(sortValue)
+            guard number > 0 else { continue }
+            result[number] = BangumiEpisode(
+                sort: number,
+                name: name,
+                nameCN: item["name_cn"] as? String,
+                desc: item["desc"] as? String
+            )
+        }
+        return result
+    }
+
+    private static func isChineseText(_ text: String) -> Bool {
+        guard !text.isEmpty else { return false }
+        let scalars = text.unicodeScalars
+        var han = 0
+        var kana = 0
+        for scalar in scalars {
+            if (0x4E00...0x9FFF).contains(scalar.value) { han += 1 }
+            if (0x3040...0x30FF).contains(scalar.value) { kana += 1 }
+        }
+        return han >= 12 && Double(kana) / Double(max(1, scalars.count)) < 0.18
     }
 
     // MARK: - TVmaze
@@ -194,7 +304,9 @@ public actor PublicMetadataService: PublicMetadataProviding {
                 overview: Self.stripHTML(episode.summary),
                 stillURL: episode.image?.original,
                 runtime: 0,
-                rating: nil
+                rating: nil,
+                titleLanguage: "en",
+                overviewLanguage: episode.summary == nil ? nil : "en"
             )
         }.sorted { $0.number < $1.number }
     }
@@ -245,28 +357,56 @@ public actor PublicMetadataService: PublicMetadataProviding {
     }
 
     private func pageSummary(title: String, language: String) async -> WikipediaSummary? {
-        let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title
-        guard let url = URL(string: "https://\(language).wikipedia.org/api/rest_v1/page/summary/\(encoded)"),
+        var components = URLComponents(string: "https://\(language).wikipedia.org/w/api.php")!
+        var items = [
+            URLQueryItem(name: "action", value: "query"),
+            URLQueryItem(name: "prop", value: "extracts|pageimages|pageprops"),
+            URLQueryItem(name: "exintro", value: "1"),
+            URLQueryItem(name: "explaintext", value: "1"),
+            URLQueryItem(name: "redirects", value: "1"),
+            URLQueryItem(name: "pithumbsize", value: "600"),
+            URLQueryItem(name: "titles", value: title),
+            URLQueryItem(name: "format", value: "json"),
+        ]
+        if language == "zh" {
+            items.append(URLQueryItem(name: "variant", value: languageVariant))
+            items.append(URLQueryItem(name: "converttitles", value: "1"))
+        }
+        components.queryItems = items
+        guard let url = components.url,
               let data = await fetch(url),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let query = root["query"] as? [String: Any],
+              let pages = query["pages"] as? [String: Any],
+              let page = pages.values.first as? [String: Any],
+              page["missing"] == nil else {
             return nil
         }
-        let extract = object["extract"] as? String
-        let description = object["description"] as? String
-        let thumbnail = (object["thumbnail"] as? [String: Any])?["source"] as? String
-        let pageTitle = object["title"] as? String ?? title
-        let wikibase = object["wikibase_item"] as? String
+        let extract = page["extract"] as? String
+        let pageTitle = page["title"] as? String ?? title
+        let thumbnail = (page["thumbnail"] as? [String: Any])?["source"] as? String
+        let pageprops = page["pageprops"] as? [String: Any]
+        let wikibase = pageprops?["wikibase_item"] as? String
         let year = (extract ?? "").range(of: #"\b(19|20)\d{2}\b"#, options: .regularExpression)
             .flatMap { Int((extract ?? "")[$0]) }
+        var resolvedTitle = self.language.localizedTitle(pageTitle)
+        if self.language.isChinese, let extract,
+           let range = extract.range(of: #"《[^》]+》"#, options: .regularExpression) {
+            resolvedTitle = String(extract[range]).trimmingCharacters(in: CharacterSet(charactersIn: "《》"))
+        }
         return WikipediaSummary(
-            title: pageTitle,
+            title: resolvedTitle,
             extract: extract,
-            description: description,
+            description: nil,
             thumbnail: thumbnail,
             wikibaseItem: wikibase,
             year: year,
             language: language
         )
+    }
+
+    private var languageVariant: String {
+        language.isTraditionalChinese ? "zh-hant" : "zh-hans"
     }
 
     private func wikidataVerifyMovie(_ entityID: String?, year: Int?) async -> (isFilm: Bool, year: Int?) {

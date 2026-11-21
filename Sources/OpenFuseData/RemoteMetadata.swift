@@ -9,6 +9,9 @@ public struct DirectoryEpisodeMetadata: Codable, Hashable, Sendable {
     public var runtime: Double
     /// TMDB episode vote average, 0–10. Only shown when present.
     public var rating: Double?
+    /// Languages actually used for this field after per-field fallback.
+    public var titleLanguage: String?
+    public var overviewLanguage: String?
 
     public var label: String {
         String(format: "S%02dE%02d", season, number)
@@ -35,6 +38,9 @@ public struct DirectoryWorkMetadata: Codable, Hashable, Sendable {
     public var seasonNumbers: [Int]
     /// Ratings from non-TMDB public sources, e.g. "TVmaze 8.4/10".
     public var ratingLabels: [String]?
+    /// Languages actually used for this field after per-field fallback.
+    public var titleLanguage: String?
+    public var overviewLanguage: String?
 
     public var tmdbLabel: String? {
         guard let tmdbRating else { return nil }
@@ -82,6 +88,7 @@ public actor RemoteMetadataService {
     private let tmdb: TMDBClient?
     private let omdb: OMDbClient?
     private let publicResolver: any PublicMetadataProviding
+    public let language: MetadataLanguage
     private let cacheDirectory: URL
     private let ttl: TimeInterval = 24 * 60 * 60
 
@@ -89,11 +96,13 @@ public actor RemoteMetadataService {
         tmdb: TMDBClient?,
         omdb: OMDbClient?,
         cacheDirectory: URL,
-        publicResolver: any PublicMetadataProviding = PublicMetadataService()
+        publicResolver: any PublicMetadataProviding = PublicMetadataService(),
+        language: MetadataLanguage = .current()
     ) {
         self.tmdb = tmdb
         self.omdb = omdb
         self.publicResolver = publicResolver
+        self.language = language
         self.cacheDirectory = cacheDirectory
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
@@ -151,7 +160,7 @@ public actor RemoteMetadataService {
         if let matchTitle, !matchTitle.isEmpty {
             titleCandidates.insert(matchTitle, at: 0)
         }
-        let cacheKey = Self.cacheKey(sourceID: sourceID, kind: kind, title: titleHint, season: seasonHint)
+        let cacheKey = Self.cacheKey(sourceID: sourceID, kind: kind, title: titleHint, season: seasonHint, language: language.identifier)
         if let cached = readCache(cacheKey) { return cached }
 
         let fallbackTitle = matchTitle?.isEmpty == false
@@ -206,7 +215,9 @@ public actor RemoteMetadataService {
                     imdbID: details.imdbID,
                     externalRatings: externalRatings,
                     seasonNumbers: details.seasons.map(\.seasonNumber),
-                    ratingLabels: []
+                    ratingLabels: [],
+                    titleLanguage: language.identifier,
+                    overviewLanguage: language.identifier
                 )
                 sourceLabel = "TMDB"
             } else {
@@ -265,7 +276,9 @@ public actor RemoteMetadataService {
                         imdbID: details.imdbID,
                         externalRatings: externalRatings,
                         seasonNumbers: [],
-                        ratingLabels: []
+                        ratingLabels: [],
+                        titleLanguage: language.identifier,
+                        overviewLanguage: language.identifier
                     )
                     sourceLabel = "TMDB"
                 } else {
@@ -379,6 +392,7 @@ public actor RemoteMetadataService {
         let files = (try? FileManager.default.contentsOfDirectory(atPath: cacheDirectory.path)) ?? []
         let prefix = sourceID + "-"
         for file in files where file.hasPrefix(prefix) && file.hasSuffix(".json") {
+            guard file.contains("-\(language.identifier)-") else { continue }
             let url = cacheDirectory.appendingPathComponent(file)
             guard let data = try? Data(contentsOf: url),
                   let envelope = try? JSONDecoder.openFuse.decode(MetadataCacheEnvelope.self, from: data),
@@ -389,7 +403,8 @@ public actor RemoteMetadataService {
                     sourceID: sourceID,
                     kind: .series,
                     title: VideoNaming.showName(parentFolder: directoryPath),
-                    season: season
+                    season: season,
+                    language: language.identifier
                 )
                 if file == key + ".json" { return envelope.value }
             } else if file.contains("-movie-") {
@@ -406,9 +421,9 @@ public actor RemoteMetadataService {
         }
     }
 
-    private static func cacheKey(sourceID: String, kind: LibraryKind, title: String, season: Int?) -> String {
+    private static func cacheKey(sourceID: String, kind: LibraryKind, title: String, season: Int?, language: String = MetadataLanguage.current().identifier) -> String {
         let clean = title.replacingOccurrences(of: #"[^A-Za-z0-9\u4e00-\u9fa5]+"#, with: "-", options: .regularExpression)
-        return "\(sourceID)-\(kind.rawValue)-\(clean)-\(season ?? 0)"
+        return "\(sourceID)-\(language)-\(kind.rawValue)-\(clean)-\(season ?? 0)"
     }
 
     private func readCache(_ key: String) -> DirectoryMetadata? {
