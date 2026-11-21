@@ -8,6 +8,7 @@
 M7（2026-11-20）：播放器控制栏在明亮主题下可见、WebDAV 路径不再重复、播放管线按 IINA 重写（CAOpenGLLayer + CVDisplayLink + display-resample）。记录：[M7 播放器管线](M7-PLAYER-PIPELINE.md)。
 0.5.1：播放器标题栏与窗口外观跟随深色，退出后恢复用户主题。
 0.5.2：回退 0.5.x 的 Core Animation 播放核心，修复色彩失衡与 SRT/ASS 字幕残缺、乱码；纯文本字幕固定上移避免被控制栏遮挡。
+0.5.3：缓存功能——缓冲/加载 HUD 显示百分比、已缓存大小与下载速度（对标 IINA）；进度条高亮已缓存区间（支持多段 seekable-ranges）。
 
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |

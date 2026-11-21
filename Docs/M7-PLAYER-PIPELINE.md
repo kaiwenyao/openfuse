@@ -206,3 +206,57 @@ Scripts/run-acceptance.sh        # 冻结抓帧、简繁 ASS、6ch、续播
 ```
 
 真实片源截图：`build/player-fix/window.png`（窗口捕获，含深色标题栏、控制栏、完整中文字幕）、`film.png`（渲染帧，用于颜色对照）、`fixture-ass.png`、`srt-black.png`。窗口捕获用新增的 `--capture-window <path>`（`CGWindowListCreateImage`，可捕获本进程的 OpenGL 视图）。
+
+## 11. 0.5.3：缓冲 HUD 与缓存区间高亮
+
+两个缓存相关的功能，数据口径对齐 IINA 的 `BufferIndicatorView`（`iina/BufferIndicatorView.swift` + `PlayerCore.syncUI(.time)`）。
+
+### 11.1 数据来源
+
+`MPVEngine` 观察以下属性（旧引擎的 `mpv_observe_property` 路径）：
+
+| 属性 | 用途 |
+| --- | --- |
+| `paused-for-cache` | 是否因等待缓存暂停 |
+| `cache-buffering-state` | 缓冲百分比（0–100，仅在 `paused-for-cache` 时有意义） |
+| `demuxer-cache-state` | `fw-bytes`（前向缓存字节数）、`raw-input-rate`（下载速度 B/s）、`cache-end`、`seekable-ranges`、`bof-cached` |
+| `cache-speed` | 与 `raw-input-rate` 相同，用于打开阶段尽早拿到速度 |
+| `demuxer-cache-time` | 缓存时间点（回退值） |
+
+`MPVEngine` 汇总成 `MPVCacheState`，以最多 5 Hz 通过 `onCacheStateChanged` 投递主线程；`PlaybackClock` 再把 `bufferedRanges` 以 5 Hz 发布给进度条，避免缓存事件（每秒几十次）重排 UI。
+
+### 11.2 缓冲/打开 HUD
+
+`PlayerCacheHUD`（SwiftUI，居中）：
+
+- `paused-for-cache` 时：`缓冲中 N%` + `已缓存大小 · 速度`，例如 `125 KB · 29 KB/s`。
+- 首次打开（`loadfile` 到首帧之前）：`正在打开…`；一旦拿到速度/字节数也会显示明细。
+- 结束或失败时由 `onEndFile(error)` 收起并给出状态提示。
+
+和 IINA 的对应关系：`progressLabel`（`Buffering… %d%%`）→ “缓冲中 N%”；`detailLabel`（`used B (speed B/s)`）→ “已缓存大小 · 速度”；IINA 的网络打开提示 “Opening stream…” → “正在打开…”。
+
+### 11.3 进度条缓存高亮
+
+`PlayerScrubber` 在未播放轨道上按 `clock.bufferedRanges` 画浅蓝区间（`Theme.accent.opacity(0.42)`），已播放段仍是实心强调色。
+
+- 基础数据是 `seekable-ranges`；它只覆盖有索引条目的区间，且可能落后于已下载字节。
+- 引擎会把“到达 `cache-end` 的那一段”延伸到 `cache-end`；如果没有区间覆盖 `cache-end`，则按 `bof-cached` 从 0 或从播放头开始补一段。这样本地顺序播放时高亮就是“已下载到哪”，远程流拖动后可以同时显示多段。
+- 区间按 `duration` 裁剪，`sub` 与进度条都不会越界。
+
+### 11.4 验收
+
+新增 `Scripts/run-cache-features.sh`：
+
+1. 从夹具生成 faststart H.264 副本（约 5.9 MB / 60 s），由本地 WebDAV 夹具以 **30 KB/s** 限速提供（低于约 90 KB/s 的码率，必然进入 `paused-for-cache`）。
+2. 播放 22 s 后抓窗口（`--capture-window`，同时包含视频、控制栏、HUD 与进度条）并写报告。
+3. 断言：本地 `bufferedRanges` 非空且末端超过播放头、`cacheUsedBytes>0`；网络侧 `isBuffering=true`、`bufferingPercent>0`、`cacheSpeedBytes>0`、`bufferedRanges` 非空。
+
+本机结果：
+
+```
+local:   position 5.7, bufferedRanges [{0, 25.6}], cacheUsed 3.69 MB, speed 160 KB/s
+network: position 5.0, isBuffering true, bufferingPercent 89, speed 29.9 KB/s, ranges [{4.54, 6.21}]
+PASS: buffering HUD metrics and cached-span highlight verified
+```
+
+证据：`build/cache-features/buffering-window.png`（HUD “缓冲中 89% · 125 KB · 29 KB/s” + 进度条上的短缓存段）、`build/cache-features/local-window.png`（0–25.6 s 的长缓存段）。

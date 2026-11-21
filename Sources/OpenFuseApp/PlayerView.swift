@@ -31,22 +31,9 @@ struct PlayerView: View {
                     .transition(.opacity)
             }
 
-            if player.isBuffering {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small).tint(.white)
-                        Text("缓冲中…")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(.black.opacity(0.7), in: Capsule())
-                    .foregroundStyle(.white)
-                    .padding(.bottom, 120)
-                }
-                .allowsHitTesting(false)
-            }
+            PlayerCacheHUD(player: player)
+                .animation(.easeInOut(duration: 0.18), value: player.isBuffering)
+                .animation(.easeInOut(duration: 0.18), value: player.isOpening)
 
             if let status = player.statusMessage {
                 VStack {

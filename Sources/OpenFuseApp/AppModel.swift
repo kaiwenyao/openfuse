@@ -2047,6 +2047,14 @@ final class AppModel: ObservableObject {
             "subUseMargins": player.engine.getPropertyString("sub-use-margins") ?? "nil",
             "osdLevel": player.engine.getPropertyString("osd-level") ?? "nil",
             "blendSubtitles": player.engine.getPropertyString("blend-subtitles") ?? "nil",
+            "cacheSpeedBytes": player.cacheSpeed,
+            "cacheUsedBytes": player.cacheBytes,
+            "bufferingPercent": player.bufferingPercent,
+            "isBuffering": player.isBuffering,
+            "isOpening": player.isOpening,
+            "bufferedEnd": player.clock.buffered,
+            "bufferedRanges": player.clock.bufferedRanges.map { ["start": $0.start, "end": $0.end] },
+            "cacheStateRaw": player.engine.getPropertyString("demuxer-cache-state") ?? "",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
@@ -2113,6 +2121,14 @@ final class PlayerModel: ObservableObject {
     @Published var logs: [String] = []
     /// Set from `paused-for-cache`; shown in the control bar while buffering.
     @Published var isBuffering = false
+    /// True from `loadfile` until the first decoded frame is on screen.
+    @Published var isOpening = true
+    /// Download speed reported by mpv (`raw-input-rate`), bytes per second.
+    @Published var cacheSpeed: Double = 0
+    /// Forward cache size in bytes (`fw-bytes`).
+    @Published var cacheBytes: Int64 = 0
+    /// `cache-buffering-state` percentage (0–100).
+    @Published var bufferingPercent = 0
 
 
     var onClose: (() -> Void)?
@@ -2210,6 +2226,7 @@ final class PlayerModel: ObservableObject {
         guard !hasStarted, engine.hasRenderContext else { return }
         hasStarted = true
         engine.onRenderContextReady = nil
+        isOpening = true
         engine.load(url: item.playbackURL, startAt: initialPosition)
         engine.play()
         clock.reset(position: initialPosition)
@@ -2254,6 +2271,9 @@ final class PlayerModel: ObservableObject {
             }
             self.position = value
             self.clock.update(position: value)
+            if self.isOpening, value > 0.1 {
+                self.isOpening = false
+            }
         }
         engine.onDurationChanged = { [weak self] value in
             guard let self else { return }
@@ -2282,6 +2302,10 @@ final class PlayerModel: ObservableObject {
             guard let self else { return }
             if reason == "eof" {
                 self.finishPlaybackIfNeeded()
+            } else if reason == "error" {
+                self.isOpening = false
+                self.isBuffering = false
+                self.statusMessage = "无法播放该文件，请检查来源或网络"
             }
         }
         engine.onEOFReached = { [weak self] in
@@ -2289,6 +2313,16 @@ final class PlayerModel: ObservableObject {
         }
         engine.onCacheChanged = { [weak self] buffered in
             self?.clock.update(buffered: buffered)
+        }
+        engine.onCacheStateChanged = { [weak self] state in
+            guard let self else { return }
+            self.cacheSpeed = state.speedBytesPerSecond
+            self.cacheBytes = state.usedBytes
+            self.bufferingPercent = state.bufferingPercent
+            self.clock.update(
+                bufferedRanges: state.ranges.map { BufferedRange(start: $0.start, end: $0.end) },
+                bufferedEnd: state.bufferedEnd
+            )
         }
         engine.onBufferingChanged = { [weak self] buffering in
             self?.isBuffering = buffering

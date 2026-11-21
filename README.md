@@ -13,14 +13,12 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.5.2（2026-11-21）
+## 当前版本 0.5.3（2026-11-21）
 
-- **修复 0.5.0/0.5.1 的色彩失衡。** 上一版把画面交给 16-bit float 的 Core Animation 图层，却没有声明颜色空间，macOS 在 XDR 屏上按扩展范围解释这块缓冲区，整幅画面发黄偏绿。已回到 0.4.x 的 8-bit sRGB 呈现路径，HDR 片源照旧由 mpv 色调映射到 SDR。
-- **修复字幕只显示一部分/乱码。** 0.5.x 的新播放核心让纯文本（SRT）字幕经 mpv OSD 渲染时丢失，ASS 只画出一部分；同时 `sub-pos` 抬升会把纯文本字幕推出画面。播放核心已回到 0.4.x 的 `NSOpenGLView` + libmpv 实现（保留新的选项、CVDisplayLink 刷新率与播放头解耦），SRT 与 ASS 都完整显示。
-- **字幕不再被控制栏挡住。** 纯文本字幕通过 `sub-margin-y-offset` 固定上移约 10%（152 px @1520），位于控制栏之上；ASS 保持脚本位置。只影响纯文本，不会造成运行时跳动。
-- **播放器标题栏跟随深色**（0.5.1）：播放器内窗口与标题栏为深色，回首页恢复用户主题。
-- **0.5.0/0.5.1 保留的其它改进：** 控制栏在明亮主题下可见、自绘进度条、WebDAV 路径规范化、Jellyfin 浏览加固、播放头 10 Hz 独立发布（控制栏淡出停帧从 ~100 ms 降到 35–45 ms）、CVDisplayLink 校准 `display-fps`。
-- 本轮 macOS 验证：69 个单元测试、M1 播放验收、控制栏/播放管线/WebDAV 三个脚本；真实 1080p 片源（Big Buck Bunny 10 s + 中文 SRT）实测颜色与源帧一致、字幕完整。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
+- **缓冲/加载时的速度显示（对标 IINA）。** 打开网络流时居中显示“正在打开…”，缓冲时显示 `缓冲中 N%`，下面一行是已缓存大小与下载速度（如 `125 KB · 29 KB/s`），数据取自 mpv 的 `cache-buffering-state`、`demuxer-cache-state/fw-bytes`、`raw-input-rate`/`cache-speed`，与 IINA `BufferIndicatorView` 的口径一致。
+- **进度条高亮已缓存部分。** 播放头后方到 `cache-end` 的已下载区间、以及 `seekable-ranges` 里的其它可寻址区间，都会以较浅的蓝色绘制在进度条上；本地文件缓存多少就亮多少，拖动后可以同时看到多段。
+- **0.5.2 的修复保持：** 8-bit sRGB 呈现（无偏色）、SRT/ASS 完整显示、纯文本字幕上移避开控制栏、深色标题栏、WebDAV 路径规范化、播放头 10 Hz 解耦。
+- 本轮 macOS 验证：69 个单元测试；新增 `Scripts/run-cache-features.sh`（本地缓存区间 + 30 KB/s 限速 WebDAV 的缓冲 HUD/速度），控制栏、播放管线、WebDAV 三个既有脚本全部通过。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
 
 # OpenFuse 开发计划
 

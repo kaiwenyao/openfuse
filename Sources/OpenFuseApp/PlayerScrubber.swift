@@ -25,15 +25,23 @@ struct PlayerScrubber: View {
         GeometryReader { proxy in
             let width = max(proxy.size.width, 1)
             let played = fraction(dragValue ?? clock.position, width: width)
-            let buffered = fraction(clock.buffered, width: width)
+            let ranges = bufferedRanges
 
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
                     .fill(Color.white.opacity(0.20))
                     .frame(height: trackHeight)
-                Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.34))
-                    .frame(width: width * buffered, height: trackHeight)
+                // Cached spans reported by mpv's demuxer cache, highlighted under
+                // the played portion (seekable ranges, so a remote file that was
+                // seeked can show more than one span).
+                ForEach(Array(ranges.enumerated()), id: \.offset) { _, range in
+                    let start = fraction(range.start, width: width)
+                    let end = fraction(range.end, width: width)
+                    Capsule(style: .continuous)
+                        .fill(Theme.accent.opacity(0.42))
+                        .frame(width: max(0, width * (end - start)), height: trackHeight)
+                        .offset(x: width * start)
+                }
                 Capsule(style: .continuous)
                     .fill(Theme.accent)
                     .frame(width: width * played, height: trackHeight)
@@ -65,6 +73,16 @@ struct PlayerScrubber: View {
         }
         .frame(height: 22)
         .help("拖动定位")
+    }
+
+    /// Cache spans clamped to the timeline. Falls back to the single cache end
+    /// when mpv has not reported `seekable-ranges` yet.
+    private var bufferedRanges: [BufferedRange] {
+        if !clock.bufferedRanges.isEmpty {
+            return clock.bufferedRanges
+        }
+        guard clock.buffered > 0, duration > 0 else { return [] }
+        return [BufferedRange(start: 0, end: min(clock.buffered, duration))]
     }
 
     private func fraction(_ seconds: Double, width: CGFloat) -> CGFloat {

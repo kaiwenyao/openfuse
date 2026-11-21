@@ -17,6 +17,7 @@ import mimetypes
 import os
 import posixpath
 import socketserver
+import time
 import sys
 import urllib.parse
 from xml.sax.saxutils import escape
@@ -69,6 +70,7 @@ def propfind_entry(root: str, relpath: str) -> str:
 class Handler(http.server.BaseHTTPRequestHandler):
     server_version = "OpenFuseWebDAVFixture/1.0"
     root = "."
+    rate_bytes = 0
 
     def log_message(self, fmt, *args):  # noqa: N802 - stdlib signature
         sys.stderr.write("[webdav] " + fmt % args + "\n")
@@ -145,20 +147,46 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 start, end, status = 0, size - 1, 200
                 extra = {}
         length = max(0, end - start + 1)
+        if self.command == "HEAD" or self.rate_bytes <= 0:
+            with open(full, "rb") as handle:
+                handle.seek(start)
+                body = handle.read(length)
+            if status == 206:
+                self.send_response(206)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Content-Range", extra["Content-Range"])
+                self.send_header("Accept-Ranges", "bytes")
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_body(200, body, content_type)
+            return
+
+        # Throttled streaming: lets the acceptance run exercise the buffering
+        # HUD and the cached-span highlight on a local server.
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(length))
+        self.send_header("Accept-Ranges", "bytes")
+        if status == 206:
+            self.send_header("Content-Range", extra["Content-Range"])
+        self.end_headers()
+        chunk = 32 * 1024
+        sent = 0
         with open(full, "rb") as handle:
             handle.seek(start)
-            body = handle.read(length)
-        if status == 206:
-            self.send_response(206)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Content-Range", extra["Content-Range"])
-            self.send_header("Accept-Ranges", "bytes")
-            self.end_headers()
-            if self.command != "HEAD":
-                self.wfile.write(body)
-            return
-        self.send_body(200, body, content_type)
+            while sent < length:
+                data = handle.read(min(chunk, length - sent))
+                if not data:
+                    break
+                try:
+                    self.wfile.write(data)
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    return
+                sent += len(data)
+                time.sleep(len(data) / self.rate_bytes)
 
     def do_OPTIONS(self):  # noqa: N802
         self.send_response(200)
@@ -172,11 +200,18 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True)
     parser.add_argument("--port", type=int, default=8099)
+    parser.add_argument("--rate-bytes", type=int, default=0,
+                        help="throttle GET bodies to this many bytes per second (0 = unlimited)")
     args = parser.parse_args()
 
     Handler.root = os.path.abspath(args.root)
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("127.0.0.1", args.port), Handler) as httpd:
+    Handler.rate_bytes = max(0, args.rate_bytes)
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    # Threaded: while a throttled GET streams the body, mpv opens a second
+    # connection for the tail/seek-head; a single-threaded server would deadlock
+    # the demuxer.
+    with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler) as httpd:
+        httpd.daemon_threads = True
         print(f"webdav fixture on http://127.0.0.1:{args.port}{BASE_PATH}/ -> {Handler.root}", flush=True)
         try:
             httpd.serve_forever()

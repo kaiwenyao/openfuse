@@ -775,3 +775,11 @@
 | SRT 字幕完整性 | 同上 | 同片 + 中文 SRT | 旧版 0.4.0 同素材 | 字幕完整显示、无乱码；固定上移 152 px，位于控制栏上方 | `build/player-fix/window.png`、`srt-black.png` | 通过（本机） |
 | ASS 字幕 | 同上 | 60 s 夹具 + 简繁 ASS | 同上 | 完整显示（1279–1324 行），与 0.4.0 一致 | `build/player-fix/fixture-ass.png` | 通过（本机） |
 | 播放节拍回退后 | 同上 | 60 s 夹具，控制栏自动隐藏 | 同上 | p50 41.4 ms、p99 54.2 ms、max 56.8 ms；淡出停帧 35 ms；`frameDropCount=5` | `build/player-pipeline/report.json` | 通过（本机；未恢复 0.5.0 的跟屏渲染） |
+
+### M7c 缓存功能执行记录（2026-11-21）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 缓冲 HUD（速度） | MacBook Pro M2 Pro／macOS 27.2.1 | 60 s faststart MP4／本地 WebDAV 限速 30 KB/s | IINA `BufferIndicatorView`：`Buffering… N%` + `used B (speed B/s)` | `缓冲中 89%`，`125 KB · 29 KB/s`；报告 `bufferingPercent=89`、`cacheSpeedBytes≈29.9k` | `build/cache-features/buffering-window.png`、`report-net.json` | 通过（本机） |
+| 缓存区间高亮 | 同上 | 60 s 夹具／本地 | 进度条显示已缓存部分 | 缓存区间 0–25.6 s 以浅蓝绘制；本地报告 `bufferedRanges=[{0,25.63}]` | `build/cache-features/local-window.png`、`report-local.json` | 通过（本机） |
+| 多段/拖动 | 同上 | 远程限速流 | 待采样 | 引擎按 `seekable-ranges` 输出多段并延伸到 `cache-end`；本机只验证单段 | `report-net.json` | 部分通过 |

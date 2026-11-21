@@ -20,6 +20,29 @@ public struct MPVTrackInfo: Hashable, Sendable {
     public var isSelected: Bool
 }
 
+/// One buffered span reported by mpv's demuxer cache.
+public struct MPVCacheRange: Hashable, Sendable {
+    public var start: Double
+    public var end: Double
+    public init(start: Double, end: Double) {
+        self.start = start
+        self.end = end
+    }
+}
+
+/// Snapshot of mpv's demuxer cache, used by the player HUD and the progress
+/// bar. Mirrors what IINA reads in `PlayerCore.syncUI(.time)`:
+/// `demuxer-cache-state`'s `seekable-ranges` / `fw-bytes` / `raw-input-rate`,
+/// plus `demuxer-cache-time`, `cache-buffering-state` and `paused-for-cache`.
+public struct MPVCacheState: Sendable {
+    public var bufferedEnd: Double = 0
+    public var ranges: [MPVCacheRange] = []
+    public var speedBytesPerSecond: Double = 0
+    public var usedBytes: Int64 = 0
+    public var bufferingPercent: Int = 0
+    public var pausedForCache: Bool = false
+}
+
 public struct MPVSnapshot: Sendable {
     public var position: Double
     public var duration: Double
@@ -38,6 +61,8 @@ public final class MPVEngine: @unchecked Sendable {
     private var stopped = false
     private var eventExited = DispatchSemaphore(value: 0)
     private var lastTimeNotification: CFTimeInterval = 0
+    private var cacheState = MPVCacheState()
+    private var lastCacheNotification: CFTimeInterval = 0
 
     // MARK: Public callbacks (main queue)
 
@@ -53,9 +78,11 @@ public final class MPVEngine: @unchecked Sendable {
     public var onEOFReached: (() -> Void)?
     public var onLog: ((String) -> Void)?
     public var onRenderContextReady: (() -> Void)?
-    /// End of the demuxer cache (unused by this engine, kept for the player API).
+    /// End of the demuxer cache in seconds (kept for the playhead clock).
     public var onCacheChanged: ((Double) -> Void)?
-    /// `paused-for-cache` (unused by this engine, kept for the player API).
+    /// Full cache snapshot (ranges, speed, used bytes, buffering percentage).
+    public var onCacheStateChanged: ((MPVCacheState) -> Void)?
+    /// `paused-for-cache`.
     public var onBufferingChanged: ((Bool) -> Void)?
 
     public private(set) var snapshot = MPVSnapshot(position: 0, duration: 0, isPaused: true, tracks: [])
@@ -121,6 +148,11 @@ public final class MPVEngine: @unchecked Sendable {
         mpv_observe_property(handle, 0, "pause", MPV_FORMAT_FLAG)
         mpv_observe_property(handle, 0, "track-list", MPV_FORMAT_NONE)
         mpv_observe_property(handle, 0, "eof-reached", MPV_FORMAT_FLAG)
+        mpv_observe_property(handle, 0, "demuxer-cache-time", MPV_FORMAT_DOUBLE)
+        mpv_observe_property(handle, 0, "demuxer-cache-state", MPV_FORMAT_NONE)
+        mpv_observe_property(handle, 0, "cache-buffering-state", MPV_FORMAT_NONE)
+        mpv_observe_property(handle, 0, "paused-for-cache", MPV_FORMAT_FLAG)
+        mpv_observe_property(handle, 0, "cache-speed", MPV_FORMAT_INT64)
         mpv_request_log_messages(handle, logLevel)
 
         eventQueue.async { [weak self] in
@@ -407,6 +439,25 @@ public final class MPVEngine: @unchecked Sendable {
             DispatchQueue.main.async { [weak self] in self?.onPauseChanged?(paused) }
         case "track-list":
             refreshTracks()
+        case "demuxer-cache-time":
+            guard property.format == MPV_FORMAT_DOUBLE, let value = property.data else { return }
+            cacheState.bufferedEnd = value.assumingMemoryBound(to: Double.self).pointee
+            emitCacheState()
+        case "demuxer-cache-state":
+            refreshCacheState()
+        case "cache-speed":
+            guard property.format == MPV_FORMAT_INT64, let value = property.data else { return }
+            cacheState.speedBytesPerSecond = Double(value.assumingMemoryBound(to: Int64.self).pointee)
+            emitCacheState()
+        case "cache-buffering-state":
+            if let raw = getPropertyString("cache-buffering-state"), let percent = Int(raw) {
+                cacheState.bufferingPercent = percent
+                emitCacheState()
+            }
+        case "paused-for-cache":
+            guard property.format == MPV_FORMAT_FLAG, let value = property.data else { return }
+            cacheState.pausedForCache = value.assumingMemoryBound(to: Int32.self).pointee != 0
+            emitCacheState(force: true)
         case "eof-reached":
             guard property.format == MPV_FORMAT_FLAG, let value = property.data else { return }
             let reached = value.assumingMemoryBound(to: Int32.self).pointee != 0
@@ -415,6 +466,69 @@ public final class MPVEngine: @unchecked Sendable {
             }
         default:
             break
+        }
+    }
+
+    /// Reads mpv's `demuxer-cache-state` node (JSON) and publishes a snapshot
+    /// at most five times per second. `seekable-ranges` is what the progress
+    /// bar highlights; `raw-input-rate` is the download speed shown in the
+    /// buffering HUD, matching IINA's `cacheSpeed`.
+    private func refreshCacheState() {
+        guard let json = getPropertyString("demuxer-cache-state"),
+              let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return }
+
+        var spans: [MPVCacheRange] = []
+        if let ranges = dict["seekable-ranges"] as? [[String: Any]] {
+            spans = ranges.compactMap { entry in
+                guard let start = (entry["start"] as? NSNumber)?.doubleValue,
+                      let end = (entry["end"] as? NSNumber)?.doubleValue,
+                      end > start
+                else { return nil }
+                return MPVCacheRange(start: start, end: end)
+            }
+        }
+        let cacheEnd = (dict["cache-end"] as? NSNumber)?.doubleValue ?? 0
+        if cacheEnd > 0 {
+            cacheState.bufferedEnd = cacheEnd
+            // `seekable-ranges` only covers spans with an index entry and can
+            // lag behind the bytes already downloaded. Extend the span that
+            // reaches the cache end, or add a span starting at the playhead so
+            // the highlight reflects the forward cache shown in the HUD.
+            if let index = spans.lastIndex(where: { $0.start <= cacheEnd + 0.5 && $0.end >= cacheEnd - 6 }) {
+                spans[index].end = max(spans[index].end, cacheEnd)
+            } else {
+                // No indexed span reaches the cache end yet. If the beginning is
+                // cached (sequential download) the highlight starts at 0;
+                // otherwise it starts where the playhead is.
+                let bofCached = (dict["bof-cached"] as? Bool) ?? false
+                let start = bofCached ? 0 : max(0, snapshot.position - 0.5)
+                spans.append(MPVCacheRange(start: start, end: cacheEnd))
+            }
+        }
+        cacheState.ranges = spans
+        if let used = (dict["fw-bytes"] as? NSNumber)?.int64Value {
+            cacheState.usedBytes = used
+        }
+        if let speed = (dict["raw-input-rate"] as? NSNumber)?.doubleValue {
+            cacheState.speedBytesPerSecond = speed
+        }
+        if let raw = getPropertyString("cache-buffering-state"), let percent = Int(raw) {
+            cacheState.bufferingPercent = percent
+        }
+        emitCacheState()
+    }
+
+    private func emitCacheState(force: Bool = false) {
+        let now = CACurrentMediaTime()
+        guard force || now - lastCacheNotification >= 0.2 else { return }
+        lastCacheNotification = now
+        let state = cacheState
+        DispatchQueue.main.async { [weak self] in
+            self?.onCacheChanged?(state.bufferedEnd)
+            self?.onCacheStateChanged?(state)
+            self?.onBufferingChanged?(state.pausedForCache)
         }
     }
 
