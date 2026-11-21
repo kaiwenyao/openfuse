@@ -41,6 +41,8 @@ public struct MPVCacheState: Sendable {
     public var usedBytes: Int64 = 0
     public var bufferingPercent: Int = 0
     public var pausedForCache: Bool = false
+    /// True once mpv reported at least one download-speed sample for this file.
+    public var hasSpeedSample: Bool = false
 }
 
 public struct MPVSnapshot: Sendable {
@@ -58,11 +60,16 @@ public final class MPVEngine: @unchecked Sendable {
     private var renderContext: OpaquePointer?
     private let eventQueue = DispatchQueue(label: "openfuse.mpv.events", qos: .userInitiated)
     private let commandLock = NSLock()
+    /// Guards `tracks` and the track-list callback; refreshTracks can be called
+    /// from the event loop and from the main thread.
+    private let stateLock = NSLock()
     private var stopped = false
+    private var stopping = false
     private var eventExited = DispatchSemaphore(value: 0)
     private var lastTimeNotification: CFTimeInterval = 0
     private var cacheState = MPVCacheState()
     private var lastCacheNotification: CFTimeInterval = 0
+    private var hasSignaledFirstFrame = false
 
     // MARK: Public callbacks (main queue)
 
@@ -84,10 +91,16 @@ public final class MPVEngine: @unchecked Sendable {
     public var onCacheStateChanged: ((MPVCacheState) -> Void)?
     /// `paused-for-cache`.
     public var onBufferingChanged: ((Bool) -> Void)?
+    /// Fired once per file when mpv reports the first decoded video frame; used
+    /// to retire the "正在打开…" HUD even when resuming at a non-zero position.
+    public var onFirstVideoFrame: (() -> Void)?
 
     public private(set) var snapshot = MPVSnapshot(position: 0, duration: 0, isPaused: true, tracks: [])
 
     public init(headless: Bool = false, httpHeaders: [String] = []) {
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
+            FileHandle.standardError.write(Data("[timing] mpvEngine.init.begin\n".utf8))
+        }
         handle = mpv_create()
         guard let handle else {
             fatalError("mpv_create failed")
@@ -153,30 +166,87 @@ public final class MPVEngine: @unchecked Sendable {
         mpv_observe_property(handle, 0, "cache-buffering-state", MPV_FORMAT_NONE)
         mpv_observe_property(handle, 0, "paused-for-cache", MPV_FORMAT_FLAG)
         mpv_observe_property(handle, 0, "cache-speed", MPV_FORMAT_INT64)
+        mpv_observe_property(handle, 0, "video-frame-info", MPV_FORMAT_NONE)
         mpv_request_log_messages(handle, logLevel)
 
-        eventQueue.async { [weak self] in
-            self?.runEventLoop()
+        // Strong capture: the event loop must keep the engine alive for its
+        // whole lifetime. A weak capture could leave `self` deallocated on the
+        // main thread while the loop was between statements (use-after-free
+        // seen as a SIGSEGV in `refreshTracks`).
+        eventQueue.async {
+            self.runEventLoop()
+        }
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
+            FileHandle.standardError.write(Data("[timing] mpvEngine.init.end\n".utf8))
         }
     }
 
-    deinit {
-        shutdown()
-    }
+    // No `deinit` teardown: the event loop and the terminate block keep this
+    // object alive until mpv has shut down. Tearing down from `deinit` could
+    // run on the event thread and touch AppKit/GL (or resurrect `self` inside
+    // the async terminate closure), which crashed with a SIGSEGV.
 
-    public func shutdown() {
-        if stopped { return }
-        stopped = true
-        if let handle {
-            command(["quit"])
-            mpv_wakeup(handle)
+
+    /// Stops the engine without blocking the caller. The GL render context is
+    /// released on the main thread (the view calls `prepareForTeardown`), then
+    /// `quit` is queued and mpv is destroyed on the event queue after its event
+    /// loop exits. The old implementation waited on a semaphore and called
+    /// `mpv_terminate_destroy` from the main thread, which could freeze the UI
+    /// for seconds when a slow source was still opening.
+    public func stop() {
+        if stopped || stopping { return }
+        stopping = true
+        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
+            FileHandle.standardError.write(Data("[timing] mpvEngine.stop.begin\n".utf8))
         }
-        _ = eventExited.wait(timeout: .now() + 2)
-        destroyRenderContext()
-        if let handle {
-            mpv_terminate_destroy(handle)
+        renderView?.prepareForTeardown()
+        renderView = nil
+        // Release UI callbacks on the main thread, before mpv can deliver more
+        // events, so no PlayerModel/AppKit object is deallocated on the mpv
+        // event thread during teardown.
+        onTimeChanged = nil
+        onDurationChanged = nil
+        onPauseChanged = nil
+        onTracksChanged = nil
+        onFileLoaded = nil
+        onEndFile = nil
+        onEOFReached = nil
+        onLog = nil
+        onRenderContextReady = nil
+        onCacheChanged = nil
+        onCacheStateChanged = nil
+        onBufferingChanged = nil
+        onFirstVideoFrame = nil
+        guard let handle else { return }
+        commandAsync(["quit"])
+        mpv_wakeup(handle)
+        let handleToDestroy = handle
+        eventQueue.async {
+            _ = self.eventExited.wait(timeout: .now() + 3)
+            mpv_terminate_destroy(handleToDestroy)
+            // Publish the closed handle only after termination, and only from
+            // the event queue: writing it from the main thread while the event
+            // loop was reading it produced a torn Optional and a SIGSEGV.
             self.handle = nil
+            self.stopped = true
+            if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
+                FileHandle.standardError.write(Data("[timing] mpvEngine.stop.destroyed\n".utf8))
+            }
         }
+    }
+
+    /// Kept for callers that used the old name; no longer blocks.
+    public func shutdown() {
+        stop()
+    }
+
+    /// Frees the libmpv render context. Must run with the view's GL context
+    /// current (see `MPVGLView.prepareForTeardown`).
+    func freeRenderContext() {
+        guard let renderContext else { return }
+        mpv_render_context_set_update_callback(renderContext, nil, nil)
+        mpv_render_context_free(renderContext)
+        self.renderContext = nil
     }
 
     // MARK: Options and commands
@@ -190,6 +260,7 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func setProperty(_ name: String, _ value: String) {
+        guard !stopping, !stopped else { return }
         guard let handle else { return }
         let code = mpv_set_property_string(handle, name, value)
         if code < 0 {
@@ -197,7 +268,23 @@ public final class MPVEngine: @unchecked Sendable {
         }
     }
 
+    /// Non-blocking variant used for loadfile/seek: the UI must never wait for
+    /// the demuxer, especially when a remote source is slow to answer.
+    private func commandAsync(_ arguments: [String]) {
+        commandLock.lock()
+        defer { commandLock.unlock() }
+        guard let handle else { return }
+        var pointers: [UnsafePointer<CChar>?] = arguments.map { UnsafePointer(strdup($0)) }
+        defer { pointers.forEach { if let pointer = $0 { free(UnsafeMutablePointer(mutating: pointer)) } } }
+        pointers.append(nil)
+        let code = mpv_command_async(handle, 0, &pointers)
+        if code < 0 {
+            onLog?("mpv async command \(arguments.first ?? "?") failed: \(String(cString: mpv_error_string(code)))")
+        }
+    }
+
     public func command(_ arguments: [String]) {
+        guard !stopping, !stopped else { return }
         commandLock.lock()
         defer { commandLock.unlock() }
         guard let handle else { return }
@@ -213,7 +300,7 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func load(url: URL, startAt: Double = 0) {
-        command(["loadfile", url.isFileURL ? url.path : url.absoluteString, "replace"])
+        commandAsync(["loadfile", url.isFileURL ? url.path : url.absoluteString, "replace"])
         if startAt > 0.2 {
             // Applied after file-loaded to avoid mpv dropping the seek during
             // demuxer initialisation.
@@ -233,7 +320,7 @@ public final class MPVEngine: @unchecked Sendable {
 
     public func seek(to seconds: Double, exact: Bool = true) {
         let clamped = max(0, seconds)
-        command(["seek", String(format: "%.3f", clamped), exact ? "absolute+exact" : "absolute"])
+        commandAsync(["seek", String(format: "%.3f", clamped), exact ? "absolute+exact" : "absolute"])
     }
 
     public func setAudioTrack(id: Int64) {
@@ -245,7 +332,9 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func addSubtitle(url: URL, select: Bool = false) {
-        command(["sub-add", url.isFileURL ? url.path : url.absoluteString, select ? "select" : "auto"])
+        // Async: local ASS parsing (+ font setup) can take hundreds of ms and
+        // used to stall the main thread for every sidecar right after open.
+        commandAsync(["sub-add", url.isFileURL ? url.path : url.absoluteString, select ? "select" : "auto"])
     }
 
     public func removeSubtitle(id: Int64) {
@@ -262,6 +351,16 @@ public final class MPVEngine: @unchecked Sendable {
 
     public func setAudioChannels(_ layout: String) {
         setProperty("audio-channels", layout)
+    }
+
+    public func setVolume(_ volume: Double) {
+        guard !stopping, !stopped else { return }
+        let clamped = min(max(volume, 0), 100)
+        setProperty("volume", String(format: "%.0f", clamped))
+    }
+
+    public func getVolume() -> Double? {
+        getPropertyString("volume").flatMap(Double.init)
     }
 
     public func setSpeed(_ speed: Double) {
@@ -351,16 +450,11 @@ public final class MPVEngine: @unchecked Sendable {
         mpv_render_context_report_swap(renderContext)
     }
 
-    private func destroyRenderContext() {
-        guard let renderContext else { return }
-        mpv_render_context_set_update_callback(renderContext, { _ in }, nil)
-        mpv_render_context_free(renderContext)
-        self.renderContext = nil
-    }
-
     // MARK: Event loop
 
     private func runEventLoop() {
+        let keepAlive = self
+        defer { _ = keepAlive }
         guard let handle else {
             eventExited.signal()
             return
@@ -369,6 +463,9 @@ public final class MPVEngine: @unchecked Sendable {
         while !shouldExit {
             guard let event = mpv_wait_event(handle, 0.2) else { break }
             let eventID = event.pointee.event_id
+            if stopping, eventID != MPV_EVENT_SHUTDOWN {
+                continue
+            }
             switch eventID {
             case MPV_EVENT_NONE:
                 continue
@@ -448,7 +545,12 @@ public final class MPVEngine: @unchecked Sendable {
         case "cache-speed":
             guard property.format == MPV_FORMAT_INT64, let value = property.data else { return }
             cacheState.speedBytesPerSecond = Double(value.assumingMemoryBound(to: Int64.self).pointee)
+            cacheState.hasSpeedSample = true
             emitCacheState()
+        case "video-frame-info":
+            guard !hasSignaledFirstFrame else { return }
+            hasSignaledFirstFrame = true
+            DispatchQueue.main.async { [weak self] in self?.onFirstVideoFrame?() }
         case "cache-buffering-state":
             if let raw = getPropertyString("cache-buffering-state"), let percent = Int(raw) {
                 cacheState.bufferingPercent = percent
@@ -513,6 +615,7 @@ public final class MPVEngine: @unchecked Sendable {
         }
         if let speed = (dict["raw-input-rate"] as? NSNumber)?.doubleValue {
             cacheState.speedBytesPerSecond = speed
+            cacheState.hasSpeedSample = true
         }
         if let raw = getPropertyString("cache-buffering-state"), let percent = Int(raw) {
             cacheState.bufferingPercent = percent
@@ -533,6 +636,8 @@ public final class MPVEngine: @unchecked Sendable {
     }
 
     public func refreshTracks() {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         guard let handle else { return }
         guard let jsonPointer = mpv_get_property_string(handle, "track-list") else {
             return

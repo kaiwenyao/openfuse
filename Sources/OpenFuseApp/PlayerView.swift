@@ -19,11 +19,17 @@ struct PlayerView: View {
     @ObservedObject var player: PlayerModel
     @State private var keyMonitor: Any?
     @State private var hitDebugMonitor: Any?
+    @State private var rightClickMonitor: Any?
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             MPVSurface(engine: player.engine)
+                // A new engine needs its own NSOpenGLView: SwiftUI would
+                // otherwise reuse the old view (whose GL context belongs to the
+                // stopped engine), leaving the new session without a render
+                // context when the user switches videos mid-load.
+                .id(ObjectIdentifier(player.engine))
                 .ignoresSafeArea()
 
             if player.showControls {
@@ -34,6 +40,14 @@ struct PlayerView: View {
             PlayerCacheHUD(player: player)
                 .animation(.easeInOut(duration: 0.18), value: player.isBuffering)
                 .animation(.easeInOut(duration: 0.18), value: player.isOpening)
+                .animation(.easeInOut(duration: 0.18), value: player.isNetworkStalled)
+
+            VStack {
+                Spacer()
+                PlayerVolumeHUD(player: player)
+                    .padding(.bottom, 132)
+            }
+            .animation(.easeInOut(duration: 0.16), value: player.showVolumeHUD)
 
             if let status = player.statusMessage {
                 VStack {
@@ -65,10 +79,12 @@ struct PlayerView: View {
         .onAppear {
             installKeyboardMonitor()
             installHitDebugMonitor()
+            installRightClickMonitor()
         }
         .onDisappear {
             removeKeyboardMonitor()
             removeHitDebugMonitor()
+            removeRightClickMonitor()
         }
         .onContinuousHover { phase in
             if case .active = phase {
@@ -113,11 +129,46 @@ struct PlayerView: View {
         }
     }
 
+    /// Right click (mouse or trackpad two-finger click) toggles play/pause
+    /// anywhere in the player: video, letterbox, subtitle area, buffering HUD
+    /// and the control bar. Swallowing the event also prevents SwiftUI/AppKit
+    /// context menus from opening in the player.
+    private func installRightClickMonitor() {
+        guard rightClickMonitor == nil else { return }
+        rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown]) { event in
+            if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_HITS"] == "1" {
+                print("[right] down window=\(String(describing: event.window)) key=\(String(describing: NSApp.keyWindow)) same=\(event.window === NSApp.keyWindow) loc=\(event.locationInWindow)")
+            }
+            guard event.window === NSApp.keyWindow else { return event }
+            if NSApp.keyWindow?.firstResponder is NSTextView { return event }
+            player.togglePlayPause(userInitiated: true)
+            return nil
+        }
+    }
+
+    private func removeRightClickMonitor() {
+        if let rightClickMonitor {
+            NSEvent.removeMonitor(rightClickMonitor)
+            self.rightClickMonitor = nil
+        }
+    }
+
     private func installKeyboardMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if event.modifierFlags.contains(.command) { return event }
+            if event.window !== NSApp.keyWindow { return event }
+            // Never steal typing (none in the player today, but keep it safe).
+            if NSApp.keyWindow?.firstResponder is NSTextView { return event }
             switch event.keyCode {
+            case 126, 125:
+                // Bare ↑/↓ adjust volume; modified arrows keep their system
+                // meaning (e.g. ⇧↑ selection, ⌥↑ scroll).
+                guard event.modifierFlags.intersection([.option, .control, .shift]).isEmpty else {
+                    return event
+                }
+                player.adjustVolume(by: event.keyCode == 126 ? 5 : -5)
+                return nil
             case 49:
                 player.togglePlayPause()
                 return nil
@@ -372,6 +423,8 @@ struct PlayerChrome: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+
+                VolumeControl(player: player)
 
                 AirPlayRoutePicker()
                     .frame(width: 24, height: 24)

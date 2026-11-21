@@ -10,7 +10,7 @@ struct PlayerCacheHUD: View {
     @ObservedObject var player: PlayerModel
 
     var body: some View {
-        if player.isBuffering || player.isOpening {
+        if player.isBuffering || player.isOpening || player.isNetworkStalled || player.isReconnecting {
             VStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
@@ -37,6 +37,12 @@ struct PlayerCacheHUD: View {
     }
 
     private var title: String {
+        if player.isReconnecting {
+            return "正在重新连接…"
+        }
+        if player.isNetworkStalled {
+            return "连接中断，重试播放"
+        }
         if player.isBuffering {
             let percent = min(max(player.bufferingPercent, 0), 100)
             return percent > 0 ? "缓冲中 \(percent)%" : "缓冲中…"
@@ -45,14 +51,15 @@ struct PlayerCacheHUD: View {
     }
 
     private var detail: String? {
+        // Local files never show a network speed measurement.
+        guard player.isNetworkSource else { return nil }
+        guard player.hasSpeedSample else { return "测速中…" }
         var pieces: [String] = []
         if player.cacheBytes > 0 {
             pieces.append(Self.byteCount(player.cacheBytes))
         }
-        if player.cacheSpeed > 1 {
-            pieces.append(Self.speed(player.cacheSpeed))
-        }
-        return pieces.isEmpty ? nil : pieces.joined(separator: " · ")
+        pieces.append(player.cacheSpeed >= 1 ? Self.speed(player.cacheSpeed) : "0 B/s")
+        return pieces.joined(separator: " · ")
     }
 
     private static func byteCount(_ bytes: Int64) -> String {

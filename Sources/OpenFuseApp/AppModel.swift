@@ -139,6 +139,21 @@ final class AppModel: ObservableObject {
     /// stale lookup can never start the wrong file.
     private var pendingNextOwner: String?
     private var keychainPromptedAccounts: Set<String> = []
+    /// Incremented whenever a playback intent starts or is cancelled. Async
+    /// source lookups capture this token and drop their result if a newer
+    /// session began meanwhile, so a slow PROPFIND/Jellyfin lookup cannot
+    /// replace the video the user picked afterwards.
+    private var sessionGeneration = 0
+
+    @discardableResult
+    private func beginPlaybackSession() -> Int {
+        sessionGeneration &+= 1
+        return sessionGeneration
+    }
+
+    private func sessionIsCurrent(_ token: Int) -> Bool {
+        token == sessionGeneration
+    }
 
     init(supportDirectory: URL? = nil) {
         let directory = supportDirectory ?? Self.defaultSupportDirectory()
@@ -306,6 +321,7 @@ final class AppModel: ObservableObject {
             return
         }
         do {
+            beginPlaybackSession()
             let item = try MediaItem.local(url: url)
             startPlayer(with: item)
         } catch {
@@ -318,6 +334,7 @@ final class AppModel: ObservableObject {
         serverStart: Double = 0,
         serverLastPlayedAt: Date? = nil
     ) {
+        PlaybackTrace.mark("startPlayer.begin \(item.title)")
         smbStreamServer?.stop()
         smbStreamServer = nil
         pendingNextPlayback = nil
@@ -345,6 +362,7 @@ final class AppModel: ObservableObject {
             playerReturnRoute = route
         }
         let model = PlayerModel(item: item, startAt: startAt, store: store)
+        PlaybackTrace.mark("startPlayer.modelReady")
         // Keep the menu bar's 播放/字幕/音轨 items in sync with the player without
         // republishing every position tick.
         playerMenuObservation = Publishers.Merge3(
@@ -381,8 +399,10 @@ final class AppModel: ObservableObject {
         }
         player = model
         route = .player
+        PlaybackTrace.mark("startPlayer.routeSet")
         model.start()
         refreshRecent()
+        PlaybackTrace.mark("startPlayer.end")
     }
 
     // MARK: - WebDAV sources
@@ -507,6 +527,7 @@ final class AppModel: ObservableObject {
     }
 
     func openRemote(source: WebDAVSource, entry: RemoteEntry, siblings: [RemoteEntry]) async {
+        let token = beginPlaybackSession()
         guard let password = password(for: source) else {
             statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
             return
@@ -518,6 +539,7 @@ final class AppModel: ObservableObject {
                 directoryEntries = (try? await client.list(path: parent)) ?? []
             }
         }
+        guard sessionIsCurrent(token) else { return }
         let subtitles = WebDAVClient.subtitleTracks(for: entry, siblings: directoryEntries)
         let item = MediaItem.webdav(source: source, entry: entry, subtitles: subtitles, password: password)
         startPlayer(with: item)
@@ -533,6 +555,7 @@ final class AppModel: ObservableObject {
     }
 
     func openRemote(source: WebDAVSource, path: String) async {
+        let token = beginPlaybackSession()
         guard let client = webdavClient(for: source) else {
             statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
             return
@@ -544,6 +567,7 @@ final class AppModel: ObservableObject {
             }
             let parent = (path as NSString).deletingLastPathComponent
             let siblings = (try? await client.list(path: parent)) ?? []
+            guard sessionIsCurrent(token) else { return }
             await openRemote(source: source, entry: entry, siblings: siblings)
         } catch {
             statusMessage = error.localizedDescription
@@ -551,6 +575,8 @@ final class AppModel: ObservableObject {
     }
 
     func closePlayer() {
+        PlaybackTrace.mark("closePlayer.begin")
+        beginPlaybackSession()
         pendingNextPlayback = nil
         pendingNextOwner = nil
         smbStreamServer?.stop()
@@ -559,6 +585,7 @@ final class AppModel: ObservableObject {
         player = nil
         route = playerReturnRoute ?? .home
         refreshRecent()
+        PlaybackTrace.mark("closePlayer.end")
     }
 
     func resume(_ record: PlaybackRecord) {
@@ -691,6 +718,7 @@ final class AppModel: ObservableObject {
     }
 
     private func openSMBItem(source: SMBSource, path: String, title: String) async {
+        let token = beginPlaybackSession()
         guard let password = smbPassword(for: source) else {
             statusMessage = "缺少 SMB 密码"
             return
@@ -747,6 +775,10 @@ final class AppModel: ObservableObject {
                 playbackURL: server.url,
                 subtitles: subtitles
             )
+            guard sessionIsCurrent(token) else {
+                server.stop()
+                return
+            }
             startPlayer(with: media)
             smbStreamServer = server
         } catch {
@@ -1021,6 +1053,7 @@ final class AppModel: ObservableObject {
         itemID: String,
         preferredMediaSourceID: String? = nil
     ) async {
+        let session = beginPlaybackSession()
         guard let client = jellyfinClient(for: source), let token = jellyfinToken(for: source) else {
             statusMessage = "缺少 \(source.name) 的登录令牌，请重新添加来源"
             return
@@ -1058,6 +1091,7 @@ final class AppModel: ObservableObject {
                 statusMessage = "无法构造 Jellyfin 播放地址"
                 return
             }
+            guard sessionIsCurrent(session) else { return }
             startPlayer(
                 with: mediaItem,
                 serverStart: JellyfinTicks.seconds(item.userData?.playbackPositionTicks),
@@ -1798,6 +1832,7 @@ final class AppModel: ObservableObject {
         title: String,
         duration: Double
     ) async {
+        let session = beginPlaybackSession()
         guard !ratingKey.isEmpty,
               let url = PlexClient(source: source, token: token).streamURL(partKey: partKey) else {
             libraryStatus = "Plex 条目地址无效"
@@ -1817,6 +1852,7 @@ final class AppModel: ObservableObject {
         } else {
             subtitles = []
         }
+        guard sessionIsCurrent(session) else { return }
         let media = MediaItem.plex(
             source: source,
             title: title,
@@ -2055,6 +2091,13 @@ final class AppModel: ObservableObject {
             "bufferedEnd": player.clock.buffered,
             "bufferedRanges": player.clock.bufferedRanges.map { ["start": $0.start, "end": $0.end] },
             "cacheStateRaw": player.engine.getPropertyString("demuxer-cache-state") ?? "",
+            "volume": player.volume,
+            "hasSpeedSample": player.hasSpeedSample,
+            "isNetworkSource": player.isNetworkSource,
+            "isNetworkStalled": player.isNetworkStalled,
+            "isReconnecting": player.isReconnecting,
+            "userPaused": player.userPaused,
+            "currentVolumeProperty": player.engine.getPropertyString("volume") ?? "nil",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
@@ -2129,6 +2172,19 @@ final class PlayerModel: ObservableObject {
     @Published var cacheBytes: Int64 = 0
     /// `cache-buffering-state` percentage (0–100).
     @Published var bufferingPercent = 0
+    /// True once a download-speed sample arrived for this file (even if 0).
+    @Published var hasSpeedSample = false
+    /// Player volume 0–100, persisted across items and launches.
+    @Published var volume: Double = 100
+    /// Shows the short volume HUD after a change.
+    @Published var showVolumeHUD = false
+    /// Network source stopped advancing and stopped reporting cache data.
+    @Published var isNetworkStalled = false
+    /// Reloading the same URL at the current position after a broken stream.
+    @Published var isReconnecting = false
+
+    /// Local files never show a network speed.
+    var isNetworkSource: Bool { item.isRemote }
 
 
     var onClose: (() -> Void)?
@@ -2151,6 +2207,14 @@ final class PlayerModel: ObservableObject {
     private var controlsTimer: Timer?
     private var hasFinished = false
     private var hasStarted = false
+    private var hasReportedFirstFrame = false
+    private var lastCacheEventAt: Date?
+    private var lastPositionChangeAt = Date()
+    private var reconnectPosition: Double?
+    private var cacheStalenessTimer: Timer?
+    private var volumeHUDWorkItem: DispatchWorkItem?
+    private(set) var userPaused = false
+    private var lastAudibleVolume: Double = 100
     private var lastMouseNote: TimeInterval = 0
     private var savedSubtitleID: String?
     private var savedAudioID: String?
@@ -2166,11 +2230,16 @@ final class PlayerModel: ObservableObject {
     private var hasReportedStart = false
 
     init(item: MediaItem, startAt: Double, store: PlaybackStore) {
+        PlaybackTrace.mark("player.init.begin")
         self.item = item
         self.initialPosition = startAt
         self.store = store
         self.catalog = item.subtitles
         self.engine = MPVEngine(httpHeaders: item.httpHeaders)
+        let storedVolume = UserDefaults.standard.object(forKey: PlayerModel.volumeDefaultsKey) as? Double
+        let initialVolume = VolumeMath.clamp(storedVolume ?? 100)
+        self.volume = initialVolume
+        self.lastAudibleVolume = initialVolume > 0 ? initialVolume : 100
         self.audioDevices = AudioDevices.outputDevices()
         if let device = ProcessInfo.processInfo.environment["OPENFUSE_AUDIO_DEVICE"], !device.isEmpty {
             self.engine.setProperty("audio-device", device)
@@ -2205,6 +2274,7 @@ final class PlayerModel: ObservableObject {
             savedAudioID = record.preferredAudioTrackID
             savedSubtitleID = record.preferredSubtitleTrackID
         }
+        PlaybackTrace.mark("player.init.end")
     }
 
     var title: String { item.title }
@@ -2227,7 +2297,22 @@ final class PlayerModel: ObservableObject {
         hasStarted = true
         engine.onRenderContextReady = nil
         isOpening = true
+        cacheSpeed = 0
+        cacheBytes = 0
+        bufferingPercent = 0
+        hasSpeedSample = false
+        isBuffering = false
+        isNetworkStalled = false
+        isReconnecting = false
+        reconnectPosition = nil
+        lastCacheEventAt = nil
+        lastPositionChangeAt = Date()
+        userPaused = false
+        engine.setVolume(volume)
+        startCacheStalenessTimer()
+        PlaybackTrace.mark("playback.load.begin")
         engine.load(url: item.playbackURL, startAt: initialPosition)
+        PlaybackTrace.mark("playback.load.returned")
         engine.play()
         clock.reset(position: initialPosition)
         // Lift plain-text subtitles (SRT) above the bottom control bar. Only
@@ -2269,9 +2354,17 @@ final class PlayerModel: ObservableObject {
                 }
                 return
             }
+            if abs(value - self.position) > 0.03 {
+                self.lastPositionChangeAt = Date()
+                self.isNetworkStalled = false
+            }
             self.position = value
             self.clock.update(position: value)
-            if self.isOpening, value > 0.1 {
+            if !self.hasReportedFirstFrame, value > self.initialPosition + 0.15 {
+                self.hasReportedFirstFrame = true
+                PlaybackTrace.mark("playback.firstFrame")
+            }
+            if self.isOpening, value > self.initialPosition + 0.15 {
                 self.isOpening = false
             }
         }
@@ -2290,7 +2383,15 @@ final class PlayerModel: ObservableObject {
             }
         }
         engine.onPauseChanged = { [weak self] paused in
-            self?.isPaused = paused
+            guard let self else { return }
+            // mpv resumes automatically when the cache recovers; if the user
+            // paused during buffering, keep the picture paused.
+            if !paused, self.userPaused {
+                self.engine.pause()
+                return
+            }
+            self.isPaused = paused
+            self.debugTimeline("pause=\(paused) userPaused=\(self.userPaused)")
         }
         engine.onTracksChanged = { [weak self] tracks in
             self?.applyTracks(tracks)
@@ -2319,13 +2420,25 @@ final class PlayerModel: ObservableObject {
             self.cacheSpeed = state.speedBytesPerSecond
             self.cacheBytes = state.usedBytes
             self.bufferingPercent = state.bufferingPercent
+            self.hasSpeedSample = state.hasSpeedSample
+            self.lastCacheEventAt = Date()
             self.clock.update(
                 bufferedRanges: state.ranges.map { BufferedRange(start: $0.start, end: $0.end) },
                 bufferedEnd: state.bufferedEnd
             )
         }
         engine.onBufferingChanged = { [weak self] buffering in
-            self?.isBuffering = buffering
+            guard let self else { return }
+            self.isBuffering = buffering
+            if buffering {
+                self.lastCacheEventAt = self.lastCacheEventAt ?? Date()
+            }
+        }
+        engine.onFirstVideoFrame = { [weak self] in
+            guard let self else { return }
+            self.isOpening = false
+            self.isReconnecting = false
+            self.reconnectPosition = nil
         }
         engine.onLog = { [weak self] message in
             guard let self else { return }
@@ -2350,6 +2463,7 @@ final class PlayerModel: ObservableObject {
     }
 
     private func handleFileLoaded() {
+        PlaybackTrace.mark("playback.fileLoaded")
         debugTimeline("file-loaded catalog=\(catalog.count)")
         debugSelection("file loaded, catalog=\(catalog.count)")
         fileLoaded = true
@@ -2362,10 +2476,13 @@ final class PlayerModel: ObservableObject {
                 engine.addSubtitle(url: url, select: false)
             }
         }
-        engine.refreshTracks()
-        if initialPosition > 0.2 {
-            pendingSeek = initialPosition
-            engine.seek(to: initialPosition)
+        // The engine already refreshed the track list on FILE_LOADED; calling
+        // it again from the main thread raced with the event loop and could
+        // corrupt the tracks array.
+        let seekTarget = reconnectPosition ?? initialPosition
+        if seekTarget > 0.2 {
+            pendingSeek = seekTarget
+            engine.seek(to: seekTarget)
         }
         if !didApplyInitialSelection {
             scheduleInitialSelection(after: 0.6)
@@ -2559,17 +2676,126 @@ final class PlayerModel: ObservableObject {
         return pieces.joined(separator: " · ")
     }
 
-    func togglePlayPause() {
-        engine.togglePause()
+    func togglePlayPause(userInitiated: Bool = true) {
+        debugTimeline("toggle playPause userInitiated=\(userInitiated)")
+        if isPaused {
+            play(userInitiated: userInitiated)
+        } else {
+            pause(userInitiated: userInitiated)
+        }
         showControlsTemporarily()
     }
 
-    func pause() {
+    func pause(userInitiated: Bool = false) {
+        if userInitiated { userPaused = true }
         engine.pause()
     }
 
-    func play() {
+    func play(userInitiated: Bool = false) {
+        if userInitiated { userPaused = false }
+        if isNetworkStalled {
+            reconnect()
+            return
+        }
         engine.play()
+    }
+
+    /// Reloads the current URL at the last position after the stream died.
+    /// Triggered by the user pressing play/space/right-click on the
+    /// "连接中断" HUD; mpv's HTTP layer has already exhausted its own retries.
+    private func reconnect() {
+        guard item.isRemote, duration > 0 else { return }
+        let target = displayPosition
+        reconnectPosition = target
+        isReconnecting = true
+        isOpening = true
+        isNetworkStalled = false
+        isBuffering = false
+        cacheSpeed = 0
+        cacheBytes = 0
+        bufferingPercent = 0
+        hasSpeedSample = false
+        lastCacheEventAt = nil
+        lastPositionChangeAt = Date()
+        clock.reset(position: target)
+        // The reloaded file has no subtitle tracks yet; allow the external
+        // sidecars to be added again while keeping the saved track choice.
+        didAddExternalSubtitles = false
+        didApplyInitialSelection = false
+        selectionAttempts = 0
+        engine.load(url: item.playbackURL, startAt: target)
+        engine.play()
+        showControlsTemporarily()
+    }
+
+    // MARK: Volume
+
+    static let volumeDefaultsKey = "openfuse.player.volume"
+
+    func setVolume(_ value: Double) {
+        let clamped = VolumeMath.clamp(value)
+        volume = clamped
+        engine.setVolume(clamped)
+        if clamped > 0 { lastAudibleVolume = clamped }
+        UserDefaults.standard.set(clamped, forKey: Self.volumeDefaultsKey)
+        showVolumeHUDBriefly()
+    }
+
+    func adjustVolume(by delta: Double) {
+        setVolume(VolumeMath.stepped(volume, by: delta))
+    }
+
+    func toggleMute() {
+        setVolume(volume > 0 ? 0 : VolumeMath.unmuted(stored: lastAudibleVolume, fallback: 60))
+    }
+
+    private func showVolumeHUDBriefly() {
+        volumeHUDWorkItem?.cancel()
+        showVolumeHUD = true
+        let work = DispatchWorkItem { [weak self] in
+            self?.showVolumeHUD = false
+        }
+        volumeHUDWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: work)
+    }
+
+    /// Watches the network cache while a remote file plays:
+    /// - buffering: if no speed sample arrives for 1.5 s the speed is stale,
+    ///   so show a measured 0 B/s instead of an old number;
+    /// - stalled: position and cache both stopped moving for 2.5 s while the
+    ///   user did not pause. That is a broken/retrying stream; surface it in
+    ///   the HUD and nudge mpv to retry playback when data is available again.
+    private func startCacheStalenessTimer() {
+        cacheStalenessTimer?.invalidate()
+        cacheStalenessTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.isNetworkSource else { return }
+                let now = Date()
+                let cacheIdle = now.timeIntervalSince(self.lastCacheEventAt ?? .distantPast)
+                let positionIdle = now.timeIntervalSince(self.lastPositionChangeAt)
+
+                if self.isBuffering, cacheIdle > 1.5 {
+                    if !self.hasSpeedSample || self.cacheSpeed != 0 {
+                        self.cacheSpeed = 0
+                        self.hasSpeedSample = true
+                    }
+                }
+
+                guard !self.userPaused, !self.isOpening, self.duration > 0,
+                      self.position < self.duration - 1.0 else {
+                    self.isNetworkStalled = false
+                    return
+                }
+
+                if positionIdle > 2.5, cacheIdle > 2.5 {
+                    self.isNetworkStalled = true
+                    self.cacheSpeed = 0
+                    self.hasSpeedSample = true
+                } else if positionIdle < 1.0 {
+                    self.isNetworkStalled = false
+                }
+            }
+        }
     }
 
     func skip(_ delta: Double) {
@@ -2799,14 +3025,21 @@ final class PlayerModel: ObservableObject {
     }
 
     func stopAndClose() {
+        PlaybackTrace.mark("player.stopAndClose.begin")
         saveProgress()
         reportJellyfinStop(wait: true)
         progressTimer?.invalidate()
         progressTimer = nil
         controlsTimer?.invalidate()
         controlsTimer = nil
+        cacheStalenessTimer?.invalidate()
+        cacheStalenessTimer = nil
+        volumeHUDWorkItem?.cancel()
+        volumeHUDWorkItem = nil
         engine.pause()
-        engine.shutdown()
+        PlaybackTrace.mark("player.stopAndClose.engineShutdown.begin")
+        engine.stop()
+        PlaybackTrace.mark("player.stopAndClose.engineShutdown.end")
         onClose?()
     }
 

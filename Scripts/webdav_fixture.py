@@ -71,6 +71,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
     server_version = "OpenFuseWebDAVFixture/1.0"
     root = "."
     rate_bytes = 0
+    first_byte_delay = 0.0
+    stall_after_bytes = 0
+    stall_seconds = 0.0
 
     def log_message(self, fmt, *args):  # noqa: N802 - stdlib signature
         sys.stderr.write("[webdav] " + fmt % args + "\n")
@@ -120,6 +123,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_GET(self):  # noqa: N802
+        if self.first_byte_delay > 0:
+            time.sleep(self.first_byte_delay)
         rel = self.relpath()
         full = self.fullpath(rel)
         if not os.path.isfile(full):
@@ -174,6 +179,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         chunk = 32 * 1024
         sent = 0
+        stalled = False
         with open(full, "rb") as handle:
             handle.seek(start)
             while sent < length:
@@ -187,6 +193,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return
                 sent += len(data)
                 time.sleep(len(data) / self.rate_bytes)
+                if (not stalled and self.stall_after_bytes > 0
+                        and sent >= self.stall_after_bytes and self.stall_seconds > 0):
+                    stalled = True
+                    time.sleep(self.stall_seconds)
 
     def do_OPTIONS(self):  # noqa: N802
         self.send_response(200)
@@ -202,10 +212,19 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8099)
     parser.add_argument("--rate-bytes", type=int, default=0,
                         help="throttle GET bodies to this many bytes per second (0 = unlimited)")
+    parser.add_argument("--first-byte-delay", type=float, default=0.0,
+                        help="sleep this many seconds before answering GET (simulates a slow origin)")
+    parser.add_argument("--stall-after-bytes", type=int, default=0,
+                        help="pause this connection after sending N bytes (simulates a network stall)")
+    parser.add_argument("--stall-seconds", type=float, default=0.0,
+                        help="length of that pause")
     args = parser.parse_args()
 
     Handler.root = os.path.abspath(args.root)
     Handler.rate_bytes = max(0, args.rate_bytes)
+    Handler.first_byte_delay = max(0.0, args.first_byte_delay)
+    Handler.stall_after_bytes = max(0, args.stall_after_bytes)
+    Handler.stall_seconds = max(0.0, args.stall_seconds)
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     # Threaded: while a throttled GET streams the body, mpv opens a second
     # connection for the tail/seek-head; a single-threaded server would deadlock

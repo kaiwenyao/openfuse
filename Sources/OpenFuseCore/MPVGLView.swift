@@ -158,6 +158,14 @@ public final class MPVGLView: NSOpenGLView {
         CVDisplayLinkStop(link)
     }
 
+    /// Releases the libmpv render context with this view's GL context current,
+    /// then stops drawing. Called from the main thread by `MPVEngine.stop()`.
+    func prepareForTeardown() {
+        if !isUninited { uninit() }
+        openGLContext?.makeCurrentContext()
+        engine.freeRenderContext()
+    }
+
     /// Stops drawing before mpv is torn down.
     func uninit() {
         guard !isUninited else { return }

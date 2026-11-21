@@ -129,6 +129,7 @@ struct OpenFuseApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        PlaybackTrace.installHeartbeat()
         AppTheme.stored.apply()
         purgeLegacyTraktState()
         if let window = NSApp.windows.first {
@@ -142,6 +143,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    /// Clicking the Dock icon (or reopening) should surface the player window
+    /// again without stealing focus repeatedly while another app is active.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag, let window = sender.windows.first(where: { $0.canBecomeMain }) {
+            window.makeKeyAndOrderFront(nil)
+        }
+        return true
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
         AppModel.shared.saveForTermination()
@@ -525,6 +535,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func scheduleAutomation(model: AppModel, arguments: [String], reopen: @escaping () -> Void) {
+        // Acceptance hook: open another file while the first one is still
+        // opening, i.e. the "pick a different episode during loading" case.
+        if let switchPath = value(after: "--switch-to", in: arguments),
+           let delay = value(after: "--switch-after", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                model.open(url: URL(fileURLWithPath: switchPath))
+            }
+        }
         if let seek = value(after: "--seek", in: arguments).flatMap(Double.init) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 model.player?.seek(to: seek)

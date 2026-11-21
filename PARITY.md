@@ -783,3 +783,17 @@
 | 缓冲 HUD（速度） | MacBook Pro M2 Pro／macOS 27.2.1 | 60 s faststart MP4／本地 WebDAV 限速 30 KB/s | IINA `BufferIndicatorView`：`Buffering… N%` + `used B (speed B/s)` | `缓冲中 89%`，`125 KB · 29 KB/s`；报告 `bufferingPercent=89`、`cacheSpeedBytes≈29.9k` | `build/cache-features/buffering-window.png`、`report-net.json` | 通过（本机） |
 | 缓存区间高亮 | 同上 | 60 s 夹具／本地 | 进度条显示已缓存部分 | 缓存区间 0–25.6 s 以浅蓝绘制；本地报告 `bufferedRanges=[{0,25.63}]` | `build/cache-features/local-window.png`、`report-local.json` | 通过（本机） |
 | 多段/拖动 | 同上 | 远程限速流 | 待采样 | 引擎按 `seekable-ranges` 输出多段并延伸到 `cache-end`；本机只验证单段 | `report-net.json` | 部分通过 |
+
+### M7d 0.5.4 播放器交互与打开响应性（2026-11-21，本机）
+
+| 测试 | 设备／系统 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 延迟首字节 + ⌘Tab（窗口） | MacBook Pro M2 Pro／macOS 27.2.1 | faststart MP4／本地 WebDAV，GET 前延迟 5 s | Finder 来回切换、空格暂停再继续 | 10/10 通过：front=OpenFuse、keys>=1、无主线程停顿、首帧到达 | `build/player-responsiveness/window-*` | 通过（本机） |
+| 延迟首字节 + ⌘Tab（全屏） | 同上 | 同上 | 同上 | 10/10 通过 | `build/player-responsiveness/fullscreen-*` | 通过（本机） |
+| 本地 MKV + ⌘Tab | 同上 | 夹具 MKV | Finder 来回切换、空格两次 | 3/3 通过，冷启动最大停顿 < 400 ms | `build/player-responsiveness/local-*` | 通过（本机） |
+| 打开中切换视频 | 同上 | 延迟 WebDAV → 本地 MKV，第 2 s 切换 | 新会话是否有渲染上下文并播放 | `hasRenderContext=true`、duration=60、position>1，无停顿 | `build/player-responsiveness/switch` | 通过（本机） |
+| 打开中退出 | 同上 | 延迟 WebDAV，第 2 s Esc | 是否回到媒体库 | home 截图存在，无停顿 | `build/player-responsiveness/close` | 通过（本机） |
+| 缓冲测速三态 | 同上 | 延迟/限速/断流 | 测速中、29 KB/s、0 B/s、恢复 | 四种报告断言全部通过 | `build/cache-features/opening-hud.png` 等 | 通过（本机） |
+| 音量 | 同上 | 本地夹具 | ↓↓↑，滑块，重启 | volume=95、mpv volume=95；HUD 85%；重启保持 | `build/player-fixes-054/volume-hud.png` | 通过（本机） |
+| 右键暂停 | 同上 | 本地夹具／全屏 | 视频、黑边、控制栏、全屏各一次；两次恢复 | 全部 `paused=true`，两次后 `false`；缓冲暂停恢复后仍 true | `build/player-interactions/*` | 通过（本机） |
+| Jellyfin 打开/⌘Tab | — | 无 Jellyfin 服务器，Docker 不可用 | — | 未复现；Jellyfin 与 WebDAV 共用 `startPlayer`/会话令牌路径 | — | 未测 |

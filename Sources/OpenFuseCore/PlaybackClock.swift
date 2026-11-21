@@ -35,6 +35,7 @@ public final class PlaybackClock: ObservableObject {
     @Published public private(set) var bufferedRanges: [BufferedRange] = []
 
     private let minimumInterval: TimeInterval
+    private let rangeInterval: TimeInterval = 0.2
     private let now: () -> TimeInterval
     private var lastPublish: TimeInterval
     private var lastRangePublish: TimeInterval
@@ -46,7 +47,7 @@ public final class PlaybackClock: ObservableObject {
         self.minimumInterval = minimumInterval
         self.now = now
         self.lastPublish = now() - minimumInterval
-        self.lastRangePublish = now() - minimumInterval
+        self.lastRangePublish = now() - rangeInterval
     }
 
     /// Records a new playhead. `force` bypasses the throttle so a seek is
@@ -73,7 +74,7 @@ public final class PlaybackClock: ObservableObject {
     public func update(bufferedRanges ranges: [BufferedRange], bufferedEnd: Double) {
         update(buffered: bufferedEnd)
         let timestamp = now()
-        guard timestamp - lastRangePublish >= 0.2 else { return }
+        guard timestamp - lastRangePublish >= rangeInterval else { return }
         lastRangePublish = timestamp
         let cleaned = ranges
             .filter { $0.end > $0.start }

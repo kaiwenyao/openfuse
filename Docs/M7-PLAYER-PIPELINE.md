@@ -260,3 +260,74 @@ PASS: buffering HUD metrics and cached-span highlight verified
 ```
 
 证据：`build/cache-features/buffering-window.png`（HUD “缓冲中 89% · 125 KB · 29 KB/s” + 进度条上的短缓存段）、`build/cache-features/local-window.png`（0–25.6 s 的长缓存段）。
+
+## 12. 0.5.4：打开响应性、缓冲状态、音量与右键暂停
+
+### 12.1 打开/切换播放器为什么会卡住
+
+复现与证据（本机 macOS 27.2.1，M2 Pro）：
+
+- 延迟首字节 5 s 的 WebDAV 源，点击播放后立即 ⌘Tab 到 Finder 再切回：旧构建在 20 次全屏/窗口循环里出现 4 次 `SIGSEGV`（崩溃报告 `OpenFuse-2026-11-21-012027.ips`、`013750`、`015100`、`020241`）。崩溃线程为 `openfuse.mpv.events` 或主线程，栈顶都是 `MPVEngine.refreshTracks()` ← `runEventLoop` / `handleFileLoaded`。
+- 根因有四个，互相叠加：
+  1. `MPVEngine.shutdown()` 在主线程 `mpv_terminate_destroy` 并最多等待 2 s；切换/退出时如果旧会话还在打开慢流，主线程被卡住，⌘Tab 回来后窗口无法响应。
+  2. `stop()` 先在主线程把 `handle` 置 nil，事件线程同时在读这个 Optional；撕裂的指针会传进 `mpv_get_property_string`，随后在 `refreshTracks` 里以 `EXC_BAD_ACCESS` 崩溃。
+  3. `PlayerModel.handleFileLoaded()` 在主线程又调用一次 `engine.refreshTracks()`，与事件线程的 `refreshTracks` 并发写 `tracks` 数组（无锁），堆损坏。
+  4. `engine.addSubtitle` 同步调用 `sub-add`，本地 3 条 ASS 的字幕解析/字体初始化在主线程造成约 400 ms 停顿（`MAIN-STALL 405ms`）。
+- 另外，SwiftUI 会在切换视频时复用旧的 `NSOpenGLView`，新引擎没有渲染上下文，界面停在全黑；`--switch-to` 测试直接复现为 `hasRenderContext=false`、position=0。
+
+修复：
+
+- `load`/`seek`/`sub-add` 改为 `mpv_command_async`；主线程不再等待 demuxer 或字幕解析。
+- `MPVEngine.stop()`：主线程只做 GL 侧拆解（`MPVGLView.prepareForTeardown()` 让上下文 current 后释放 render context），`quit`、等待事件循环、`mpv_terminate_destroy` 全部放到 `openfuse.mpv.events` 队列；`handle` 只在 terminate 之后由事件队列置 nil。
+- 事件循环强持有引擎，直到 `SHUTDOWN` 与 terminate 结束；删除 `deinit` 中的 teardown（避免在事件线程碰 AppKit/GL 或复活 self）。
+- `tracks` 与 `refreshTracks` 用 `stateLock` 串行化；删除主线程的重复刷新。
+- `PlayerView` 的 `MPVSurface` 加 `.id(ObjectIdentifier(engine))`，每个会话独立 GL 视图。
+- 所有异步来源打开（WebDAV/Jellyfin/Plex/SMB/本地）带 `sessionGeneration` 令牌；退出、换片或新的打开会作废旧请求，慢 PROPFIND 的结果不能覆盖后选的视频。
+- 打开/首帧耗时用 `OPENFUSE_DEBUG_TIMING=1` 打点；主队列心跳超过 250 ms 记录 `MAIN-STALL`。
+
+### 12.2 延迟 5 s 首字节的实测
+
+窗口模式一次典型时间线（`build/player-responsiveness/window-1/timing.log`）：
+
+```
+startPlayer.begin        0.0 ms
+mpvEngine.init           0.4–120 ms
+playback.load.begin      ~220 ms
+playback.load.returned   ~220 ms   (异步，立即返回)
+playback.fileLoaded      ~5.27 s   (服务器延迟 5 s)
+playback.firstFrame      ~5.4 s
+```
+
+- 10 次窗口 + 10 次全屏：全部 `front=OpenFuse`、`keys>=1`（空格事件被处理）、`MAIN-STALL` 为 0；全屏个别轮次有一次 255 ms 的首帧着色器编译停顿（< 400 ms），其余为 0。
+- 本地 MKV 3 次：0 停顿；冷启动偶发 < 300 ms 的窗口/GL 初始化停顿。
+- 打开中切换到本地视频：新会话 `hasRenderContext=true`、duration=60、position>1，主线程停顿 0。
+- 打开中按 Esc：回到媒体库，主页截图存在，0 停顿。
+- Jellyfin：本机没有服务器且 Docker 不可用，未做实测；它和 WebDAV 共用 `startPlayer`、`stop()` 与会话令牌路径。
+
+### 12.3 缓冲/测速状态机
+
+`MPVEngine` 在 `demuxer-cache-state` / `cache-speed` 事件上置 `hasSpeedSample`（0 也算样本），`PlayerModel` 增加：
+
+- `hasSpeedSample`：无样本 → HUD 明细“测速中…”；有样本且速度为 0 → “0 B/s”；否则按 B/s、KB/s、MB/s 格式化。
+- `isNetworkStalled`：网络源、非用户暂停、位置与缓存都 2.5 s 不动 → HUD 标题“连接中断，重试播放”并获得 0 B/s；按播放/空格/右键调用 `reconnect()`，在当前位置重新 `loadfile` 并恢复字幕选择。
+- 只有 `item.isRemote` 才显示测速；本地文件只显示“正在打开…”，不显示网络速度。
+- 每次换片在 `beginPlaybackIfReady` 重置速度、字节、区间与样本状态。
+
+`Scripts/run-cache-features.sh` 的四个可重复场景（本机结果）：
+
+| 场景 | 结果 |
+| --- | --- |
+| 首字节延迟 5 s，3 s 截图 | `isOpening=true`、`hasSpeedSample=false`，HUD “正在打开… / 测速中…” |
+| 30 KB/s + 中途停 12 s，16 s 截图 | `isBuffering=true`、`speed≈29.9 KB/s`、`bufferedRanges=[{0.67,1.37}]` |
+| 播放中杀掉服务器，16 s 报告 | `isNetworkStalled=true`、`cacheSpeedBytes=0`、HUD “连接中断，重试播放 / 0 B/s” |
+| 杀掉后重启服务器，按空格重连 | `isNetworkStalled=false`、position 前进、speed≈29.8 KB/s |
+
+### 12.4 音量与右键
+
+- `VolumeMath`（Core）：0–100 夹取、±5 步进、取消静音恢复；`PlayerModel.volume` 写入 `openfuse.player.volume`，新会话在 `loadfile` 前设置 mpv `volume`。
+- 控制栏 `VolumeControl`：扬声器按钮 + 64 pt 滑块；HUD 显示 `🔊 85%` 1.2 s。
+- 裸 ↑/↓ 在 `PlayerView` 的本地 key monitor 中处理；带 ⌘/⌥/⌃/⇧ 的方向键、文本框、菜单和设置窗口保持原行为。按键重复事件直接处理，所以按住连续调节。
+- 右键用 `NSEvent.addLocalMonitorForEvents([.rightMouseDown])`，只在播放器挂载期间安装，返回 `nil` 吞掉事件；覆盖视频、黑边、字幕区、缓冲 HUD、控制栏和全屏；媒体库/文件列表不受影响。
+- `userPaused` 记录用户意图：缓冲恢复时 mpv 若自动解除暂停，会立刻重新 `pause`，所以“缓冲期间右键暂停”在恢复后仍保持暂停。
+
+本机验收：`build/player-interactions/`（音量 95、mpv 95、四个区域暂停、两次恢复、缓冲暂停保持）与 `build/player-responsiveness/summary.txt`（10+10 次 ⌘Tab）。

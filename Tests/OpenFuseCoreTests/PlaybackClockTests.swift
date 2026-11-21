@@ -62,4 +62,25 @@ final class PlaybackClockTests: XCTestCase {
         clock.update(position: -3, force: true)
         XCTAssertEqual(clock.position, 0)
     }
+
+    func testBufferedRangesAreThrottledAndReset() {
+        let time = FakeTime()
+        let clock = PlaybackClock(now: { time.seconds })
+        clock.update(bufferedRanges: [BufferedRange(start: 0, end: 10)], bufferedEnd: 10)
+        XCTAssertEqual(clock.bufferedRanges, [BufferedRange(start: 0, end: 10)])
+        XCTAssertEqual(clock.buffered, 10)
+
+        // Inside the 200 ms window: the progress bar keeps the previous spans.
+        time.seconds += 0.05
+        clock.update(bufferedRanges: [BufferedRange(start: 0, end: 30)], bufferedEnd: 30)
+        XCTAssertEqual(clock.bufferedRanges, [BufferedRange(start: 0, end: 10)])
+        XCTAssertEqual(clock.buffered, 30, "the cache end is not throttled")
+
+        time.seconds += 0.2
+        clock.update(bufferedRanges: [BufferedRange(start: 0, end: 30), BufferedRange(start: 40, end: 50)], bufferedEnd: 50)
+        XCTAssertEqual(clock.bufferedRanges.count, 2)
+
+        clock.reset(position: 0)
+        XCTAssertTrue(clock.bufferedRanges.isEmpty)
+    }
 }
