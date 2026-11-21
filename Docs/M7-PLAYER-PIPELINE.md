@@ -438,3 +438,6 @@ Esc → isFullScreen=false
 
 ## 18. 0.8.0：整行字幕菜单、⌘3 最大化、资料语言与缩略图
 见 [0.8.0-EXPERIENCE.md](0.8.0-EXPERIENCE.md)。
+
+## 19. 0.8.2：Trickplay、预取与缩略图基准
+见 [0.8.2-THUMBNAILS.md](0.8.2-THUMBNAILS.md)。

@@ -48,6 +48,7 @@ final class ThumbnailProvider {
     private(set) var lastSource = ""
     private(set) var lastElapsedMs = 0
     private(set) var diskHits = 0
+    private(set) var trickplayHits = 0
 
     private(set) var lastTime: Double?
     private(set) var lastBytes = 0
@@ -93,6 +94,7 @@ final class ThumbnailProvider {
         lastSource = ""
         lastElapsedMs = 0
         diskHits = 0
+        trickplayHits = 0
         queue.async { [box] in
             box.engine?.stop()
             box.engine = nil
@@ -110,6 +112,7 @@ final class ThumbnailProvider {
         lastSource = ""
         lastElapsedMs = 0
         diskHits = 0
+        trickplayHits = 0
         queue.async { [box] in
             box.engine?.stop()
             box.engine = nil
@@ -170,6 +173,7 @@ final class ThumbnailProvider {
         }
         if let trickplay, let image = await trickplayImage(for: time, source: trickplay, key: key) {
             insert(image, key: key)
+            trickplayHits += 1
             lastSource = "trickplay"
             lastElapsedMs = Int((CFAbsoluteTimeGetCurrent() - started) * 1000)
             if let directory = diskDirectory,

@@ -2393,6 +2393,7 @@ final class AppModel: ObservableObject {
             "thumbnailLastSource": player.thumbnails.lastSource,
             "thumbnailLastElapsedMs": player.thumbnails.lastElapsedMs,
             "thumbnailDiskHits": player.thumbnails.diskHits,
+            "thumbnailTrickplayHits": player.thumbnails.trickplayHits,
             "thumbnailBenchmarkSamples": player.thumbnailBenchmarkSamples,
             "thumbnailBenchmarkP50": player.thumbnailBenchmarkP50,
             "thumbnailBenchmarkP95": player.thumbnailBenchmarkP95,
@@ -2969,6 +2970,7 @@ final class PlayerModel: ObservableObject {
             if !self.hasReportedFirstFrame, value > self.initialPosition + 0.15 {
                 self.hasReportedFirstFrame = true
                 PlaybackTrace.mark("playback.firstFrame")
+                self.scheduleThumbnailPrefetch()
             }
             if self.isOpening, value > self.initialPosition + 0.15 {
                 self.isOpening = false
@@ -3701,6 +3703,22 @@ final class PlayerModel: ObservableObject {
     func finishSession() {
         saveProgress()
         reportJellyfinStop(wait: true)
+    }
+
+    private func scheduleThumbnailPrefetch() {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_DISABLE_THUMB_PREFETCH"] != "1",
+              ProcessInfo.processInfo.environment["OPENFUSE_THUMB_BENCHMARK"] != "1",
+              duration > 10 else { return }
+        Task(priority: .utility) { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard let self, !self.isBuffering else { return }
+            let targets = [self.position - 30, self.position - 15, self.position + 15, self.position + 30]
+                .filter { $0 > 1 && $0 < self.duration - 1 }
+            for target in targets {
+                guard !self.isBuffering, !Task.isCancelled else { continue }
+                _ = await self.thumbnails.image(for: target)
+            }
+        }
     }
 
     private func scheduleThumbnailBenchmark() {
