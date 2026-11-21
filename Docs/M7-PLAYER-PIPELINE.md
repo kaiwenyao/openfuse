@@ -361,3 +361,42 @@ playback.firstFrame      ~5.4 s
 - 远程首次预览需要一次 range 请求，慢源可能等待数秒（HUD 显示加载圈）；之后的 ±2 s 桶命中缓存。
 - 只有控制栏可见时才能 hover 进度条；鼠标移动会先唤出控制栏。
 - 2 秒粒度是速度/精度折中，未做邻近桶预取。
+
+## 14. 0.5.6：IINA 风格窗口管理
+
+参考 IINA 的默认键位（`iina/config/iina-default-input.conf` 与 Window 菜单）：
+
+| 功能 | IINA 默认 | OpenFuse 0.5.6 |
+| --- | --- | --- |
+| 半屏（0.5×视频） | ⌘0 `set window-scale 0.5` | ⌘0 |
+| 正常（1×视频） | ⌘1 `set window-scale 1` | ⌘1 |
+| 双倍（2×视频） | ⌘2 `set window-scale 2` | ⌘2 |
+| 适合屏幕 | ⌘3 `fit-to-screen` | **⌘4**（⌘3 按用户要求留给全屏） |
+| 切换全屏 | ⌃⌘F `cycle fullscreen` | **⌘3**，同时保留 ⌃⌘F（播放器内本地 key monitor） |
+| 总在最前 | ⌃⌘T `cycle ontop` | ⌃⌘T |
+| 缩小/放大窗口 | ⌘- / ⌘= | ⌘- / ⌘= |
+| 退出全屏 | Esc `set fullscreen no` | Esc（全屏时）；窗口模式仍关闭播放器 |
+
+实现：
+
+- `MPVEngine.videoSize()` 读取 mpv `width`/`height`，作为 0.5×/1×/2× 的基准；`WindowScaleMath`（Core）计算目标内容尺寸：保持视频比例、夹在 `screen.visibleFrame`（宽 −60、高 −110）内、最小 320×180；`fit` 用视频比例填满可用区域。
+- `AppModel` 新增 `isPlayerFullScreen`、`isAlwaysOnTop`、`windowScaleLastAction/ContentSize`；监听 `NSWindow.didEnterFullScreen/didExitFullScreen` 同步菜单标题；`togglePlayerFullScreen()`、`toggleAlwaysOnTop()`、`applyWindowScale(_:)` 作用于当前播放器窗口。全屏时执行尺寸命令会先退出全屏，动画结束后再应用。
+- “窗口”菜单通过 `CommandGroup(after: .windowSize)` 添加，播放器不存在时全部禁用；“总在最前”显示勾选。
+- 播放器窗口最小尺寸 320×180（SwiftUI frame + `window.contentMinSize`），关闭播放器恢复 980×620，因此 640×360 视频的半屏 320×180 能真正生效。
+- Esc 逻辑保持 0.5.4 行为：全屏退出，窗口模式关闭播放器；`f` 仍可切换全屏。
+
+验收 `Scripts/run-window-management.sh`（640×360 测试片）：
+
+```
+initial 1180×760
+⌘0 320×208   ⌘1 640×360   ⌘2 1280×720
+⌘4 1394×785 (16:9)   ⌘- 1255×707   ⌘= 1381×778
+⌘3 → isFullScreen=true, 1512×949
+Esc → isFullScreen=false
+⌃⌘F → isFullScreen=true
+⌃⌘T → alwaysOnTop=true level=3; 再按 → false level=0
+```
+
+截图：`build/window-management/fullscreen/window.png`。80 个单元测试（WindowScaleMath 4 个）全部通过；缩略图、交互、控制栏、缓存、播放管线回归通过。
+
+已知边界：未实现 IINA 的画中画（⌃⌘P）与 Music Mode（libmpv 渲染路径）；窗口管理作用于唯一的播放器窗口，不支持多窗口。

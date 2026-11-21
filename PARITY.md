@@ -807,3 +807,14 @@
 | WebDAV 缩略图 | 同上 | faststart MP4／本地 WebDAV | 50% 停留：缓存 1 张、320×180、播放未被打断 | `build/thumbnail-preview/webdav/window.png` | 通过 |
 | 全屏缩略图 | 同上 | 夹具 MKV | 全屏 60% 停留：缓存 ≥1 | `build/thumbnail-preview/fullscreen/` | 通过 |
 | 移出隐藏 | 同上 | 同上 | 移出后预览消失、请求取消 | 手动截图 | 通过（目视） |
+
+### M7f 0.5.6 IINA 风格窗口管理（2026-11-21，本机）
+
+| 测试 | 设备／系统 | 素材 | 步骤与结果 | 截图／报告 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| 半屏/正常/双倍 | M2 Pro／macOS 27.2.1 | 640×360 H.264 20 s | ⌘0→320×208、⌘1→640×360、⌘2→1280×720 | `build/window-management/sizes/` | 通过 |
+| 适合屏幕/缩放 | 同上 | 同上 | ⌘4→1394×785（16:9）、⌘- 变小、⌘= 变大、最后动作 bigger | 同上 | 通过 |
+| ⌘3 全屏 | 同上 | 同上 | `isFullScreen=true`、窗口 1512×949 | `build/window-management/fullscreen/window.png` | 通过 |
+| Esc 退出全屏 | 同上 | 同上 | ⌘3 后 Esc：`isFullScreen=false` | `build/window-management/esc/` | 通过 |
+| ⌃⌘F | 同上 | 同上 | `isFullScreen=true` | `build/window-management/ctrlcmdf/` | 通过 |
+| 总在最前 | 同上 | 同上 | ⌃⌘T：`alwaysOnTop=true`、`windowLevel=3`；再按：false、0 | `build/window-management/ontop-*` | 通过 |

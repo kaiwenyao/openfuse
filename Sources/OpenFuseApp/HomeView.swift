@@ -26,7 +26,10 @@ struct OpenFuseApp: App {
                 .onChange(of: appearance) { _, newValue in
                     AppTheme(rawValue: newValue)?.apply()
                 }
-                .frame(minWidth: 980, minHeight: 620)
+                .frame(
+                    minWidth: model.player == nil ? 980 : 320,
+                    minHeight: model.player == nil ? 620 : 180
+                )
         }
         .windowResizability(.contentMinSize)
         .commands {
@@ -35,6 +38,46 @@ struct OpenFuseApp: App {
                     model.presentOpenPanel()
                 }
                 .keyboardShortcut("o", modifiers: .command)
+            }
+            CommandGroup(after: .windowSize) {
+                Divider()
+                Button(model.isPlayerFullScreen ? "退出全屏" : "进入全屏") {
+                    model.togglePlayerFullScreen()
+                }
+                .keyboardShortcut("3", modifiers: .command)
+                .disabled(model.player == nil)
+
+                Button {
+                    model.toggleAlwaysOnTop()
+                } label: {
+                    if model.isAlwaysOnTop {
+                        Label("总在最前", systemImage: "checkmark")
+                    } else {
+                        Text("总在最前")
+                    }
+                }
+                .keyboardShortcut("t", modifiers: [.control, .command])
+                .disabled(model.player == nil)
+
+                Divider()
+                Button("正常大小") { model.applyWindowScale(.normal) }
+                    .keyboardShortcut("1", modifiers: .command)
+                    .disabled(model.player == nil)
+                Button("半屏大小") { model.applyWindowScale(.half) }
+                    .keyboardShortcut("0", modifiers: .command)
+                    .disabled(model.player == nil)
+                Button("双倍大小") { model.applyWindowScale(.doubleSize) }
+                    .keyboardShortcut("2", modifiers: .command)
+                    .disabled(model.player == nil)
+                Button("适合屏幕") { model.applyWindowScale(.fit) }
+                    .keyboardShortcut("4", modifiers: .command)
+                    .disabled(model.player == nil)
+                Button("缩小窗口") { model.applyWindowScale(.smaller) }
+                    .keyboardShortcut("-", modifiers: .command)
+                    .disabled(model.player == nil)
+                Button("放大窗口") { model.applyWindowScale(.bigger) }
+                    .keyboardShortcut("=", modifiers: .command)
+                    .disabled(model.player == nil)
             }
             CommandMenu("播放") {
                 Button(model.player?.isPaused == true ? "继续播放" : "暂停") {
@@ -130,6 +173,7 @@ struct OpenFuseApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         PlaybackTrace.installHeartbeat()
+        AppModel.shared.installWindowStateObservers()
         AppTheme.stored.apply()
         purgeLegacyTraktState()
         if let window = NSApp.windows.first {

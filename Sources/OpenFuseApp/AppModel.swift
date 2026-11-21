@@ -103,6 +103,12 @@ final class AppModel: ObservableObject {
     @Published var syncTokenInput = ""
     @Published var syncCAPath: String?
     @Published var syncBusy = false
+    /// Window management state (IINA-style Window menu).
+    @Published var isPlayerFullScreen = false
+    @Published var isAlwaysOnTop = false
+    @Published var windowScaleLastAction = ""
+    @Published var windowScaleContentSize = ""
+    private var windowStateObservers: [NSObjectProtocol] = []
     private var smbStreamServer: SMBStreamServer?
     @Published var librarySearch = ""
     @Published var librarySort: LibrarySort = .title
@@ -375,6 +381,7 @@ final class AppModel: ObservableObject {
         model.onClose = { [weak self] in
             self?.smbStreamServer?.stop()
             self?.smbStreamServer = nil
+            self?.resetPlayerWindowBehavior()
             self?.player = nil
             self?.route = self?.playerReturnRoute ?? .home
             self?.refreshRecent()
@@ -399,6 +406,7 @@ final class AppModel: ObservableObject {
         }
         player = model
         route = .player
+        playerWindow?.contentMinSize = NSSize(width: 320, height: 180)
         PlaybackTrace.mark("startPlayer.routeSet")
         model.start()
         refreshRecent()
@@ -577,6 +585,7 @@ final class AppModel: ObservableObject {
     func closePlayer() {
         PlaybackTrace.mark("closePlayer.begin")
         beginPlaybackSession()
+        resetPlayerWindowBehavior()
         pendingNextPlayback = nil
         pendingNextOwner = nil
         smbStreamServer?.stop()
@@ -2063,6 +2072,10 @@ final class AppModel: ObservableObject {
             "currentAO": player.engine.getPropertyString("current-ao") ?? "",
             "currentVO": player.engine.getPropertyString("current-vo") ?? "",
             "isFullScreen": NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false,
+            "alwaysOnTop": self.isAlwaysOnTop,
+            "windowLevel": NSApp.keyWindow?.level.rawValue ?? 0,
+            "windowScaleLastAction": self.windowScaleLastAction,
+            "windowScaleContentSize": self.windowScaleContentSize,
             "windowAppearance": NSApp.keyWindow?.appearance?.name.rawValue ?? "system",
             "windowFrame": NSStringFromRect(NSApp.keyWindow?.frame ?? .zero),
             "videoOutParams": player.engine.getPropertyString("video-out-params") ?? "",
@@ -2134,6 +2147,106 @@ final class AppModel: ObservableObject {
             try? data.write(to: url)
             print("[OpenFuse] wrote report to \(url.path)")
         }
+    }
+    // MARK: - IINA-style window management
+
+    /// The player uses one WindowGroup window for the library and the player;
+    /// when the player is active the key/main window is the one to manage.
+    private var playerWindow: NSWindow? {
+        if let key = NSApp.keyWindow, key.canBecomeMain { return key }
+        return NSApp.windows.first { $0.isVisible && $0.canBecomeMain }
+    }
+
+    func installWindowStateObservers() {
+        guard windowStateObservers.isEmpty else { return }
+        let center = NotificationCenter.default
+        windowStateObservers.append(center.addObserver(
+            forName: NSWindow.didEnterFullScreenNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            Task { @MainActor in
+                guard let self, let window = note.object as? NSWindow,
+                      window === self.playerWindow else { return }
+                self.isPlayerFullScreen = true
+            }
+        })
+        windowStateObservers.append(center.addObserver(
+            forName: NSWindow.didExitFullScreenNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            Task { @MainActor in
+                guard let self, let window = note.object as? NSWindow,
+                      window === self.playerWindow else { return }
+                self.isPlayerFullScreen = false
+            }
+        })
+    }
+
+    func togglePlayerFullScreen() {
+        guard let window = playerWindow else { return }
+        window.toggleFullScreen(nil)
+    }
+
+    func toggleAlwaysOnTop() {
+        guard let window = playerWindow else { return }
+        isAlwaysOnTop.toggle()
+        window.level = isAlwaysOnTop ? .floating : .normal
+    }
+
+    /// IINA window-size commands: ⌘0 half, ⌘1 normal (native video size),
+    /// ⌘2 double, ⌘4 fit-to-screen (IINA uses ⌘3; this build reserves ⌘3 for
+    /// fullscreen at the user's request), ⌘- smaller, ⌘= bigger.
+    func applyWindowScale(_ action: WindowScaleAction) {
+        guard let window = playerWindow, let screen = window.screen ?? NSScreen.main else { return }
+
+        // Leave fullscreen first; applying a content size during the transition
+        // is ignored by AppKit.
+        if window.styleMask.contains(.fullScreen) {
+            window.toggleFullScreen(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.applyWindowScale(action)
+            }
+            return
+        }
+
+        let visible = screen.visibleFrame
+        let maxContent = CGSize(
+            width: max(480, visible.width - 60),
+            height: max(300, visible.height - 110)
+        )
+        let current = window.contentView?.bounds.size ?? window.frame.size
+        let video = player?.engine.videoSize()
+        let target = WindowScaleMath.targetSize(
+            action: action,
+            videoSize: video,
+            current: current,
+            maxContent: maxContent
+        )
+
+        window.setContentSize(target)
+        let frame = window.frame
+        let origin = NSPoint(
+            x: visible.midX - frame.width / 2,
+            y: visible.midY - frame.height / 2
+        )
+        window.setFrameOrigin(origin)
+
+        windowScaleLastAction = action.rawValue
+        windowScaleContentSize = "\(Int(target.width))x\(Int(target.height))"
+        PlaybackTrace.mark("window.scale \(action.rawValue) \(windowScaleContentSize)")
+    }
+
+    func resetPlayerWindowBehavior() {
+        if let window = playerWindow {
+            window.level = .normal
+            window.contentMinSize = NSSize(width: 980, height: 620)
+        }
+        isAlwaysOnTop = false
+        isPlayerFullScreen = false
+        windowScaleLastAction = ""
+        windowScaleContentSize = ""
     }
 }
 
@@ -3127,6 +3240,7 @@ final class PlayerModel: ObservableObject {
     func toggleFullScreen() {
         NSApp.keyWindow?.toggleFullScreen(nil)
     }
+
 }
 
 private extension String {

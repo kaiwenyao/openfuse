@@ -156,6 +156,12 @@ struct PlayerView: View {
     private func installKeyboardMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Standard macOS fullscreen shortcut, kept in addition to ⌘3.
+            if event.keyCode == 3,
+               event.modifierFlags.contains([.control, .command]) {
+                player.toggleFullScreen()
+                return nil
+            }
             if event.modifierFlags.contains(.command) { return event }
             if event.window !== NSApp.keyWindow { return event }
             // Never steal typing (none in the player today, but keep it safe).

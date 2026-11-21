@@ -379,6 +379,15 @@ public final class MPVEngine: @unchecked Sendable {
         setProperty("volume", String(format: "%.0f", clamped))
     }
 
+    /// Native video size reported by mpv (`width`/`height`), used by the
+    /// IINA-style window-size commands.
+    public func videoSize() -> CGSize? {
+        guard let width = getPropertyString("width").flatMap(Double.init),
+              let height = getPropertyString("height").flatMap(Double.init),
+              width > 0, height > 0 else { return nil }
+        return CGSize(width: width, height: height)
+    }
+
     public func getVolume() -> Double? {
         getPropertyString("volume").flatMap(Double.init)
     }
