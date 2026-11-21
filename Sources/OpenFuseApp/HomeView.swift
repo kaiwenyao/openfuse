@@ -618,8 +618,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        if let needle = value(after: "--select-subtitle", in: arguments) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                if let track = model.player?.subtitleTracks.first(where: { $0.displayName.contains(needle) }) {
+                    model.player?.selectSubtitle(track)
+                }
+            }
+        }
         if let delay = value(after: "--sub-delay", in: arguments).flatMap(Double.init) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
                 model.player?.setSubtitleDelay(delay)
             }
         }

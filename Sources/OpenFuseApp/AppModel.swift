@@ -3346,6 +3346,12 @@ final class PlayerModel: ObservableObject {
     }
 
     func selectSubtitle(_ track: SubtitleTrack?) {
+        // A user choice during the initial selection window wins over the
+        // delayed auto-selection; otherwise it would silently revert to the
+        // sidecar a moment later.
+        didApplyInitialSelection = true
+        selectionWorkItem?.cancel()
+        selectionWorkItem = nil
         guard let track else {
             selectedSubtitleID = nil
             savedSubtitleID = nil
