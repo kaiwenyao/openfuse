@@ -13,7 +13,7 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.7.0（2026-11-21）
+## 当前版本 0.7.1（2026-11-21）
 
 - **播放器底栏直接调节字幕偏移。** 「字幕」菜单在轨道列表下方显示当前偏移，可提前/延后 0.1 秒、输入自定义秒数、归零；关闭字幕后入口保留但调节禁用。顶部菜单与底栏调用同一套 `PlayerModel` 操作，正值延后、负值提前；偏移按视频+字幕轨持久化并在重开时恢复。
 - **零配置影视资料。** 移除设置里的 TMDB/OMDb 密钥输入、保存/验证按钮和 key 提示。Jellyfin 继续直接使用服务器条目/集号/简介/评分/图片；纯 WebDAV 优先 NFO（当前目录或剧集父目录）和手动匹配，未命中时使用 TVmaze（剧集）、Wikipedia + Wikidata（电影）公开接口。中文优先，缺失时显示实际可用语言；评分标注来源/量表。`Attack on Titan (2013)/Season 01/Shingeki no Kyojin - S01E01/E02` 能分别匹配到 2013 年动画的不同简介与剧照；同目录多部电影按文件分别匹配。公共服务只发送片名、年份或公开 ID。

@@ -239,6 +239,7 @@ struct PlayerChrome: View {
     @ObservedObject var player: PlayerModel
     @State private var scrubValue: Double?
     @State private var showLog = false
+    @State private var showSubtitleMenu = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -368,46 +369,30 @@ struct PlayerChrome: View {
                 .help("同文件夹视频")
                 .disabled(player.folderVideos.isEmpty)
 
-                Menu {
-                    Button {
-                        player.selectSubtitle(nil)
-                    } label: {
-                        if player.selectedSubtitleID == nil {
-                            Label("关闭字幕", systemImage: "checkmark")
-                        } else {
-                            Text("关闭字幕")
-                        }
-                    }
-                    Divider()
-                    ForEach(player.subtitleTracks) { track in
-                        Button {
-                            player.selectSubtitle(track)
-                        } label: {
-                            if player.selectedSubtitleID == track.id {
-                                Label(track.displayName, systemImage: "checkmark")
-                            } else {
-                                Text(track.displayName)
-                            }
-                        }
-                    }
-                    Divider()
-                    Text("字幕偏移：\(player.subtitleDelaySummary)")
-                    Button("提前 0.1 秒") { player.adjustSubtitleDelay(by: -0.1) }
-                        .disabled(player.selectedSubtitleID == nil)
-                    Button("延后 0.1 秒") { player.adjustSubtitleDelay(by: 0.1) }
-                        .disabled(player.selectedSubtitleID == nil)
-                    Button("输入秒数…") { player.beginSubtitleDelayInput() }
-                        .disabled(player.selectedSubtitleID == nil)
-                    Button("重置为 0") { player.resetSubtitleDelay() }
-                        .disabled(player.selectedSubtitleID == nil)
+                Button {
+                    showSubtitleMenu.toggle()
                 } label: {
-                    Label(selectedSubtitleName ?? "字幕", systemImage: "captions.bubble")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundStyle(.white)
+                    HStack(spacing: 5) {
+                        Image(systemName: "captions.bubble")
+                        Text(selectedSubtitleName ?? "字幕")
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(.white)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
+                .buttonStyle(.plain)
+                .help("字幕与字幕偏移")
                 .accessibilityLabel("字幕菜单")
+                .popover(isPresented: $showSubtitleMenu, arrowEdge: .bottom) {
+                    subtitleMenuContent
+                }
+                .onAppear {
+                    guard ProcessInfo.processInfo.environment["OPENFUSE_OPEN_SUBTITLE_MENU"] == "1" else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        showSubtitleMenu = true
+                    }
+                }
 
                 Menu {
                     ForEach(player.audioTracks) { track in
@@ -495,6 +480,50 @@ struct PlayerChrome: View {
         }
     }
 
+    private var subtitleMenuContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                player.selectSubtitle(nil)
+            } label: {
+                HStack {
+                    Text("关闭字幕")
+                    Spacer()
+                    if player.selectedSubtitleID == nil { Image(systemName: "checkmark") }
+                }
+            }
+            .buttonStyle(.plain)
+            Divider()
+            ForEach(player.subtitleTracks) { track in
+                Button {
+                    player.selectSubtitle(track)
+                } label: {
+                    HStack {
+                        Text(track.displayName)
+                        Spacer()
+                        if player.selectedSubtitleID == track.id { Image(systemName: "checkmark") }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            Divider()
+            Text("字幕偏移：\(player.subtitleDelaySummary)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Theme.secondary)
+            Button("提前 0.1 秒") { player.adjustSubtitleDelay(by: -0.1) }
+                .disabled(player.selectedSubtitleID == nil)
+            Button("延后 0.1 秒") { player.adjustSubtitleDelay(by: 0.1) }
+                .disabled(player.selectedSubtitleID == nil)
+            Button("输入秒数…") { player.beginSubtitleDelayInput() }
+                .disabled(player.selectedSubtitleID == nil)
+            Button("重置为 0") { player.resetSubtitleDelay() }
+                .disabled(player.selectedSubtitleID == nil)
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 12))
+        .padding(14)
+        .frame(width: 260)
+    }
+
     private var selectedSubtitleName: String? {
         guard let id = player.selectedSubtitleID else { return nil }
         return player.subtitleTracks.first(where: { $0.id == id })?.displayName
@@ -531,6 +560,7 @@ private struct SubtitleDelaySheet: View {
     @ObservedObject var player: PlayerModel
     @Environment(\.dismiss) private var dismiss
     @State private var error: String?
+    @FocusState private var inputFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -542,6 +572,8 @@ private struct SubtitleDelaySheet: View {
             TextField("例如 1.5 或 -1", text: $player.subtitleDelayInput)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 280)
+                .focused($inputFocused)
+                .accessibilityLabel("字幕偏移秒数")
                 .onSubmit(apply)
             if let error {
                 Text(error)
@@ -559,6 +591,7 @@ private struct SubtitleDelaySheet: View {
         }
         .padding(20)
         .frame(width: 360)
+        .onAppear { inputFocused = true }
     }
 
     private func apply() {
