@@ -1459,56 +1459,46 @@ struct HomeView: View {
     private var networkSources: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("网络来源")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Theme.text)
+                Text("网络来源").font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.text)
                 Spacer()
-                Button {
-                    model.showAddSource = true
-                } label: {
-                    Label("添加", systemImage: "plus")
-                        .font(.system(size: 12, weight: .semibold))
+                Button { model.showAddSource = true } label: {
+                    Label("添加", systemImage: "plus").font(.system(size: 12, weight: .semibold))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(Theme.accent)
+                .buttonStyle(.plain).foregroundStyle(Theme.accent)
             }
-            ForEach(model.sources) { source in
-                HStack(spacing: 14) {
-                    Image(systemName: "externaldrive.connected.to.line.below")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 38, height: 38)
-                        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(source.name)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Theme.text)
-                        Text(source.baseURL.absoluteString)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(Theme.secondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Button("扫描") {
-                        model.startWebDAVScan(source)
-                    }
-                    .buttonStyle(.bordered)
-                    Button("浏览") {
-                        model.browse(source)
-                    }
-                    .buttonStyle(.bordered)
-                    Button {
-                        model.removeSource(source)
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundStyle(Theme.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 340), spacing: 16)], alignment: .leading, spacing: 16) {
+                ForEach(model.sources) { source in
+                    Button { model.browse(source) } label: {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Image(systemName: "externaldrive.connected.to.line.below")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundStyle(Theme.accent)
+                                    .frame(width: 40, height: 40)
+                                    .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 9))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Theme.secondary)
+                            }
+                            Text(source.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.text)
+                            Text(source.baseURL.absoluteString)
+                                .font(.system(size: 10.5, design: .monospaced))
+                                .foregroundStyle(Theme.secondary).lineLimit(1)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
+                        .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help("移除来源（不删除服务器文件）")
+                    .contextMenu {
+                        Button("扫描") { model.startWebDAVScan(source) }
+                        Button("浏览") { model.browse(source) }
+                        Button("移除来源", role: .destructive) { model.removeSource(source) }
+                    }
                 }
-                .padding(14)
-                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.stroke, lineWidth: 1))
             }
         }
     }
