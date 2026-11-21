@@ -172,6 +172,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 model.captureUI(to: URL(fileURLWithPath: captureUI), preferKeyWindow: preferKey)
             }
         }
+        if let captureWindow = value(after: "--capture-window", in: arguments) {
+            let delayed = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + delayed) {
+                model.captureWindow(to: URL(fileURLWithPath: captureWindow))
+            }
+        }
 
         if arguments.contains("--show-add-source") {
             model.showAddSource = true

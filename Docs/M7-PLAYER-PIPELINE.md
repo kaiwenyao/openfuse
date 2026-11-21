@@ -172,3 +172,37 @@ private var preferredColorScheme: ColorScheme? {
 ### 9.3 诊断
 
 `OPENFUSE_DEBUG_GL=1` 现在还会打印 view/window/layer 的几何与窗口外观（去重后只在变化时输出），`--report` 增加 `windowAppearance`，便于下次排查“画面被裁”“外观不跟随”这类问题。
+
+## 10. 0.5.2：回退播放核心，修复色彩与字幕
+
+0.5.0 的 Core Animation 播放核心（`MPVController` + `MPVVideoLayer`）在真机片源上暴露了两个严重回归，0.5.2 把**播放核心回退到 0.4.x 的 `MPVEngine` + `NSOpenGLView`**，其余改进保留。
+
+### 10.1 色彩失衡
+
+- 0.5.x 使用 10-bit float 的 `CAOpenGLLayer`（`contentsFormat = .RGBA16Float`）承载画面，却没有给图层声明颜色空间；同时 `target-colorspace-hint` 让 mpv 按 EDR 输出。Core Animation 于是按扩展范围解释这块缓冲区，在 XDR 屏上整幅画面发黄偏绿（用户截图里的肤色和草地）。
+- 0.4.x 的 `NSOpenGLView` 是 8-bit RGBA，CA 不会做扩展范围解释，颜色正确。0.5.2 回到该路径，`target-colorspace-hint` 仍是 0.4.x 的“EDR 屏幕才提示”，HDR 由 mpv 色调映射到 SDR。
+- 真实片源对照（Big Buck Bunny 1080p 10 s）：播放器帧均值 RGB **93.4 / 102.6 / 57.0**，ffmpeg 解码同一帧 **94.1 / 106.6 / 57.8**（差异来自帧时刻与缩放）。
+
+### 10.2 字幕只显示一部分 / 乱码
+
+- 新播放核心下，纯文本（SRT）字幕经 mpv OSD 渲染时经常整段丢失；`sub-pos` 抬升还会把文本推出画面，表现为“只剩一部分/乱码”。ASS 有时只画出一部分。
+- 回退到 0.4.x 的 `NSOpenGLView` + libmpv 渲染后，SRT 与 ASS 都完整显示（黑底 SRT 的亮像素包围盒 904–1460 × 1385–1436；ASS 行 1279–1324），与 0.4.0 的抓帧一致。
+- 字幕避让改为**只对纯文本生效**的 `sub-margin-y-offset = 72`（折合 152 px @1520，约 10%），把 SRT 抬到控制栏之上；ASS 保持脚本位置，不会跳动。
+
+### 10.3 保留与放弃
+
+保留：10 Hz `PlaybackClock`、自绘进度条、深色标题栏、CVDisplayLink 的 `display-fps`、WebDAV 路径规范化、Jellyfin 浏览加固、缓存/硬解选项。
+
+放弃：Core Animation 图层与 `MPVVideoLayer`/`MPVVideoView`/`MPVController`（从 0.5.2 起不再编译）。相应地，跟屏渲染（p50 ~8.4 ms）回到 24 fps 输出（p50 41.4 ms、p99 54.2 ms、max 56.8 ms、`frameDropCount=5`/50 s）；控制栏淡出停帧仍是 35 ms（0.4.0 约 100 ms），因为播放头已与 UI 解耦。
+
+回退触发条件：只要 8-bit sRGB 呈现路径能保证颜色与字幕正确，就优先正确性；后续若要重新引入跟屏渲染，必须先补上图层颜色空间声明、并解决纯文本字幕的 OSD 渲染问题，再用真实片源验收。
+
+### 10.4 验证命令与证据
+
+```bash
+Scripts/run-player-pipeline.sh   # 60 s：p50 41.4 ms、p99 54.2 ms、淡出 35 ms、无解码丢帧
+Scripts/run-player-ui.sh         # 明亮/深色控制栏、退出后外观恢复
+Scripts/run-acceptance.sh        # 冻结抓帧、简繁 ASS、6ch、续播
+```
+
+真实片源截图：`build/player-fix/window.png`（窗口捕获，含深色标题栏、控制栏、完整中文字幕）、`film.png`（渲染帧，用于颜色对照）、`fixture-ass.png`、`srt-black.png`。窗口捕获用新增的 `--capture-window <path>`（`CGWindowListCreateImage`，可捕获本进程的 OpenGL 视图）。

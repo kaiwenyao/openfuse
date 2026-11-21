@@ -766,3 +766,12 @@
 
 | 字幕与控制栏 | 同上 | 60 s 夹具，ASS 字幕 2.5–6.2 s | 待采样 | 控制栏可见时字幕行 1162–1207，隐藏后回到 1279–1324；纯文本字幕留在画面内 | `Docs/M7-PLAYER-PIPELINE.md` §9 | 通过（本机） |
 | 播放器标题栏外观 | 同上 | 明亮主题，进入/退出播放器 | 待采样 | 播放器内 `windowAppearance=DarkAqua`；回首页背景 YAVG 154.7（明亮） | `Scripts/run-player-ui.sh` | 通过（本机） |
+
+### M7b 回退与修复执行记录（2026-11-21）
+
+| 测试 | 设备／系统／权益 | 素材／来源／初始状态 | 参照步骤与结果 | OpenFuse 构建与结果 | 截图或测量编号 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 真实片源颜色 | MacBook Pro M2 Pro／macOS 27.2.1 | Big Buck Bunny 1080p 10 s（H.264 SDR）／本地 | ffmpeg 解码同一帧为参照 | 画面均值 RGB 93.4/102.6/57.0 vs 源 94.1/106.6/57.8；回到 8-bit sRGB 呈现 | `build/player-fix/window.png`、`film.png` | 通过（本机） |
+| SRT 字幕完整性 | 同上 | 同片 + 中文 SRT | 旧版 0.4.0 同素材 | 字幕完整显示、无乱码；固定上移 152 px，位于控制栏上方 | `build/player-fix/window.png`、`srt-black.png` | 通过（本机） |
+| ASS 字幕 | 同上 | 60 s 夹具 + 简繁 ASS | 同上 | 完整显示（1279–1324 行），与 0.4.0 一致 | `build/player-fix/fixture-ass.png` | 通过（本机） |
+| 播放节拍回退后 | 同上 | 60 s 夹具，控制栏自动隐藏 | 同上 | p50 41.4 ms、p99 54.2 ms、max 56.8 ms；淡出停帧 35 ms；`frameDropCount=5` | `build/player-pipeline/report.json` | 通过（本机；未恢复 0.5.0 的跟屏渲染） |

@@ -13,15 +13,14 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.5.1（2026-11-20）
+## 当前版本 0.5.2（2026-11-21）
 
-- **字幕不再被控制栏挡住。** 控制栏出现时字幕自动上移（mpv `sub-pos`，ASS 与外挂 SRT 都适用），约 150 ms 滑回原位；控制栏渐变从 240 pt/0.82 收窄到 200 pt/0.72。纯文本字幕改为留在画面内（`sub-use-margins=no`），不再被挤进底部黑边。
-- **播放器标题栏跟随深色。** 窗口外观按路由切换：进入播放器时整个窗口（含标题栏、菜单）为深色，回到首页恢复用户选择的明亮/深色/跟随系统。
-- **0.5.0：播放器控制栏可见性修复。** 明亮主题下字幕、音轨、倍速菜单和返回/日志图标曾黑底黑字；播放器改用深色外观，进度条改为自绘（未播放段与缓冲段可见）。
-- **0.5.0：播放管线按 IINA 重写。** `CAOpenGLLayer` + 专用 GL 队列 + `CVDisplayLink` + `display-fps`；播放头 10 Hz 独立发布；60 s 连播 p99 12.2 ms，控制栏淡出停帧 12 ms（旧 ~100 ms）；默认 `video-sync=display-resample`（`OPENFUSE_VIDEO_SYNC=audio` 可回退）。
-- **0.5.0：WebDAV 浏览路径不再重复。** 导航改为规范化状态机，加载中连点被丢弃，旧重复路径自动迁移；Jellyfin 浏览同步加固。
-- （0.4.0 起）默认明亮主题，可在设置切换；Trakt 同步已完全移除。
-- 本轮 macOS 验证：69 个单元测试、M1 播放验收，以及控制栏、播放管线、WebDAV 浏览三个验收脚本全部通过。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
+- **修复 0.5.0/0.5.1 的色彩失衡。** 上一版把画面交给 16-bit float 的 Core Animation 图层，却没有声明颜色空间，macOS 在 XDR 屏上按扩展范围解释这块缓冲区，整幅画面发黄偏绿。已回到 0.4.x 的 8-bit sRGB 呈现路径，HDR 片源照旧由 mpv 色调映射到 SDR。
+- **修复字幕只显示一部分/乱码。** 0.5.x 的新播放核心让纯文本（SRT）字幕经 mpv OSD 渲染时丢失，ASS 只画出一部分；同时 `sub-pos` 抬升会把纯文本字幕推出画面。播放核心已回到 0.4.x 的 `NSOpenGLView` + libmpv 实现（保留新的选项、CVDisplayLink 刷新率与播放头解耦），SRT 与 ASS 都完整显示。
+- **字幕不再被控制栏挡住。** 纯文本字幕通过 `sub-margin-y-offset` 固定上移约 10%（152 px @1520），位于控制栏之上；ASS 保持脚本位置。只影响纯文本，不会造成运行时跳动。
+- **播放器标题栏跟随深色**（0.5.1）：播放器内窗口与标题栏为深色，回首页恢复用户主题。
+- **0.5.0/0.5.1 保留的其它改进：** 控制栏在明亮主题下可见、自绘进度条、WebDAV 路径规范化、Jellyfin 浏览加固、播放头 10 Hz 独立发布（控制栏淡出停帧从 ~100 ms 降到 35–45 ms）、CVDisplayLink 校准 `display-fps`。
+- 本轮 macOS 验证：69 个单元测试、M1 播放验收、控制栏/播放管线/WebDAV 三个脚本；真实 1080p 片源（Big Buck Bunny 10 s + 中文 SRT）实测颜色与源帧一致、字幕完整。记录：[M7 播放器管线](Docs/M7-PLAYER-PIPELINE.md)。
 
 # OpenFuse 开发计划
 

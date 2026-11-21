@@ -5,11 +5,14 @@ import SwiftUI
 struct MPVSurface: NSViewRepresentable {
     let engine: MPVEngine
 
-    func makeNSView(context: Context) -> MPVVideoView {
-        MPVVideoView(engine: engine)
+    func makeNSView(context: Context) -> MPVGLView {
+        guard let view = MPVGLView(engine: engine) else {
+            fatalError("OpenGL pixel format unavailable")
+        }
+        return view
     }
 
-    func updateNSView(_ nsView: MPVVideoView, context: Context) {}
+    func updateNSView(_ nsView: MPVGLView, context: Context) {}
 }
 
 struct PlayerView: View {
@@ -165,13 +168,6 @@ struct PlayerView: View {
 /// only invalidate the scrubber (`PlaybackClock`) instead of this whole
 /// hierarchy — re-laying out three `Menu`s and the AirPlay picker 20 times a
 /// second was one half of the stutter.
-private struct ControlBarHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
 struct PlayerChrome: View {
     @ObservedObject var player: PlayerModel
     @State private var scrubValue: Double?
@@ -188,14 +184,11 @@ struct PlayerChrome: View {
                 LinearGradient(colors: [.black.opacity(0.65), .clear], startPoint: .top, endPoint: .bottom)
                     .frame(height: 150)
                 Spacer()
-                LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 200)
+                LinearGradient(colors: [.clear, .black.opacity(0.82)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 240)
             }
             .ignoresSafeArea()
             .allowsHitTesting(false)
-        }
-        .onPreferenceChange(ControlBarHeightKey.self) { height in
-            player.updateControlBarHeight(height)
         }
         .sheet(isPresented: $showLog) {
             logSheet
@@ -407,11 +400,6 @@ struct PlayerChrome: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 26)
             .padding(.bottom, 22)
-            .background {
-                GeometryReader { proxy in
-                    Color.clear.preference(key: ControlBarHeightKey.self, value: proxy.size.height)
-                }
-            }
         }
     }
 

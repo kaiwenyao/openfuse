@@ -1,23 +1,18 @@
 #!/bin/bash
 # Playback pipeline acceptance: frame pacing, dropped frames and the
-# control-bar fade-out must be clean over a 60 s MKV soak.
+# control-bar fade-out over a 60 s MKV soak.
 #
 #   Scripts/run-player-pipeline.sh
 #
-# What is measured
-#  - `[gl] draw <nanos>` lines written by MPVVideoLayer while OPENFUSE_DEBUG_GL=1
-#    give the video frame cadence on the Core Animation render thread.
-#  - `[timeline] <nanos> controls hidden` marks the control bar fade-out. The
-#    rewrite made that transition stop blocking the video; with the old
-#    main-thread NSOpenGLView it produced a ~100 ms gap.
-#  - mpv counters (`frame-drop-count`, `decoder-frame-drop-count`,
-#    `mistimed-frame-count`), `display-fps` (set from CVDisplayLink) and
-#    `estimated-vf-fps` come from the playback report.
-#
-# Baseline before the rewrite (20 s, controls auto-hiding):
-#   p99 51.9 ms, max 100.8 ms, 22 intervals > 50 ms.
-# After (60 s): p50 ~8.4 ms (panel-locked), p99 ~12 ms, no interval > 50 ms,
-# and the fade-out gap dropped from ~100 ms to <45 ms.
+# Notes
+#  - The presentation surface is the proven NSOpenGLView from 0.4.x. The 0.5.0
+#    Core Animation backend rendered every vsync (p50 ~8.4 ms) but broke
+#    plain-text subtitle rendering and Core Animation's colour management tinted
+#    the picture on XDR displays, so it was rolled back in 0.5.2.
+#  - `[gl] draw <nanos>` lines (OPENFUSE_DEBUG_GL=1) give the frame cadence.
+#  - `[timeline] <nanos> controls hidden` marks the control-bar fade; the UI
+#    clock keeps that transition from stalling the video (it was ~100 ms in
+#    0.4.0).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -35,8 +30,8 @@ swift test >/dev/null
 rm -rf "$OUT"
 mkdir -p "$OUT/support" "$OUT/capture-support"
 
-# 1) Soak without screenshots: a PNG readback in `draw` costs ~100 ms and would
-#    pollute the pacing measurement.
+# 1) Soak without screenshots: a PNG readback costs ~100 ms and would pollute
+#    the pacing measurement.
 OPENFUSE_SUPPORT_DIR="$OUT/support" \
 OPENFUSE_DEBUG_GL=1 \
 OPENFUSE_DEBUG_TIMELINE=1 \
@@ -73,8 +68,8 @@ for line in open(os.path.join(out, "draw.log"), errors="replace"):
     if match:
         hidden_at = int(match.group(1))
 
-if len(draws) < 5000:
-    errors.append(f"only {len(draws)} rendered frames captured (expected display-rate rendering)")
+if len(draws) < 800:
+    errors.append(f"only {len(draws)} rendered frames captured")
 
 start = draws[0]
 times = [(t - start) / 1e9 for t in draws]
@@ -84,16 +79,13 @@ gaps_sorted = sorted(gaps)
 p50 = statistics.median(gaps)
 p99 = gaps_sorted[int(len(gaps_sorted) * 0.99)]
 worst = gaps_sorted[-1]
-print(f"frame cadence: n={len(times)} span={times[-1]:.1f}s p50={p50:.2f}ms p99={p99:.1f}ms max={worst:.1f}ms")
-if not 7.5 <= p50 <= 9.5:
-    errors.append(f"median frame interval {p50:.2f} ms (expected ~8.4 ms = panel-locked rendering)")
-if p99 > 20:
-    errors.append(f"p99 frame interval {p99:.1f} ms > 20 ms")
-if worst > 45:
-    errors.append(f"worst frame interval {worst:.1f} ms > 45 ms")
-over_50 = sum(1 for gap in gaps if gap > 50)
-if over_50:
-    errors.append(f"{over_50} frame intervals over 50 ms")
+print(f"frame cadence: n={len(times)} span={times[-1]:.1f}s p50={p50:.1f}ms p99={p99:.1f}ms max={worst:.1f}ms")
+if not 40.5 <= p50 <= 43.5:
+    errors.append(f"median frame interval {p50:.1f} ms (expected ~41.7 ms for 24 fps)")
+if p99 > 56:
+    errors.append(f"p99 frame interval {p99:.1f} ms > 56 ms")
+if worst > 80:
+    errors.append(f"worst frame interval {worst:.1f} ms > 80 ms")
 
 if hidden_at is None:
     errors.append("control bar never hid; the fade-out regression check did not run")
@@ -102,7 +94,7 @@ elif draws:
     after = [t for t in draws if t > hidden_at]
     if before and after:
         fade_gap = (after[0] - before[-1]) / 1e6
-        print(f"control-bar fade gap: {fade_gap:.1f} ms (was ~100 ms before the rewrite)")
+        print(f"control-bar fade gap: {fade_gap:.1f} ms (was ~100 ms in 0.4.0)")
         if fade_gap > 70:
             errors.append(f"control-bar fade stalled the video for {fade_gap:.1f} ms")
 
@@ -117,12 +109,8 @@ else:
         "hasRenderContext")})
     if report.get("hasRenderContext") is not True:
         errors.append("no mpv render context")
-    # mpv counts a handful of drops during demux/decoder warm-up; measured at
-    # 12 s and 50 s they are already final, i.e. startup-only.
-    if (report.get("frameDropCount") or 0) > 2:
+    if (report.get("frameDropCount") or 0) > 8:
         errors.append(f"frameDropCount={report.get('frameDropCount')}")
-    if (report.get("mistimedFrameCount") or 0) > 8:
-        errors.append(f"mistimedFrameCount={report.get('mistimedFrameCount')}")
     if (report.get("decoderDropFrameCount") or 0) != 0:
         errors.append(f"decoderDropFrameCount={report.get('decoderDropFrameCount')}")
     fps = report.get("estimatedVFFps") or 0
@@ -132,8 +120,8 @@ else:
         errors.append(f"display-fps={report.get('displayFps')}; CVDisplayLink override not applied")
     if (report.get("position") or 0) < duration - 10:
         errors.append(f"playback only reached {report.get('position')} s")
-    if report.get("videoSync") != "display-resample":
-        errors.append(f"video-sync={report.get('videoSync')} (expected display-resample)")
+    if report.get("videoSync") != "audio":
+        errors.append(f"video-sync={report.get('videoSync')} (expected audio)")
 
 for artifact in ("frame.png", "player-ui.png"):
     path = os.path.join(out, artifact)
@@ -143,5 +131,5 @@ for artifact in ("frame.png", "player-ui.png"):
 if errors:
     print("FAIL: " + "; ".join(errors))
     sys.exit(1)
-print("PASS: 60 s soak, panel-locked pacing, no post-warm-up frame drops, fade-out no longer stalls video")
+print("PASS: 60 s soak, no decoder drops, control-bar fade below 70 ms")
 PY

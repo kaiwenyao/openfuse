@@ -1963,6 +1963,29 @@ final class AppModel: ObservableObject {
         return url
     }
 
+    /// Captures the window as the window server presents it, including the
+    /// Core Animation video layer and the titlebar. Used by acceptance runs to
+    /// verify on-screen colours and subtitles (the FBO capture bypasses Core
+    /// Animation's colour management).
+    func captureWindow(to url: URL) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.windowNumber > 0 }),
+              let image = CGWindowListCreateImage(
+                .null,
+                .optionIncludingWindow,
+                CGWindowID(window.windowNumber),
+                [.boundsIgnoreFraming, .bestResolution]
+              )
+        else {
+            FileHandle.standardError.write(Data("window capture failed\n".utf8))
+            return
+        }
+        let rep = NSBitmapImageRep(cgImage: image)
+        if let data = rep.representation(using: .png, properties: [:]) {
+            try? data.write(to: url)
+            print("[OpenFuse] wrote window capture to \(url.path)")
+        }
+    }
+
     func captureUI(to url: URL, preferKeyWindow: Bool = false) {
         let visible = NSApp.windows.filter { $0.isVisible && $0.frame.width > 200 && $0.frame.height > 200 }
         let window = (preferKeyWindow ? NSApp.keyWindow : nil)
@@ -2017,6 +2040,13 @@ final class AppModel: ObservableObject {
             "audioDeviceActive": player.engine.getPropertyString("audio-device") ?? "",
             "screenEDR": NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1,
             "selectedSubtitle": player.selectedSubtitleID ?? "off",
+            "mpvSid": player.engine.getPropertyString("sid") ?? "nil",
+            "subVisibility": player.engine.getPropertyString("sub-visibility") ?? "nil",
+            "subText": player.engine.getPropertyString("sub-text") ?? "",
+            "subAssOverride": player.engine.getPropertyString("sub-ass-override") ?? "nil",
+            "subUseMargins": player.engine.getPropertyString("sub-use-margins") ?? "nil",
+            "osdLevel": player.engine.getPropertyString("osd-level") ?? "nil",
+            "blendSubtitles": player.engine.getPropertyString("blend-subtitles") ?? "nil",
             "selectedAudio": player.selectedAudioID ?? "default",
             "libraryStatus": libraryStatus ?? "",
             "generatedAt": ISO8601DateFormatter().string(from: Date()),
@@ -2077,21 +2107,13 @@ final class PlayerModel: ObservableObject {
     @Published var audioDevices: [AudioDeviceInfo] = []
     @Published var selectedAudioDeviceID = "auto"
     @Published var speed: Double = 1.0
-    @Published var showControls = true {
-        didSet {
-            guard oldValue != showControls else { return }
-            applySubtitleLift()
-        }
-    }
+    @Published var showControls = true
     @Published var isScrubbing = false
     @Published var statusMessage: String?
     @Published var logs: [String] = []
     /// Set from `paused-for-cache`; shown in the control bar while buffering.
     @Published var isBuffering = false
-    /// Height of the bottom control bar in points, reported by `PlayerChrome`.
-    var controlBarHeight: CGFloat = 110
-    private var subtitleLift: Double = 0
-    private var subtitleLiftGeneration = 0
+
 
     var onClose: (() -> Void)?
     var onFinished: (() -> Void)?
@@ -2191,7 +2213,11 @@ final class PlayerModel: ObservableObject {
         engine.load(url: item.playbackURL, startAt: initialPosition)
         engine.play()
         clock.reset(position: initialPosition)
-        applySubtitleLift(animated: false)
+        // Lift plain-text subtitles (SRT) above the bottom control bar. Only
+        // affects converted text subtitles; ASS tracks keep their scripted
+        // position. Safe with the 0.4.x renderer (unlike `sub-pos`, which made
+        // plain text disappear in the 0.5.0 pipeline).
+        engine.setProperty("sub-margin-y-offset", "72")
         scheduleControlsHide()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -2789,38 +2815,6 @@ final class PlayerModel: ObservableObject {
 
     func captureScreenshot(to path: URL) {
         engine.screenshot(to: path)
-    }
-
-    /// Keeps dialogue clear of the control bar. The subtitle position is
-    /// animated over ~150 ms so showing/hiding the bar does not make the text
-    /// jump; mpv re-renders only the subtitle layer.
-    func updateControlBarHeight(_ height: CGFloat) {
-        guard height > 40 else { return }
-        controlBarHeight = height
-        if showControls {
-            applySubtitleLift(animated: false)
-        }
-    }
-
-    private func applySubtitleLift(animated: Bool = true) {
-        let windowHeight = NSApp.keyWindow?.contentView?.bounds.height ?? 730
-        let fraction = min(0.22, max(0, Double(controlBarHeight) / Double(max(windowHeight, 320))))
-        let target = showControls ? fraction * 100 : 0
-        guard abs(target - subtitleLift) > 0.05 || !animated else { return }
-
-        subtitleLiftGeneration += 1
-        let generation = subtitleLiftGeneration
-        let start = subtitleLift
-        let steps = animated ? 6 : 1
-        subtitleLift = target
-        for step in 1...steps {
-            let delay = animated ? Double(step) * 0.025 : 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                guard let self, self.subtitleLiftGeneration == generation else { return }
-                let value = start + (target - start) * Double(step) / Double(steps)
-                self.engine.setSubtitleLift(percent: value)
-            }
-        }
     }
 
     func showControlsTemporarily() {
