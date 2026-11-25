@@ -208,6 +208,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        // Writes the final per-stage render percentiles to the timing log, so
+        // an acceptance run covers the Cmd+Tab windows and not only the report
+        // snapshot taken a few seconds after the first frame.
+        RenderTiming.shared.logSummary()
         AppModel.shared.stopWindowRecording()
         AppModel.shared.saveForTermination()
     }

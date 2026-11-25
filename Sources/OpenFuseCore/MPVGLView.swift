@@ -22,6 +22,8 @@ public final class MPVGLView: NSOpenGLView {
     private var displayLink: CVDisplayLink?
     private var currentDisplay: CGDirectDisplayID?
     private var isUninited = false
+    private var occlusionObserver: NSObjectProtocol?
+    private var activationObservers: [NSObjectProtocol] = []
 
     public init?(engine: MPVEngine) {
         self.engine = engine
@@ -43,6 +45,7 @@ public final class MPVGLView: NSOpenGLView {
         super.init(frame: .zero, pixelFormat: format)
         wantsBestResolutionOpenGLSurface = true
         autoresizingMask = [.width, .height]
+        RenderTiming.shared.startPeriodicLogging()
     }
 
     required init?(coder: NSCoder) {
@@ -82,35 +85,82 @@ public final class MPVGLView: NSOpenGLView {
     public override func draw(_ dirtyRect: NSRect) {
         guard let context = openGLContext, didCreateContext, !isUninited else { return }
         context.makeCurrentContext()
-        engine.render(into: self)
-        engine.reportSwap()
-        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_GL"] != nil {
-            let stamp = DispatchTime.now().uptimeNanoseconds
-            FileHandle.standardError.write(Data("[gl] draw \(stamp)\n".utf8))
+        RenderTiming.shared.measure(.draw) {
+            engine.render(into: self)
+            engine.reportSwap()
+            if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_GL"] != nil {
+                let stamp = DispatchTime.now().uptimeNanoseconds
+                FileHandle.standardError.write(Data("[gl] draw \(stamp)\n".utf8))
+            }
+            if let url = pendingCaptureURL {
+                pendingCaptureURL = nil
+                RenderTiming.shared.measure(.capture) {
+                    captureFramebuffer(to: url)
+                }
+            }
+            RenderTiming.shared.measure(.swap) {
+                context.flushBuffer()
+            }
         }
-        if let url = pendingCaptureURL {
-            pendingCaptureURL = nil
-            captureFramebuffer(to: url)
-        }
-        context.flushBuffer()
     }
 
     // MARK: - Display link
 
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        guard window != nil else {
+        guard let window else {
             stopDisplayLink()
+            stopObservingWindowState()
             return
         }
         startDisplayLink()
+        startObservingWindowState(window)
     }
 
     public override func viewWillMove(toWindow newWindow: NSWindow?) {
         if newWindow == nil {
             stopDisplayLink()
+            stopObservingWindowState()
         }
         super.viewWillMove(toWindow: newWindow)
+    }
+
+    /// App activation and window occlusion are the two events that change what
+    /// a `Cmd+Tab` round looks like from inside the player. They are recorded
+    /// next to the draw samples so a stutter can be attributed to the switch
+    /// window instead of to steady-state playback.
+    private func startObservingWindowState(_ window: NSWindow) {
+        stopObservingWindowState()
+        occlusionObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification,
+            object: window,
+            queue: .main
+        ) { note in
+            guard let observed = note.object as? NSWindow else { return }
+            let visible = observed.occlusionState.contains(.visible)
+            RenderTiming.shared.recordEvent("window.occlusion.\(visible ? "visible" : "hidden")")
+        }
+        let center = NotificationCenter.default
+        activationObservers = [
+            center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+                RenderTiming.shared.recordEvent("app.active")
+            },
+            center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in
+                RenderTiming.shared.recordEvent("app.inactive")
+            },
+        ]
+        RenderTiming.shared.recordEvent("view.window.ready")
+    }
+
+    private func stopObservingWindowState() {
+        if let occlusionObserver {
+            NotificationCenter.default.removeObserver(occlusionObserver)
+            self.occlusionObserver = nil
+        }
+        for observer in activationObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        activationObservers = []
     }
 
     private func startDisplayLink() {
@@ -171,6 +221,8 @@ public final class MPVGLView: NSOpenGLView {
         guard !isUninited else { return }
         isUninited = true
         stopDisplayLink()
+        stopObservingWindowState()
+        RenderTiming.shared.logSummary()
     }
 
     // MARK: - Frame capture
