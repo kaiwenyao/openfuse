@@ -25,7 +25,9 @@ unzip -t "$ZIP" >/dev/null
 
 (
   cd build
-  shasum -a 256 "OpenFuse-macos.zip" | awk '{print $1}' > "OpenFuse-macos.zip.sha256"
+  # Keep the standard `shasum` two-space + filename format so the sidecar can
+  # be consumed directly by `shasum -a 256 -c OpenFuse-macos.zip.sha256`.
+  shasum -a 256 "OpenFuse-macos.zip" > "OpenFuse-macos.zip.sha256"
 )
 cp Scripts/install-openfuse-macos.sh build/install-openfuse-macos.sh
 chmod +x build/install-openfuse-macos.sh

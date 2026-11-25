@@ -1,20 +1,51 @@
-# OpenFuse 0.9.2 · macOS 界面修复交付与验收
+# OpenFuse 0.9.3 · 换集交互验收（含 0.9.2 历史证据）
 
-基线：`0.9.1`（`04b0160`）。本轮在同一台 Mac 上实现、构建、启动应用并完成真实交互验收。
+基线：`0.9.2`（`d6268ee`）。本轮修复「换集后右键/空格无法暂停」，在同一台 Mac 上完成构建、真实输入交互与安装包验收。下方 `## 0.9.3` 是本轮证据；`## 1`–`## 7` 保留 0.9.2 界面改版的历史验收记录。
 
 - 机器：MacBook（arm64），macOS 27.2.1（26B131），Xcode 27.2，屏幕 1512 × 982 pt
-- 应用：`build/OpenFuse.app`，版本 `0.9.2`
+- 应用：`build/OpenFuse.app`，版本 `0.9.3`，`OpenFuseCommit=1bb47d0`
 - 安装包：`delivery/OpenFuse-macos.zip`、`delivery/OpenFuse-macos.zip.sha256`、`delivery/install-openfuse-macos.sh`
-- 安装命令：
+- SHA-256：`4f901226225cd7b20a94869c1c4bad63f6d20721c1926f34e221d7ee67fcf1f0`
 
-```bash
-cd /Users/ykw/Documents/openfuse/delivery
-bash install-openfuse-macos.sh --app OpenFuse-macos.zip
+## 0.9.3 换集后暂停修复验收
+
+### 缺陷复现（修复前）
+
+| 场景 | `file` | `paused` | `userPaused` |
+| --- | --- | --- | --- |
+| 不换集 + 空格 | `openfuse-fixture.mkv` | `true` | `true` |
+| 选集面板换到 `video.mkv` + 空格 | `video.mkv` | `false` | `false` |
+| 选集面板换到 `video.mkv` + 右键 | `video.mkv` | `false` | `false` |
+
+`OPENFUSE_DEBUG_HITS=1` 右键监视器打印 `captured=openfuse-fixture.mkv current=video.mkv`，`NSApp.keyWindow?.firstResponder` 为窗口本身（非 `NSTextView`），确认是闭包捕获旧 `PlayerModel` 而非焦点/窗口判断。SwiftUI `onChange` 的 action 闭包同样捕获旧视图值，重绑无效。
+
+### 回归脚本
+
+`Scripts/run-episode-switch-pause.sh`（`build/episode-switch-pause/*/report.json`）：
+
+```text
+ok   no-switch-space: space pauses after switch: True
+ok   no-switch-right: right pauses after switch: True
+ok   folder-switch-space: episode on screen: video.mkv
+ok   folder-switch-space: space pauses after switch: True
+ok   folder-switch-right: right pauses after switch: True
+ok   direct-switch-space: space pauses after switch: True
+ok   folder-switch-volume: ↓ reaches the new engine: 95
+ok   folder-switch-volume: mpv volume of new engine follows: 95.000000
+PASS: right-click / space / volume keys follow episode switches
 ```
 
-离线安装会校验 SHA-256、用本机持久签名身份重签并安装到 `/Applications`，同时备份旧版本，重复执行即为升级。
+- `swift test`：136 个测试，0 失败。
+- `Scripts/run-player-interactions.sh`：PASS（音量键、视频/黑边/控制栏/全屏右键、两次右键恢复、缓冲中暂停）。
 
-## 1. 交付内容
+### 安装包
+
+- `unzip -t` 无错误；`shasum -a 256 -c OpenFuse-macos.zip.sha256` → `OK`。
+- `codesign --verify --deep --strict` 通过；`otool -L` 无 `/opt/homebrew` 依赖。
+- 打包后自包含应用实机换集 + 空格：`paused=true`、`userPaused=true`、`mpv v0.42.0`。
+- 离线安装 `--prefix /tmp/openfuse-install-093 --no-launch --sign adhoc`：成功，版本 `0.9.3 (1bb47d0)`。
+
+## 1. 交付内容（0.9.2 历史）
 
 ### 截图（`delivery/screenshots/`）
 

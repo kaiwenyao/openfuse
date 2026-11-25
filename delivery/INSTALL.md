@@ -1,10 +1,10 @@
-# OpenFuse 0.9.2 · macOS 安装
+# OpenFuse 0.9.3 · macOS 安装
 
 ## 包内容
 
 ```text
-delivery/OpenFuse-macos.zip              28 MB，自包含 libmpv 及依赖
-delivery/OpenFuse-macos.zip.sha256       5464f2e063bc2309e7b2aa2eabffccd81f3350255ffc51cadb03b0bb7fafe348
+delivery/OpenFuse-macos.zip              28 MB，自包含 libmpv 及依赖，版本 0.9.3（1bb47d0）
+delivery/OpenFuse-macos.zip.sha256       4f901226225cd7b20a94869c1c4bad63f6d20721c1926f34e221d7ee67fcf1f0
 delivery/install-openfuse-macos.sh       安装/升级脚本
 ```
 
@@ -51,6 +51,7 @@ open /Applications/OpenFuse.app
 ## 安装包实测
 
 - `unzip -t`：无错误。
-- `codesign --verify --deep --strict build/OpenFuse.app`：通过。
-- 打包后的自包含应用实际启动并播放 HEVC Main 10 + E-AC-3 5.1 + 双语 ASS 夹具，窗口抓帧成功。
-- 离线安装到临时目录（`--prefix /tmp/openfuse-install-test --no-launch --sign adhoc`）成功，版本 0.9.2。
+- `shasum -a 256 -c OpenFuse-macos.zip.sha256`：`OpenFuse-macos.zip: OK`。
+- `codesign --verify --deep --strict build/OpenFuse.app`：通过；`otool -L` 无 `/opt/homebrew` 依赖。
+- 打包后的自包含应用实际启动并播放换集流程：换集后空格暂停成功（报告 `paused=true`、`userPaused=true`、`mpv v0.42.0`）。
+- 离线安装到临时目录（`--prefix /tmp/openfuse-install-093 --no-launch --sign adhoc`）成功，版本 0.9.3（`1bb47d0`）。

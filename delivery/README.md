@@ -1,6 +1,6 @@
-# OpenFuse 0.9.2 · macOS 交付包
+# OpenFuse 0.9.3 · macOS 交付包
 
-基线：0.9.1（`04b0160`）。本轮修复 WebDAV 文件夹卡片显示名，并把播放器改成紧凑、可拖动的原生悬浮面板。
+基线：0.9.2（`d6268ee`）。本轮修复「在播放页面换集之后，右键任意位置或按空格都无法暂停视频」，并重新打包自包含安装包。
 
 ## 快速开始
 
@@ -22,34 +22,28 @@ open /Applications/OpenFuse.app
 
 | 路径 | 说明 |
 | --- | --- |
-| `OpenFuse-macos.zip` | 28 MB 自包含 macOS 应用（libmpv + FFmpeg + 依赖，无需 Homebrew） |
-| `OpenFuse-macos.zip.sha256` | `5464f2e063bc2309e7b2aa2eabffccd81f3350255ffc51cadb03b0bb7fafe348`（重新打包后以实际文件为准） |
+| `OpenFuse-macos.zip` | 28 MB 自包含 macOS 应用（libmpv + FFmpeg + 依赖，无需 Homebrew）；`CFBundleShortVersionString=0.9.3`，`OpenFuseCommit=1bb47d0` |
+| `OpenFuse-macos.zip.sha256` | `4f901226225cd7b20a94869c1c4bad63f6d20721c1926f34e221d7ee67fcf1f0`（标准 `shasum` 格式，可直接 `-c` 校验） |
 | `install-openfuse-macos.sh` | 安装/升级脚本 |
 | `INSTALL.md` | 安装、校验、直接解压与运行要求 |
-| `TEST-RESULTS.md` | 逐项验收结果、测试命令、面板几何数据、QuickTime 对照与待验证项 |
-| `screenshots/` | 改动前后、普通窗口、320 pt、全屏、隐藏、字幕弹层、网格/列表、拖拽预览、减少透明度、返回原集 |
-| `recording/panel-interaction.mp4` | 18.9 秒短录屏：拖面板 → 悬停预览 → 字幕偏移 → 控件淡出 |
-| `evidence/` | 运行时报告 JSON 与 WebDAV 服务端请求日志 |
+| `TEST-RESULTS.md` | 0.9.3 换集交互验收 + 0.9.2 历史验收证据 |
+| `screenshots/`、`recording/`、`evidence/` | 0.9.2 界面改版的历史截图、录屏与运行时报告 |
 
-## 核心改动
+## 本轮改动
 
-- `RemoteEntry.folderDisplayName`：单段 `<displayname>` 优先，整条路径/缺失时回退到 `entry.path` 最后一段；网格、列表、单季卡副标题、VoiceOver 同规则。`path`/`url` 不变。
-- `RemoteEntry.baseName` / `fileBaseName`：路径型 displayname 下 NFO、外挂字幕和播放标题不再重复拼路径。
-- `PlayerChrome`：顶部居中两行悬浮面板，常规 480–560 pt，320 pt 收缩到 304 pt；播放/快退/快进居中，音量、选集、字幕分列；时间轴独占第二行并显示剩余时间。
-- macOS 26+ `glassEffect`；macOS 14/15 `NSVisualEffectView` within-window；减少透明度时使用不透明面板。
-- 面板只能由顶部空白拖动条移动，并始终限制在窗口内；拖动音量/时间轴不会误拖面板。
-- 悬停面板、字幕弹层、键盘操作、拖动时间轴期间保持可见，空闲 3.2 秒后淡出。
-- 缩略图预览随面板位置向上/向下展开。
-- 标题收敛为作品名 + 季集号；完整文件名、来源、编码和日志在「播放信息」。
-- 右键暂停、↑/↓ 音量、Esc 退出、退出后返回原季/选集保持。
+- `PlayerView` 的 `NSEvent` 本地监视器不再按值捕获安装时的 `PlayerModel`：换集会新建模型但保留 `.player` 路由与视图身份，`onAppear` 不会重跑，旧闭包一直在对已停止的引擎调用 `togglePlayPause()`。
+- 改为在事件到达时从 `AppModel.shared` 解析当前在屏剧集（`route == .player` 守卫）；空格、右键、↑/↓、←/→、Esc、⌘3 在选集换集、自动连播、加载中改选之后都作用于新引擎。
+- 打包脚本的 SHA-256 sidecar 改回标准 `shasum` 格式，`shasum -a 256 -c` 可直接校验。
+- 改动只涉及 `Sources/OpenFuseApp/PlayerView.swift` 与 `Scripts/package-release.sh`，播放器布局、面板几何和 mpv 管线不变。
+
+详细根因与复现数据见 [0.9.3 换集修复](../Docs/0.9.3-EPISODE-SWITCH.md)。
 
 ## 验证摘要
 
 - `swift test`：136 个测试，0 失败。
-- `Scripts/run-webdav-browser.sh`：PASS。
-- `Scripts/run-player-interactions.sh`：PASS（音量键、四个区域右键、全屏右键、缓冲中暂停）。
-- 真实 WebDAV 夹具（`--displayname-mode path`）：点击 Fargo → Season 01 → 面包屑返回，请求路径无重复拼接。
-- 面板几何：普通 `{310,64}`、全屏 `{476,64}`、⌘3 `{447,64}`、拖动钳制 `{612,630}`、缩放后 `{232,370}`。
-- 录屏报告：`subDelay=0.1`、`showControls=false`、`chromeHolds=[]`。
+- `Scripts/run-episode-switch-pause.sh`：PASS（6 个真实输入用例：无换集基线空格/右键、选集面板换集空格/右键、直接打开另一文件换集空格、换集后 ↓ 音量键）。
+- `Scripts/run-player-interactions.sh`：PASS（音量键、视频/黑边/控制栏/全屏右键、缓冲中暂停、两次右键恢复）。
+- 打包后自包含 `OpenFuse.app` 实机冒烟：换集后空格暂停，`paused=true`、`userPaused=true`、`mpv v0.42.0`。
+- `unzip -t`、`codesign --verify --deep --strict`、`shasum -a 256 -c` 全部通过；离线安装到 `--prefix /tmp/openfuse-install-093 --no-launch --sign adhoc` 成功，版本 0.9.3（`1bb47d0`）。
 
 详细数据见 [TEST-RESULTS.md](TEST-RESULTS.md)。
