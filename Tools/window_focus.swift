@@ -10,10 +10,11 @@ import AppKit
 //
 //   focus frontmost            prints the frontmost process id
 //   focus activate <pid>       activates that process, exit 1 on failure
+//   focus terminate <pid>      requests a normal quit, exit 1 on failure
 
 let arguments = CommandLine.arguments
 guard arguments.count >= 2 else {
-    FileHandle.standardError.write(Data("usage: focus frontmost|activate <pid>\n".utf8))
+    FileHandle.standardError.write(Data("usage: focus frontmost|activate <pid>|terminate <pid>\n".utf8))
     exit(2)
 }
 
@@ -21,15 +22,18 @@ switch arguments[1] {
 case "frontmost":
     let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1
     print(pid)
-case "activate":
+case "activate", "terminate":
     guard arguments.count >= 3, let raw = Int32(arguments[2]),
           let application = NSRunningApplication(processIdentifier: pid_t(raw)) else {
         FileHandle.standardError.write(Data("focus: no process for pid \(arguments.count >= 3 ? arguments[2] : "?")\n".utf8))
         exit(1)
     }
-    let activated = application.activate(options: [.activateAllWindows])
-    if !activated {
-        FileHandle.standardError.write(Data("focus: activate failed for pid \(raw)\n".utf8))
+    let action = arguments[1]
+    let accepted = action == "activate"
+        ? application.activate(options: [.activateAllWindows])
+        : application.terminate()
+    if !accepted {
+        FileHandle.standardError.write(Data("focus: \(action) failed for pid \(raw)\n".utf8))
         exit(1)
     }
 default:

@@ -208,6 +208,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let report = value(after: "--report-on-quit", in: CommandLine.arguments) {
+            AppModel.shared.writeTestReport(to: URL(fileURLWithPath: report))
+        }
         // Writes the final per-stage render percentiles to the timing log, so
         // an acceptance run covers the Cmd+Tab windows and not only the report
         // snapshot taken a few seconds after the first frame.

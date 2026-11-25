@@ -58,11 +58,11 @@ HEVC Main 10、E-AC-3 5.1、60 s、内嵌 ASS + 外挂 zh-Hans/zh-Hant/双语 AS
 | `Sources/OpenFuseCore/MPVEngine.swift` | 在 `mpv_initialize` 前应用策略；`render()` 内计时并读取 `MPV_RENDER_PARAM_NEXT_FRAME_INFO` 记录 `targetLead`；C 组时传 `MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME=0`；`renderStats` 增加 `videoTimingOffset`、`blockForTargetTime`、`avsync`、`displaySyncActive`、`voDelayedFrameCount` 与完整 `renderTiming` 摘要。 |
 | `Sources/OpenFuseCore/MPVGLView.swift` | `draw` 内分段计时；观察 `NSWindow.didChangeOcclusionStateNotification` 与 `NSApplication` 激活通知；卸载时写最终分段摘要。 |
 | `Sources/OpenFuseApp/AppModel.swift` | 验收报告增加 `appActive`、`windowOccluded`，并合并引擎的渲染统计。 |
-| `Sources/OpenFuseApp/HomeView.swift` | `applicationWillTerminate` 写最终 `render-final`，让 `--quit-after` 的采样覆盖整个切换窗口。 |
+| `Sources/OpenFuseApp/HomeView.swift` | `applicationWillTerminate` 写最终 `render-final`。验收用的 `--report-on-quit` 在销毁播放器前保存切回后的播放报告。 |
 | `Tests/OpenFuseCoreTests/VideoTimingPolicyTests.swift` | 策略覆盖：交互式 audio 返回 `0`、环境覆盖、空值保留 mpv 默认、headless/缩略图/其他同步模式不受影响、C 组开关。 |
 | `Tests/OpenFuseCoreTests/RenderTimingTests.swift` | 百分位、超预算计数、禁用时零开销、环形容量、事件摘要、`target_time` 的 ns→ms 换算（mpv 0.42 的 `vo_frame.pts` 是 ns，而 `render.h` 文字写的是 µs，代码按实测基准确认并单测）。 |
-| `Tools/window_focus.swift` | 验收用焦点助手：用 `NSRunningApplication` 按 pid 激活/查询前台进程，不依赖辅助功能授权，也不会像 `tell application "OpenFuse"` 那样启动 `/Applications/OpenFuse.app` 的第二个实例。 |
-| `Scripts/run-cmdtab-timing.sh` | A/B/C × 播放/暂停 × 窗口/全屏的自动采样：`Cmd+Tab` 系统切换（失败时退回 Finder 激活），期间 `sample` 主线程，汇总报告、分段百分位、`avsync`、掉帧和真实切出次数。 |
+| `Tools/window_focus.swift` | 按 PID 查询和激活前台进程，并在切换循环结束后请求测试实例正常退出。 |
+| `Scripts/run-cmdtab-timing.sh` | 用 A/B/C 对照播放和暂停，可选普通窗口或全屏。分别记录 `Cmd+Tab`、Finder 回退、失败切出和失败切回，汇总切换前后的进度、`avsync`、掉帧增量和分段耗时。 |
 
 诊断开关（默认全关，常规运行只有一次布尔判断）：
 
@@ -102,9 +102,8 @@ OPENFUSE_BLOCK_FOR_TARGET_TIME=0    # C 组定位对照
 `vo-delayed-frame-count` 都是 0，`mistimed-frame-count` 两次都未由 mpv 提供，
 `swap`（`flushBuffer`）p95 中位数 10.4–11.4 ms → 7.5–9.2 ms，没有向交换阶段
 转移长尾。
-每次运行 12 次切出都由 System Events 发送 `Cmd+Tab` 走系统切换路径（不是人手
-按键；激活失败时才退回 Finder 激活），`switches.txt` 记录 12 次；窗口组和全屏组
-各 2 轮共 24 次/方案，满足验收要求的每模式至少 20 次。
+上述历史播放组由 System Events 发送 `Cmd+Tab`。复核各轮对应的 WindowServer
+`appSwitchFWD` 记录，每轮实际切出 12 次，普通窗口和全屏各 2 轮，共 24 次/方案。
 
 `MAIN-STALL` 心跳在每组都记录到一次约 260–380 ms 的冷启动停顿（约启动后
 0.27 s，首次 GL/首帧）以及 A 全屏组一次全屏切换约 280 ms 的停顿；B 组切换
@@ -168,9 +167,11 @@ SRT 字幕第二句：切出再切回后仍然可见
 SRT
 ```
 
-`Scripts/run-cmdtab-timing.sh` 的结果在 `build/cmdtab-timing/`
-（`summary.md`、`summary.tsv`、每次运行的 `report.json`、`timing.log`、
-`sample.txt`、`switches.txt`、`frame.png`、`fixture.wav`）。
+每次执行 `Scripts/run-cmdtab-timing.sh` 都在 `build/cmdtab-timing/` 下创建独立的
+`run.*` 目录。`summary.md` 和 `summary.tsv` 只汇总本次运行。每组保留
+`report-before.json`、`report-after.json`、`timing.log`、`sample.txt`、`switches.tsv`、`switches.log`、
+`frame.png` 和 `fixture.wav`。前后报告的 `position` 和 `avsync` 均以秒为单位。
+任一组缺少必要报告或采样、出现 Finder 回退，或未完成指定的 `Cmd+Tab` 切出和切回时，脚本返回失败。
 
 ## 回归
 
@@ -187,10 +188,17 @@ SRT
 - `Scripts/run-player-responsiveness.sh`：PASS。5 s 延迟打开期间窗口组和原生全屏
   各 10 次 `⌘Tab`、空格暂停、打开中切换和关闭都通过，最大主队列停顿 0–278 ms
   （冷启动 GL 一次）。
-- 播放连续性：切出/切回后报告位置继续推进，`fixture.wav` 无静音段；
-  首帧、暂停/恢复、跳转、变速、换集、关闭由上述脚本和 `render-final`
-  计数覆盖。
+- 播放连续性：历史运行的退出时播放记录显示进度继续推进，`fixture.wav` 无静音段。
+  更新后的脚本直接从前后报告对照进度、音画同步和掉帧增量。首帧、暂停/恢复、
+  跳转、变速、换集与关闭由相关回归脚本覆盖。
 - SRT / ASS / SDR / 截图：见上。
+
+审核修正后重跑 `swift test`，160 项通过。ThreadSanitizer 对先前会触发竞争的
+两线程测试完成 40,000 次 `flushWindow()`。验收脚本的模拟测试覆盖成功、Finder
+回退、采样缺失、暂停组缺失和提前生成退出报告。普通窗口和全屏对照都生成了
+切换前后报告，播放组位置继续推进，暂停组位置不变。当前会话中 System Events
+拒绝 `osascript` 发送按键（1002），实测切换均计为 Finder 回退，脚本按预期返回失败。
+自动快捷键路径的依据是上文已经由 WindowServer 日志复核的历史数据。
 
 仍待验证：
 

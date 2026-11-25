@@ -155,7 +155,6 @@ public final class RenderTiming: @unchecked Sendable {
         let over = overBudget[stage] ?? 0
         lock.unlock()
         let sorted = ring.sorted()
-        let count = sorted.count
         return StageStats(
             count: total,
             p50Ms: Self.percentile(sorted, 0.50),
@@ -219,9 +218,9 @@ public final class RenderTiming: @unchecked Sendable {
     /// that interval.
     public func flushWindow() {
         guard isEnabled else { return }
+        lock.lock()
         let now = CACurrentMediaTime()
         let seconds = max(now - lastFlush, 0.001)
-        lock.lock()
         let window = pending
         pending = [:]
         lastFlush = now
