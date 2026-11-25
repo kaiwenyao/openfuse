@@ -3655,10 +3655,13 @@ final class PlayerModel: ObservableObject {
     /// embedded tracks have stable IDs, so switching back re-applies its own
     /// value; a track without a record defaults to 0.
     private func restoreSubtitleDelay(for track: SubtitleTrack) {
-        let value = subtitleOffsets?.offset(
+        // Stored records (including ones written by older builds) go through
+        // the same millisecond grid as fresh input, so reopening a film never
+        // shows a different value than the one that was applied.
+        let value = SubtitleOffsetText.normalized(subtitleOffsets?.offset(
             media: item.fingerprint.resumeKey,
             track: track.id
-        ) ?? 0
+        ) ?? 0)
         subtitleDelay = value
         subtitleDelaySummary = SubtitleOffsetText.summary(value)
         engine.setSubtitleDelay(value)
@@ -3670,7 +3673,9 @@ final class PlayerModel: ObservableObject {
             statusMessage = "请先选择一条字幕轨"
             return
         }
-        let value = min(max(seconds, -600), 600)
+        // One effective value feeds the menu, the edit field, the store and
+        // mpv; rounding here keeps all four on mpv's millisecond precision.
+        let value = SubtitleOffsetText.normalized(seconds)
         subtitleDelay = value
         subtitleDelaySummary = SubtitleOffsetText.summary(value)
         engine.setSubtitleDelay(value)
@@ -3688,14 +3693,17 @@ final class PlayerModel: ObservableObject {
     }
 
     func beginSubtitleDelayInput() {
-        subtitleDelayInput = String(format: "%.1f", subtitleDelay)
+        // Prefill with the same effective value the menu shows; applying the
+        // untouched text therefore preserves 0.04 or 0.15 instead of rounding
+        // it to 0.0 / 0.1.
+        subtitleDelayInput = SubtitleOffsetText.valueText(subtitleDelay)
         showSubtitleDelayPrompt = true
     }
 
     @discardableResult
     func submitSubtitleDelayInput() -> Bool {
         guard let value = SubtitleOffsetText.parse(subtitleDelayInput) else {
-            statusMessage = "请输入秒数，例如 1.5（延后）或 -1（提前）"
+            statusMessage = "请输入秒数，例如 1.5（延后）、-1（提前）或 提前 0.1 秒"
             return false
         }
         setSubtitleDelay(value)
