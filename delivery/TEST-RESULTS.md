@@ -1,5 +1,13 @@
 # OpenFuse macOS 交付验证
 
+## 0.9.5 播放时切换应用
+
+- 构建提交 `cc6e753`，Apple Silicon，验证环境为 macOS 27.2.1。ZIP 内置 libmpv 的目标系统版本为 macOS 27.2。
+- `swift test` 通过 160 项。ZIP 完整性、SHA-256、解包应用完整签名和安装脚本 Bash 语法均通过检查。核对了应用版本、构建提交以及可执行文件和内置动态库的依赖路径。
+- 从 ZIP 解包启动并播放本地 MKV，位置从 3.92 秒推进到 6.92 秒，生成 2360 × 1520 的播放器截图。运行日志确认加载内置 libmpv。两份播放报告的 `videoSync` 均为 `audio`，`videoTimingOffset` 均为 `0`。
+- 切换应用的性能数据沿用 PR 的实测记录，本轮发布验收验证了打包后的播放。屏幕动画的长帧和显示耗时仍待直接量测。[修复与验证记录](../Docs/MACOS-CMD-TAB-FIX.md)
+- SHA-256 为 `7a8bc13f0278e8b428e8d7f53c1e1c1424ec6974981ec59393ffccfed9933bf0`。
+
 ## 0.9.4 字幕偏移
 
 - 构建提交 `cc5f929`，Apple Silicon，验证环境为 macOS 27.2.1。

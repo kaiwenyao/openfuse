@@ -1,10 +1,10 @@
-# OpenFuse 0.9.4 · macOS 安装
+# OpenFuse 0.9.5 · macOS 安装
 
 ## 包内容
 
 ```text
-delivery/OpenFuse-macos.zip              28 MB，自包含 libmpv 及依赖，版本 0.9.4（cc5f929）
-delivery/OpenFuse-macos.zip.sha256       6df75de9953503b1c78f0e6133130469f5a651c8eda4fec0d6649c28f7d2cb43
+delivery/OpenFuse-macos.zip              约 28 MiB，自包含 libmpv 及依赖，版本 0.9.5（cc6e753）
+delivery/OpenFuse-macos.zip.sha256       7a8bc13f0278e8b428e8d7f53c1e1c1424ec6974981ec59393ffccfed9933bf0
 delivery/install-openfuse-macos.sh       安装/升级脚本
 ```
 
@@ -52,5 +52,5 @@ open /Applications/OpenFuse.app
 
 - `unzip -t`：无错误。
 - `shasum -a 256 -c OpenFuse-macos.zip.sha256`：`OpenFuse-macos.zip: OK`。
-- `codesign --verify --deep --strict build/OpenFuse.app`：通过；`otool -L` 无 `/opt/homebrew` 依赖。
-- 解压 ZIP 到临时目录后，启动应用并验证了字幕偏移和重开恢复。见 [TEST-RESULTS.md](TEST-RESULTS.md)。
+- 解包应用通过 `codesign --verify --deep --strict`。`otool -L` 检查了可执行文件和内置动态库，确认依赖已打包。
+- 解包后使用本地 MKV 验证播放、截图和退出报告，确认应用加载了内置 libmpv，并应用默认的零提前量设置。见 [TEST-RESULTS.md](TEST-RESULTS.md)。
