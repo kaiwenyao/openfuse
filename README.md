@@ -13,7 +13,11 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.4（2026-11-25）
+## 当前版本 0.9.5（2026-11-25）
+
+- **改善 macOS 播放视频时用 `Cmd+Tab` 切换应用的卡顿。** 播放器调整出帧时序，减少 libmpv 在窗口主线程上的等待。本地样片中，渲染耗时中位数从约 35 ms 降到 3–4 ms。[修复与验证记录](Docs/MACOS-CMD-TAB-FIX.md) · [PR #2](https://github.com/kaiwenyao/openfuse/pull/2)
+
+## 历史版本 0.9.4（2026-11-25）
 
 - **修复 macOS 字幕时间偏移。** 菜单、输入框、保存和播放使用相同的毫秒精度。设置 `0.04` 秒后，菜单显示「延后 0.04 秒」，重新打开输入框后直接应用会保留该值。
 - 粘贴 `−0.1` 会正确提前字幕。已保存的偏移按影片和字幕轨恢复，重置只清除当前轨道的偏移。[PR #1](https://github.com/kaiwenyao/openfuse/pull/1)

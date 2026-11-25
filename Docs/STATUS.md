@@ -4,6 +4,8 @@
 
 更新：2026-11-25。基线 Infuse 8.5.10。
 
+0.9.5 改善 macOS 持续播放视频时的 `Cmd+Tab` 卡顿。渲染路径减少主线程对目标帧时刻的等待，验收脚本记录切换前后的进度、音画同步和掉帧。[修复与验证记录](MACOS-CMD-TAB-FIX.md) · [PR #2](https://github.com/kaiwenyao/openfuse/pull/2)
+
 0.9.4 修复 macOS 字幕偏移显示精度与负号解析。菜单、编辑框、保存和播放统一到毫秒精度。旧记录按影片和字幕轨恢复。[PR #1](https://github.com/kaiwenyao/openfuse/pull/1)
 
 0.9.3：修复换集后右键/空格无法暂停视频——播放器的 AppKit 本地事件监视器改为在事件到达时解析当前 `PlayerModel`，不再捕获换集前的旧引擎；新增 `Scripts/run-episode-switch-pause.sh` 六用例回归。记录：[0.9.3 换集修复](0.9.3-EPISODE-SWITCH.md)。
