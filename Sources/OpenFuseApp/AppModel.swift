@@ -2460,6 +2460,8 @@ final class AppModel: ObservableObject {
             "currentAO": player.engine.getPropertyString("current-ao") ?? "",
             "currentVO": player.engine.getPropertyString("current-vo") ?? "",
             "isFullScreen": NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false,
+            "appActive": NSApp.isActive,
+            "windowOccluded": NSApp.keyWindow.map { !$0.occlusionState.contains(.visible) } ?? true,
             "screenVisibleFrame": NSStringFromRect(NSApp.keyWindow?.screen?.visibleFrame ?? .zero),
             "alwaysOnTop": self.isAlwaysOnTop,
             "windowLevel": NSApp.keyWindow?.level.rawValue ?? 0,

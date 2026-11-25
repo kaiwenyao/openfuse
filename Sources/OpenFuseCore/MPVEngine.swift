@@ -70,6 +70,17 @@ public final class MPVEngine: @unchecked Sendable {
     private var cacheState = MPVCacheState()
     private var lastCacheNotification: CFTimeInterval = 0
     private var hasSignaledFirstFrame = false
+    /// Environment captured at init so the timing policy and the render path
+    /// agree on the same values for the whole engine lifetime.
+    private let environment: [String: String]
+    /// `video-timing-offset` applied for this engine, `nil` when mpv's default
+    /// (0.05 s) is in effect.
+    public private(set) var appliedVideoTimingOffset: String?
+    /// True when the diagnostic `MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME=0`
+    /// experiment is enabled for this engine.
+    public private(set) var disablesBlockForTargetTime = false
+    /// One-shot guard for the raw target-time diagnostic line.
+    private var loggedTargetRaw = false
 
     // MARK: Public callbacks (main queue)
 
@@ -97,10 +108,16 @@ public final class MPVEngine: @unchecked Sendable {
 
     public private(set) var snapshot = MPVSnapshot(position: 0, duration: 0, isPaused: true, tracks: [])
 
-    public init(headless: Bool = false, httpHeaders: [String] = [], thumbnailOutput: URL? = nil) {
-        if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_TIMING"] == "1" {
+    public init(
+        headless: Bool = false,
+        httpHeaders: [String] = [],
+        thumbnailOutput: URL? = nil,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) {
+        if environment["OPENFUSE_DEBUG_TIMING"] == "1" {
             FileHandle.standardError.write(Data("[timing] mpvEngine.init.begin\n".utf8))
         }
+        self.environment = environment
         handle = mpv_create()
         guard let handle else {
             fatalError("mpv_create failed")
@@ -145,7 +162,25 @@ public final class MPVEngine: @unchecked Sendable {
         setOption("cache-secs", "20")
         setOption("demuxer-max-bytes", "512MiB")
         setOption("demuxer-max-back-bytes", "128MiB")
-        setOption("video-sync", ProcessInfo.processInfo.environment["OPENFUSE_VIDEO_SYNC"] ?? "audio")
+        let videoSync = MPVVideoTimingPolicy.effectiveVideoSync(environment: environment)
+        setOption("video-sync", videoSync)
+        // The interactive macOS engine draws synchronously on the AppKit main
+        // thread. Starting frames 50 ms early turns into a blocking wait
+        // inside `mpv_render_context_render()` on that same thread, which made
+        // `Cmd+Tab` away from a playing video stutter. See
+        // `MPVVideoTimingPolicy` for the scope (audio clock, visible view only).
+        if let offset = MPVVideoTimingPolicy.timingOffset(
+            videoSync: videoSync,
+            headless: headless,
+            thumbnailOutput: thumbnailOutput,
+            environment: environment
+        ) {
+            setOption("video-timing-offset", offset)
+            appliedVideoTimingOffset = offset
+        }
+        if MPVVideoTimingPolicy.disablesBlockForTargetTime(environment: environment) {
+            disablesBlockForTargetTime = true
+        }
         setOption("audio-pitch-correction", "yes")
         setOption("idle", "yes")
         setOption("sub-auto", "no")
@@ -453,30 +488,81 @@ public final class MPVEngine: @unchecked Sendable {
         let height = Int32(max(1, backing.height))
         var fbo = mpv_opengl_fbo(fbo: 0, w: width, h: height, internal_format: 0)
         var flip: CInt = 1
+        var blockForTargetTime: CInt = disablesBlockForTargetTime ? 0 : 1
+        recordTargetLead(renderContext)
         return withUnsafeMutablePointer(to: &fbo) { fboPointer in
             withUnsafeMutablePointer(to: &flip) { flipPointer in
-                var params = [
-                    mpv_render_param(type: MPV_RENDER_PARAM_OPENGL_FBO, data: UnsafeMutableRawPointer(fboPointer)),
-                    mpv_render_param(type: MPV_RENDER_PARAM_FLIP_Y, data: UnsafeMutableRawPointer(flipPointer)),
-                    mpv_render_param(type: MPV_RENDER_PARAM_INVALID, data: nil),
-                ]
-                let code = mpv_render_context_render(renderContext, &params)
-                if code < 0 {
-                    onLog?("mpv render failed: \(String(cString: mpv_error_string(code)))")
+                withUnsafeMutablePointer(to: &blockForTargetTime) { blockPointer in
+                    var params = [
+                        mpv_render_param(type: MPV_RENDER_PARAM_OPENGL_FBO, data: UnsafeMutableRawPointer(fboPointer)),
+                        mpv_render_param(type: MPV_RENDER_PARAM_FLIP_Y, data: UnsafeMutableRawPointer(flipPointer)),
+                    ]
+                    if disablesBlockForTargetTime {
+                        params.append(mpv_render_param(
+                            type: MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME,
+                            data: UnsafeMutableRawPointer(blockPointer)
+                        ))
+                    }
+                    params.append(mpv_render_param(type: MPV_RENDER_PARAM_INVALID, data: nil))
+                    let code = RenderTiming.shared.measure(.render) {
+                        mpv_render_context_render(renderContext, &params)
+                    }
+                    if code < 0 {
+                        onLog?("mpv render failed: \(String(cString: mpv_error_string(code)))")
+                    }
+                    if environment["OPENFUSE_DEBUG_GL"] != nil {
+                        print("[gl] render code=\(code) size=\(width)x\(height) vo=\(getPropertyString("vo-configured") ?? "?")")
+                    }
+                    return code
                 }
-                if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_GL"] != nil {
-                    print("[gl] render code=\(code) size=\(width)x\(height) vo=\(getPropertyString("vo-configured") ?? "?")")
-                }
-                return code
             }
         }
+    }
+
+    /// `target_time - now`: how far ahead of its display time libmpv handed
+    /// this frame over. Positive values are the window the render call may
+    /// block in; recording it proves whether the timing-offset change moved
+    /// the schedule instead of only re-shaping the wait.
+    private func recordTargetLead(_ renderContext: OpaquePointer) {
+        guard RenderTiming.shared.isEnabled, let handle else { return }
+        var info = mpv_render_frame_info(flags: 0, target_time: 0)
+        let code: Int32 = withUnsafeMutablePointer(to: &info) { pointer in
+            let param = mpv_render_param(
+                type: MPV_RENDER_PARAM_NEXT_FRAME_INFO,
+                data: UnsafeMutableRawPointer(pointer)
+            )
+            return mpv_render_context_get_info(renderContext, param)
+        }
+        guard code >= 0, info.target_time > 0 else { return }
+        let nowUs = mpv_get_time_us(handle)
+        // mpv 0.42's `mpv_render_frame_info.target_time` is copied from
+        // `vo_frame.pts`, which is documented in mp_time_ns() units in vo.h
+        // even though render.h describes microseconds. Log both raw values so
+        // the base can be checked instead of assuming one.
+        if environment["OPENFUSE_DEBUG_TIMING"] == "1", !loggedTargetRaw {
+            loggedTargetRaw = true
+            FileHandle.standardError.write(Data(
+                "[timing] target-raw target=\(info.target_time) nowUs=\(nowUs)\n".utf8
+            ))
+        }
+        let leadMs = Self.targetLeadMilliseconds(targetTime: info.target_time, nowMicroseconds: nowUs)
+        RenderTiming.shared.record(.targetLead, leadMs)
+    }
+
+    /// `target_time` is in mp_time_ns() units in mpv 0.42 (vo.h documents
+    /// `vo_frame.pts` in ns); `mpv_get_time_us()` returns the same base in
+    /// microseconds. Kept as a pure function so the conversion is testable.
+    static func targetLeadMilliseconds(targetTime: Int64, nowMicroseconds: Int64) -> Double {
+        Double(targetTime - nowMicroseconds * 1000) / 1_000_000
     }
 
     public var hasRenderContext: Bool { renderContext != nil }
 
     public func reportSwap() {
         guard let renderContext else { return }
-        mpv_render_context_report_swap(renderContext)
+        RenderTiming.shared.measure(.reportSwap) {
+            mpv_render_context_report_swap(renderContext)
+        }
     }
 
     // MARK: Event loop
@@ -713,12 +799,15 @@ public final class MPVEngine: @unchecked Sendable {
         var stats: [String: Any] = [
             "renderer": "libmpv/NSOpenGLView",
             "hasRenderContext": hasRenderContext,
+            "videoTimingOffset": appliedVideoTimingOffset ?? "default",
+            "blockForTargetTime": !disablesBlockForTargetTime,
         ]
         let counters: [String: String] = [
             "voDropFrameCount": "vo-drop-frame-count",
             "mistimedFrameCount": "mistimed-frame-count",
             "decoderDropFrameCount": "decoder-frame-drop-count",
             "frameDropCount": "frame-drop-count",
+            "voDelayedFrameCount": "vo-delayed-frame-count",
         ]
         for (key, property) in counters {
             if let value = getPropertyString(property), let number = Int(value) {
@@ -728,6 +817,13 @@ public final class MPVEngine: @unchecked Sendable {
         if let value = getPropertyString("estimated-vf-fps"), let fps = Double(value) { stats["estimatedVFFps"] = fps }
         if let value = getPropertyString("display-fps"), let fps = Double(value) { stats["displayFps"] = fps }
         if let value = getPropertyString("video-sync") { stats["videoSync"] = value }
+        // A/V relation sampled at report time; the A/B runs also record it
+        // while playing.
+        if let value = getPropertyString("avsync"), let sync = Double(value) { stats["avsync"] = sync }
+        if let value = getPropertyString("display-sync-active") { stats["displaySyncActive"] = value }
+        if RenderTiming.shared.isEnabled {
+            stats["renderTiming"] = RenderTiming.shared.summary()
+        }
         return stats
     }
 
