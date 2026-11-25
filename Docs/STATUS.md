@@ -4,6 +4,8 @@
 
 更新：2026-11-25。基线 Infuse 8.5.10。
 
+0.9.4 修复 macOS 字幕偏移显示精度与负号解析。菜单、编辑框、保存和播放统一到毫秒精度。旧记录按影片和字幕轨恢复。[PR #1](https://github.com/kaiwenyao/openfuse/pull/1)
+
 0.9.3：修复换集后右键/空格无法暂停视频——播放器的 AppKit 本地事件监视器改为在事件到达时解析当前 `PlayerModel`，不再捕获换集前的旧引擎；新增 `Scripts/run-episode-switch-pause.sh` 六用例回归。记录：[0.9.3 换集修复](0.9.3-EPISODE-SWITCH.md)。
 
 0.9.2：WebDAV 文件夹卡片只显示本名；播放器改为顶部居中、两行、可拖动的紧凑悬浮面板（macOS 26+ glassEffect，14/15 NSVisualEffectView），标题收敛为作品名 + 季集号。记录：[0.9.2 UI](0.9.2-UI.md)。

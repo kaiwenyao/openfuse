@@ -13,7 +13,12 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.3（2026-11-25）
+## 当前版本 0.9.4（2026-11-25）
+
+- **修复 macOS 字幕时间偏移。** 菜单、输入框、保存和播放使用相同的毫秒精度。设置 `0.04` 秒后，菜单显示「延后 0.04 秒」，重新打开输入框后直接应用会保留该值。
+- 粘贴 `−0.1` 会正确提前字幕。已保存的偏移按影片和字幕轨恢复，重置只清除当前轨道的偏移。[PR #1](https://github.com/kaiwenyao/openfuse/pull/1)
+
+## 历史版本 0.9.3（2026-11-25）
 
 - **修复换集后无法暂停。** 在播放页面换集之后，右键任意位置或按空格不再能暂停新视频：播放器安装一次的 `NSEvent` 本地监视器把第一集的 `PlayerModel` 捕获在闭包里，而 `startPlayer()` 换集会新建模型但保留 `.player` 路由与视图身份，`onAppear` 不会再触发，于是右键/空格持续作用于已停止的旧引擎。现在改为在事件到达时从 `AppModel.shared` 解析当前在屏剧集（`route == .player` 守卫），空格、右键、↑/↓、←/→、Esc、⌘3 在换集、自动连播、加载中改选之后都指向新引擎。改动只在 `Sources/OpenFuseApp/PlayerView.swift`，详见 [0.9.3 换集修复](Docs/0.9.3-EPISODE-SWITCH.md)。
 - 136 个单元测试；新增 `Scripts/run-episode-switch-pause.sh`（选集面板换集 / 直接开另一文件 / 无换集基线，右键与空格与 ↓ 音量键）PASS；原有 `Scripts/run-player-interactions.sh` 保持 PASS。
