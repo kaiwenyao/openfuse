@@ -156,10 +156,19 @@ struct PlayerView: View {
         guard rightClickMonitor == nil else { return }
         rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown]) { event in
             if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_HITS"] == "1" {
-                print("[right] down window=\(String(describing: event.window)) key=\(String(describing: NSApp.keyWindow)) same=\(event.window === NSApp.keyWindow) loc=\(event.locationInWindow)")
+                print("[right] down window=\(String(describing: event.window)) key=\(String(describing: NSApp.keyWindow)) same=\(event.window === NSApp.keyWindow) loc=\(event.locationInWindow) target=\(AppModel.shared.player?.url.lastPathComponent ?? "-")")
             }
             guard event.window === NSApp.keyWindow else { return event }
             if NSApp.keyWindow?.firstResponder is NSTextView { return event }
+            // 换集 replaces `AppModel.player` with a fresh `PlayerModel` while
+            // the route stays `.player`, so `PlayerView` keeps its identity,
+            // its `@State` and these installed monitors (`onAppear` does not
+            // run again, and a SwiftUI `onChange` action still captures the
+            // old view value). Capturing `player` here would therefore keep
+            // toggling the first — already stopped — engine. Resolve the episode
+            // on screen when the event arrives instead.
+            let model = AppModel.shared
+            guard model.route == .player, let player = model.player else { return event }
             player.togglePlayPause(userInitiated: true)
             return nil
         }
@@ -175,6 +184,14 @@ struct PlayerView: View {
     private func installKeyboardMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Same late binding as the right-click monitor: every shortcut
+            // (space, ↑/↓, ←/→, Esc, ⌘3) must reach the episode playing now,
+            // not the one that installed this monitor.
+            let model = AppModel.shared
+            guard model.route == .player, let player = model.player else { return event }
+            if ProcessInfo.processInfo.environment["OPENFUSE_DEBUG_HITS"] == "1", event.keyCode == 49 {
+                print("[key] space target=\(player.url.lastPathComponent)")
+            }
             // Standard macOS fullscreen shortcut, kept in addition to ⌘3.
             if event.keyCode == 3,
                event.modifierFlags.contains([.control, .command]) {

@@ -2,7 +2,9 @@
 
 当前只排期 [Mac 的 WebDAV 和 Jellyfin](MAC-FIRST.md)。下表是既有实现的历史记录。
 
-更新：2026-11-21。基线 Infuse 8.5.10。
+更新：2026-11-25。基线 Infuse 8.5.10。
+
+0.9.3：修复换集后右键/空格无法暂停视频——播放器的 AppKit 本地事件监视器改为在事件到达时解析当前 `PlayerModel`，不再捕获换集前的旧引擎；新增 `Scripts/run-episode-switch-pause.sh` 六用例回归。记录：[0.9.3 换集修复](0.9.3-EPISODE-SWITCH.md)。
 
 0.9.2：WebDAV 文件夹卡片只显示本名；播放器改为顶部居中、两行、可拖动的紧凑悬浮面板（macOS 26+ glassEffect，14/15 NSVisualEffectView），标题收敛为作品名 + 季集号。记录：[0.9.2 UI](0.9.2-UI.md)。
 

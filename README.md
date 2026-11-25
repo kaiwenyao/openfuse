@@ -13,7 +13,12 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.2（2026-11-21）
+## 当前版本 0.9.3（2026-11-25）
+
+- **修复换集后无法暂停。** 在播放页面换集之后，右键任意位置或按空格不再能暂停新视频：播放器安装一次的 `NSEvent` 本地监视器把第一集的 `PlayerModel` 捕获在闭包里，而 `startPlayer()` 换集会新建模型但保留 `.player` 路由与视图身份，`onAppear` 不会再触发，于是右键/空格持续作用于已停止的旧引擎。现在改为在事件到达时从 `AppModel.shared` 解析当前在屏剧集（`route == .player` 守卫），空格、右键、↑/↓、←/→、Esc、⌘3 在换集、自动连播、加载中改选之后都指向新引擎。改动只在 `Sources/OpenFuseApp/PlayerView.swift`，详见 [0.9.3 换集修复](Docs/0.9.3-EPISODE-SWITCH.md)。
+- 136 个单元测试；新增 `Scripts/run-episode-switch-pause.sh`（选集面板换集 / 直接开另一文件 / 无换集基线，右键与空格与 ↓ 音量键）PASS；原有 `Scripts/run-player-interactions.sh` 保持 PASS。
+
+## 历史版本 0.9.2（2026-11-21）
 
 - **WebDAV 文件夹卡片只显示本名。** 网格、列表、单季卡副标题和 VoiceOver 统一走 `RemoteEntry.folderDisplayName`：优先使用有效的单段 `<displayname>`，OpenList 把整条路径写进 displayname 或漏传名称时回退到 `entry.path` 的最后一个非空路径段。`entry.path`/`url` 继续用于请求、导航和缓存；同时修复了路径型 displayname 下的 NFO/外挂字幕文件名拼接。覆盖中文、空格、括号、尾斜杠、字面百分号和不同父目录下的同名文件夹。
 - **播放器改为紧凑、可拖动的原生悬浮面板。** 两行布局（播放/快退/快进居中，音量、选集、字幕分列两侧；时间轴独占第二行并显示剩余时间），面板从画面顶部中央出现，宽度 480–560 pt 随窗口收缩，320 pt 小窗保留播放、时间轴和字幕入口。macOS 26+ 使用系统 `glassEffect`，macOS 14/15 使用 `NSVisualEffectView` 的 within-window 混合；减少透明度时自动切换不透明面板。面板只能通过顶部空白拖动条移动并始终限制在窗口内；悬停、字幕弹层、键盘操作和拖动时间轴期间保持可见，空闲后淡出。缩略图预览随面板位置向下/向上展开。顶部标题收敛为作品名 + 季集号，完整文件名、来源、编码和会话日志移入「播放信息」。
