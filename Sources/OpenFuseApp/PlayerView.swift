@@ -1183,7 +1183,10 @@ private struct SubtitleDelaySheet: View {
             Text("正数让字幕延后，负数让字幕提前。当前：\(player.subtitleDelaySummary)")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
-            TextField("例如 1.5 或 -1", text: $player.subtitleDelayInput)
+            Text("支持 -1、−1、1,5、延后 2 秒、提前 0.1 秒。")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            TextField("例如 1.5、-1 或 提前 0.1 秒", text: $player.subtitleDelayInput)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 280)
                 .focused($inputFocused)
@@ -1212,7 +1215,7 @@ private struct SubtitleDelaySheet: View {
         if player.submitSubtitleDelayInput() {
             dismiss()
         } else {
-            error = "请输入数字，例如 1.5（延后）或 -1（提前）"
+            error = "请输入一个秒数，例如 1.5（延后）、-1（提前）或 提前 0.1 秒"
         }
     }
 }
