@@ -13,7 +13,11 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.7（2026-11-27）
+## 当前版本 0.9.8（2026-11-27）
+
+- **macOS 可以重新从界面添加 Jellyfin / Emby。** 侧边栏和文件页的「添加来源」改为菜单，可选 WebDAV 或 Jellyfin / Emby。0.9.0 到 0.9.7 中，没有 Jellyfin 来源时界面上找不到添加入口。[PR #4](https://github.com/kaiwenyao/openfuse/pull/4)
+
+## 历史版本 0.9.7（2026-11-27）
 
 <img src="Platforms/Mobile/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="OpenFuse 应用图标" width="96">
 

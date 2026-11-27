@@ -119,6 +119,8 @@ final class AppModel: ObservableObject {
     private var statusCredentialRetry: (account: String, service: String, action: () async -> Void)?
     @Published var sources: [WebDAVSource] = []
     @Published var browsingSource: WebDAVSource?
+    /// Opens the WebDAV form. `showAddJellyfin` opens the Jellyfin / Emby form;
+    /// both sheets hang off `MainShellView`, and `AddSourceMenu` sets either one.
     @Published var showAddSource = false
     /// Non-nil while the «更新密码…» form is up for that source.
     @Published var passwordUpdateSource: WebDAVSource?

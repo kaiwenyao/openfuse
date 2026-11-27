@@ -1,6 +1,6 @@
-# OpenFuse 0.9.7 · macOS 交付包
+# OpenFuse 0.9.8 · macOS 交付包
 
-本版为 macOS 应用加入新的 OpenFuse 图标，采用深色底和暖橙色折面播放键。
+本版恢复从界面添加 Jellyfin / Emby 的入口：侧边栏和文件页的「添加来源」改为菜单，可选 WebDAV 或 Jellyfin / Emby。0.9.0 到 0.9.7 中，没有 Jellyfin 来源时界面上找不到添加入口。[PR #4](https://github.com/kaiwenyao/openfuse/pull/4)
 
 ## 安装
 
@@ -18,8 +18,8 @@ bash install-openfuse-macos.sh --app OpenFuse-macos.zip
 
 | 路径 | 说明 |
 | --- | --- |
-| `OpenFuse-macos.zip` | Apple Silicon 自包含应用。版本为 `0.9.7`，构建提交为 `0a98d64`。 |
-| `OpenFuse-macos.zip.sha256` | `69a016f4fc7ea88890171e53d763a2eb7d53388cafe44d3129737cb055721920` |
+| `OpenFuse-macos.zip` | Apple Silicon 自包含应用。版本为 `0.9.8`，构建提交为 `1934829`。 |
+| `OpenFuse-macos.zip.sha256` | `053cca0aab291115bf1bd97b90edc434c7f88cb828a2f16149c98c7444f7e19f` |
 | `install-openfuse-macos.sh` | 安装和升级脚本 |
-| `TEST-RESULTS.md` | 0.9.7 安装包验收及历史测试结果 |
+| `TEST-RESULTS.md` | 0.9.8 安装包验收及历史测试结果 |
 | `screenshots/`、`recording/`、`evidence/` | 0.9.2 界面改版的历史截图、录屏与运行时报告 |

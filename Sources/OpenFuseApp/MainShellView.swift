@@ -72,6 +72,9 @@ struct MainShellView<Content: View>: View {
         .sheet(isPresented: $model.showAddSource) {
             AddSourceSheet().environmentObject(model)
         }
+        .sheet(isPresented: $model.showAddJellyfin) {
+            AddJellyfinSheet().environmentObject(model)
+        }
         .sheet(item: $model.passwordUpdateSource) { source in
             AddSourceSheet(existing: source).environmentObject(model)
         }
@@ -158,14 +161,13 @@ struct MainShellView<Content: View>: View {
 
             Spacer()
 
-            Button { model.showAddSource = true } label: {
+            AddSourceMenu {
                 Label("添加来源", systemImage: "plus.circle")
                     .font(.system(size: 12, weight: .medium))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
             }
-            .buttonStyle(.plain)
             .foregroundStyle(Theme.secondary)
             .padding(.horizontal, 10)
             .padding(.bottom, 4)
@@ -183,6 +185,33 @@ struct MainShellView<Content: View>: View {
             .padding(.bottom, 16)
         }
         .background(Theme.panel.opacity(0.6))
+    }
+}
+
+/// 「添加来源」 for the sidebar and the Files page: lets the user pick the
+/// source type first, then opens that type's form.
+///
+/// Until 0.9.8 both buttons opened the WebDAV form directly. The Jellyfin form
+/// was only reachable from the 「添加」 button of the Jellyfin section, which is
+/// drawn only once a Jellyfin source exists, so a first Jellyfin or Emby server
+/// could not be added from the UI at all.
+struct AddSourceMenu<MenuLabel: View>: View {
+    @EnvironmentObject private var model: AppModel
+    @ViewBuilder var label: () -> MenuLabel
+
+    var body: some View {
+        Menu {
+            Button("WebDAV（OpenList、Nextcloud、群晖等）") { model.showAddSource = true }
+            Button("Jellyfin / Emby") { model.showAddJellyfin = true }
+        } label: {
+            label()
+        }
+        // `.button` + `.plain` draws the label exactly as given (capsule,
+        // accent colour); `.borderlessButton` would drop its background.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .help("添加 WebDAV 或 Jellyfin / Emby 来源")
     }
 }
 

@@ -1,5 +1,14 @@
 # OpenFuse macOS 交付验证
 
+## 0.9.8 Jellyfin 添加入口
+
+- 构建提交 `1934829`，Apple Silicon，验证环境为 macOS 27.2.1。
+- `swift test` 通过 182 项。ZIP 完整性、SHA-256、解包应用签名及安装脚本语法检查均通过，`otool -L` 未发现指向 Homebrew 的依赖。
+- 开发构建的独立副本（单独的 bundle id 和支持目录）从没有任何来源的状态打开「添加 Jellyfin」表单，登录本地 Jellyfin 夹具后写入 `jellyfin-sources.json`，文件页出现 Jellyfin 区块，区块里的「添加」仍能打开同一表单。
+- 解包应用以 `--show-add-jellyfin` 启动后显示「添加 Jellyfin」表单；播放本地 HEVC Main 10 MKV，生成播放器截图，报告播放位置为 2.67 秒。
+- 未验证：没有在测试中实际点开「添加来源」菜单。后台控制不能打开弹出菜单，全屏控制的授权请求没有得到回应。
+- SHA-256 为 `053cca0aab291115bf1bd97b90edc434c7f88cb828a2f16149c98c7444f7e19f`。
+
 ## 0.9.7 应用图标
 
 - 构建提交 `0a98d64`，Apple Silicon，验证环境为 macOS 27.2.1。

@@ -293,6 +293,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if arguments.contains("--show-add-source") {
             model.showAddSource = true
         }
+        // The same flag the 「添加来源 › Jellyfin / Emby」 menu item sets.
+        if arguments.contains("--show-add-jellyfin") {
+            model.showAddJellyfin = true
+        }
         if arguments.contains("--show-settings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 model.showSettings = true
@@ -887,7 +891,6 @@ struct HomeView: View {
     @State private var isDropTarget = false
     @State private var showAllHistory = false
     @State private var recentThumbnails: [String: URL] = [:]
-    @State private var showAddJellyfin = false
     @State private var showAddPlex = false
     @State private var showAddSMB = false
 
@@ -941,10 +944,6 @@ struct HomeView: View {
             handleDrop(providers)
         }
         .animation(.easeInOut(duration: 0.2), value: isDropTarget)
-        .sheet(isPresented: $showAddJellyfin) {
-            AddJellyfinSheet()
-                .environmentObject(model)
-        }
         .sheet(isPresented: $showAddPlex) {
             AddPlexSheet()
                 .environmentObject(model)
@@ -967,9 +966,7 @@ struct HomeView: View {
             }
             Spacer()
             if destination == .files {
-                Button {
-                    showAddSourceSheet()
-                } label: {
+                AddSourceMenu {
                     Label("添加来源", systemImage: "plus")
                         .font(.system(size: 12, weight: .semibold))
                         .padding(.horizontal, 12)
@@ -977,7 +974,7 @@ struct HomeView: View {
                         .background(Theme.accent.opacity(0.14), in: Capsule())
                         .foregroundStyle(Theme.accent)
                 }
-                .buttonStyle(.plain)
+                .fixedSize()
                 scanMenu
             } else if destination == .library {
                 scanMenu
@@ -1023,10 +1020,6 @@ struct HomeView: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-    }
-
-    private func showAddSourceSheet() {
-        model.showAddSource = true
     }
 
     private var header: some View {
@@ -1118,7 +1111,7 @@ struct HomeView: View {
             .buttonStyle(.plain)
 
             Button {
-                showAddJellyfin = true
+                model.showAddJellyfin = true
             } label: {
                 Label("Jellyfin", systemImage: "play.tv")
                     .font(.system(size: 13, weight: .semibold))
@@ -1409,7 +1402,7 @@ struct HomeView: View {
                     .foregroundStyle(Theme.text)
                 Spacer()
                 Button {
-                    showAddJellyfin = true
+                    model.showAddJellyfin = true
                 } label: {
                     Label("添加", systemImage: "plus")
                         .font(.system(size: 12, weight: .semibold))
