@@ -4,6 +4,8 @@
 
 更新：2026-11-27。基线 Infuse 8.5.10。
 
+0.9.8 恢复 macOS 添加 Jellyfin / Emby 的入口：「添加来源」改为菜单，可选 WebDAV 或 Jellyfin / Emby。[PR #4](https://github.com/kaiwenyao/openfuse/pull/4)
+
 0.9.7 为 macOS、iPhone 和 iPad 提供新的 OpenFuse 应用图标，GitHub Release 提供 macOS 安装包。
 
 0.9.6 修复 2026-11-27 功能问题清单中的 7 条：续播后关闭卡在加载页、失败无提示、「仅本次会话」来源误报密码错误、来源移除后的历史条目、Keychain 写入警告不可见，以及两条 iOS 问题。[问题清单](BUG-REVIEW-2026-11-27.md) · [PR #3](https://github.com/kaiwenyao/openfuse/pull/3)
