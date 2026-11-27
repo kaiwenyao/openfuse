@@ -109,13 +109,10 @@ struct MobileRootView: View {
             MobilePlayerView(item: item)
                 .environmentObject(model)
         }
-        .fullScreenCover(item: Binding(
-            get: { model.browserPlayback },
-            set: { model.browserPlayback = $0 }
-        )) { item in
-            MobilePlayerView(item: item)
-                .environmentObject(model)
-        }
+        // The WebDAV browser player is presented by MobileWebDAVBrowserView, which
+        // lives inside the 媒体来源 sheet. Attaching that cover here meant asking
+        // the root view controller to present while it already presented the
+        // sheet, which iOS drops ("already presenting").
     }
 
     private var compactView: some View {

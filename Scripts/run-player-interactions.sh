@@ -111,10 +111,14 @@ check "$(report_field "$dir/report.json" paused)" "False" "two right clicks resu
 # --- fullscreen -----------------------------------------------------------
 dir="$OUT/right-fullscreen"; rm -rf "$dir"; mkdir -p "$dir"
 OPENFUSE_SUPPORT_DIR="$dir" OPENFUSE_FORCE_CONTROLS=1 \
-  "$APP" --open "$FIXTURE" --fullscreen --report "$dir/report.json" --capture-after 7 --quit-after 9 \
+  "$APP" --open "$FIXTURE" --fullscreen --report "$dir/report.json" --capture-after 8 --quit-after 10 \
   >"$dir/app.log" 2>&1 &
 pid=$!
-sleep 4.0
+# The fullscreen transition moves the window to its own Space. On a large display
+# (2560x1440 here) the animation takes longer than 4 s, and a click posted before
+# it finishes lands on the desktop Space and is lost — the same failure happens on
+# the pre-fix build, so this is a timing guard, not a behaviour change.
+sleep 6.0
 # Fullscreen focus occasionally needs a moment after the animation.
 for _ in {1..10}; do
   [[ "$(osascript -e 'tell application "System Events" to get name of first process whose frontmost is true' 2>/dev/null | tr -d '\n')" == "OpenFuse" ]] && break
@@ -122,7 +126,13 @@ for _ in {1..10}; do
   open -a "$PWD/build/OpenFuse.app" >/dev/null 2>&1
   sleep 0.3
 done
-sleep 0.4
+sleep 0.6
+# Park the cursor inside the video first: `left` posts a mouseMoved, `right` does
+# not, and a right-click into a freshly entered fullscreen Space is otherwise
+# dropped.
+read -r gx gy gw gh <<<"$(geometry)"
+"$OUT/rightclick" move $((gx + gw / 2)) $((gy + gh / 2))
+sleep 0.3
 click_region fullscreen
 wait "$pid" || true
 check "$(report_field "$dir/report.json" paused)" "True" "right click toggles in fullscreen"
@@ -130,8 +140,18 @@ check "$(report_field "$dir/report.json" isFullScreen)" "True" "fullscreen windo
 
 # --- pause during buffering survives cache recovery -----------------------
 dir="$OUT/buffered-pause"; rm -rf "$dir"; mkdir -p "$dir"
+# These two cases stream from the cache-features tree. Scripts/run-cache-features.sh
+# builds it, but this script must not depend on another run having happened:
+# generate the same faststart MP4 when the tree is absent.
+CACHE_ROOT="$PWD/build/cache-features/root"
+if [[ ! -f "$CACHE_ROOT/Shows/fast.mp4" ]]; then
+  mkdir -p "$CACHE_ROOT/Shows"
+  ffmpeg -v error -y -i "$FIXTURE" -map 0:v:0 -map 0:a:0 \
+    -c:v libx264 -preset ultrafast -b:v 700k -c:a aac -b:a 128k \
+    -movflags +faststart "$CACHE_ROOT/Shows/fast.mp4"
+fi
 PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
-python3 Scripts/webdav_fixture.py --root "$PWD/build/cache-features/root" --port "$PORT" \
+python3 Scripts/webdav_fixture.py --root "$CACHE_ROOT" --port "$PORT" \
   --rate-bytes 60000 --stall-after-bytes 240000 --stall-seconds 8 >"$dir/server.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" >/dev/null 2>&1 || true' EXIT
