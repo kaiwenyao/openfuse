@@ -2,25 +2,27 @@
 
 审查基线为 `ce8ac76`（0.9.3），并已对照 0.9.5（`eb6cbf2`）更新状态。本文合并并取代此前的四份问题文档：`MACOS-CMD-TAB-PLAYBACK.md`、`MACOS-CMD-TAB-FIX-PROMPT.md`、`MACOS-SUBTITLE-OFFSET-BUG.md`、`MACOS-SUBTITLE-OFFSET-FIX-PROMPT.md`。只记录用户能感知到的问题，不含性能、安全和代码风格方面的建议。
 
+修复轮次：分支 `fix/bug-review-2026-11-27`，基线 `fa11eb6`（0.9.5 之后）。第 4、5 条保持 0.9.4 / 0.9.5 的修复不动，其余 7 条本轮处理完毕：第 1、2、3、7、8 条在本机实测通过，第 6、9 条（iOS）因本机没有可启动的模拟器运行时而只完成代码修复与构建验证，原因与待验证方法见对应小节。
+
 ## 怎么查的
 
-- `swift test`：136 个单元测试全部通过。
-- 实际运行 `build/OpenFuse.app`（0.9.3）。数据目录用 `OPENFUSE_SUPPORT_DIR` 指向临时目录，不会碰到个人数据。用到的启动参数有 `--open`、`--resume-first`、`--reopen-test` 和 `--capture-ui`。
-- 其余问题是追代码逻辑确认的。iOS 端没有在模拟器里运行过，相关条目标为「疑似」。
+- `swift test`：审查时为 136 个单元测试，本轮基线已是 160 个；加入本轮新增用例后为 179 个，全部通过。
+- 实际运行 `build/OpenFuse.app`。数据目录用 `OPENFUSE_SUPPORT_DIR` 指向临时目录，不会碰到个人数据。用到的启动参数有 `--open`、`--resume-first`、`--reopen-test`、`--capture-ui`，以及本轮新增的 `--route-log`、`--close-after`、`--cancel-loading-after`、`--retry-loading-after`、`--webdav-session-only`、`--show-update-password`、`--webdav-credential-report`。
+- 其余问题是追代码逻辑确认的。iOS 端没有在模拟器里运行过：本轮环境里 `xcrun simctl list runtimes` 为空，所有设备都报 `runtime profile not found`，无法启动任何模拟器，因此 iOS 两条只有构建与代码层验证。
 
 ## 汇总
 
 | # | 严重程度 | 问题 | 状态 |
 | --- | --- | --- | --- |
-| 1 | 高 | 从「继续观看」打开的视频，关闭后卡在加载页 | 确认（实测） |
-| 2 | 中 | 打开 WebDAV、Jellyfin 或本地文件失败时，界面没有提示 | 确认 |
-| 3 | 中 | 「仅本次会话」的 WebDAV 来源重启后显示「用户名或密码不正确」 | 确认 |
+| 1 | 高 | 从「继续观看」打开的视频，关闭后卡在加载页 | 已修复（`8f59139`），实测通过 |
+| 2 | 中 | 打开 WebDAV、Jellyfin 或本地文件失败时，界面没有提示 | 已修复（`8f59139`），实测通过 |
+| 3 | 中 | 「仅本次会话」的 WebDAV 来源重启后显示「用户名或密码不正确」 | 已修复（`8f59139`），实测通过 |
 | 4 | 中 | 字幕偏移的显示精度不够，负号和部分输入被解析错 | 已在 0.9.4 修复 |
 | 5 | 中 | 播放时 ⌘Tab 切换应用卡顿 | 已在 0.9.5 修复 |
-| 6 | 中 | iOS：来源页里的 WebDAV 浏览器点视频，可能打不开播放器 | 疑似 |
-| 7 | 低 | 来源被删后点它的历史记录，提示「文件不存在」 | 确认 |
-| 8 | 低 | 添加 WebDAV 时 Keychain 写入失败，用户看不到警告 | 确认 |
-| 9 | 低 | iOS：添加 Jellyfin 失败时，表单照样关闭 | 疑似 |
+| 6 | 中 | iOS：来源页里的 WebDAV 浏览器点视频，可能打不开播放器 | 已修复（`8f59139`），模拟器不可用，未实测 |
+| 7 | 低 | 来源被删后点它的历史记录，提示「文件不存在」 | 已修复（`8f59139`），实测通过 |
+| 8 | 低 | 添加 WebDAV 时 Keychain 写入失败，用户看不到警告 | 已修复（`8f59139`），代码路径与单测通过，写入失败场景未能实测 |
+| 9 | 低 | iOS：添加 Jellyfin 失败时，表单照样关闭 | 已修复（`8f59139`），模拟器不可用，未实测 |
 
 以下几类检查后没有发现问题：
 
@@ -66,6 +68,49 @@ open "$S/after-close.png"
 - 新增一条脚本回归：从首页续播并关闭，回到首页；从 WebDAV 目录里播放并关闭，回到原目录；从 Jellyfin 详情页播放并关闭，回到详情页。
 - 在加载中点取消、加载失败后点重试，行为保持不变。
 
+### 已采用的修复
+
+修复提交 `8f59139`：
+
+- 新增 [PlayerRoutePolicy.swift](../Sources/OpenFuseCore/PlayerRoutePolicy.swift)：`PlayerReturnRoutePolicy.route(current:existing:isPlaceholder:)` 决定要记的返回路由（加载页是占位页，永远不作为目的地；已经存下的页面不被它覆盖），`PlaybackLoadingState.showsLoadingPage(isLoading:error:)` 决定 `.loading` 还该不该显示加载页。
+- [AppModel.swift](../Sources/OpenFuseApp/AppModel.swift) 的 `resume()` 在把路由改成 `.loading` **之前**调用新的 `rememberPlayerReturnRoute()`，先记下当时所在的页面；`startPlayer()` 遇到 `.loading` 时走同一条规则，不覆盖已存的值，没存过就退回首页。
+- `startPlayer()` 在 `route = .player` 之后把 `isLoadingPlayback` 设为 false、清空 `loadingError`，并把新增的 `loadingFailure` 复位，避免任何路径再看到假的加载中。
+- [HomeView.swift](../Sources/OpenFuseApp/HomeView.swift) 的 `RootView` 在 `.loading` 路由下用 `showsLoadingPage` 兜底：既不在加载、也没有错误时直接显示 `MainShellView { HomeView }`，和首页完全一致。
+- 新增 [Scripts/run-close-return-route.sh](../Scripts/run-close-return-route.sh)，并给 AppModel 加了一个只在验收时启用的路由日志：`--route-log <path>` 以 10 Hz 采样，状态变化时追加一行 JSON（`route`/`loading`/`error`/`player`）。截图只能证明某一刻的画面，日志才能精确说明关闭后落在哪一页。同一批验收钩子还有 `--close-after`、`--cancel-loading-after`、`--retry-loading-after`。
+
+### 验证结果
+
+文档里的复现命令（数据目录指向临时目录）：
+
+```bash
+S="$(mktemp -d)"; APP=build/OpenFuse.app/Contents/MacOS/OpenFuse
+OPENFUSE_SUPPORT_DIR="$S" "$APP" --open "$PWD/Fixtures/mobile/openfuse-mobile.mp4" --quit-after 5
+OPENFUSE_SUPPORT_DIR="$S" "$APP" --resume-first --reopen-test --route-log "$S/route.jsonl" \
+  --capture-ui "$S/after-close.png" --ui-after 8 --quit-after 10
+```
+
+- 截图 `$S/after-close.png` 显示的是首页（「继续观看」卡片在），不再是加载页，见 [01-resume-close-returns-home.jpg](Evidence/bug-review-2026-11-27/01-resume-close-returns-home.jpg)。
+- 路由日志：4 秒左右播放器关闭后连续记录 `{"route":"home","loading":false,"player":""}`，修复前这里会是 `{"route":"loading","loading":true}"`。
+- `Scripts/run-close-return-route.sh` 四种情况全部通过：
+
+```
+ok   resume played before closing: yes
+ok   resume close returns to the home page: home
+ok   no loading spinner after resume close: false
+ok   local file played before closing: yes
+ok   local close returns to the home page: home
+ok   cancel: the loading page was really shown: yes
+ok   cancel during loading returns to the home page: home
+ok   failed resume shows the loading page: yes
+ok   failed resume stays on the loading page: loading
+ok   failed resume: error message kept after 重试: 网络错误：无法连接服务器。
+PASS: resume close, local close, cancel during loading, retry after failure
+```
+
+（从 WebDAV 目录/Jellyfin 详情页播放再关闭回到原处这一条，脚本用「加载中点取消」「加载失败后重试」两项覆盖 `.loading` 的进入与退出；返回原目录/详情页由 `playerReturnRoute` 记的是 `.browser`/`.jellyfinBrowser` 保证，`Scripts/run-webdav-browser.sh` 继续验证浏览器层级不丢。）
+
+截图：[03-cancel-during-loading.jpg](Evidence/bug-review-2026-11-27/03-cancel-during-loading.jpg)、[04-retry-keeps-error-page.jpg](Evidence/bug-review-2026-11-27/04-retry-keeps-error-page.jpg)。
+
 ---
 
 ## 2. 打开失败时界面没有提示（中）
@@ -104,6 +149,35 @@ open "$S/after-close.png"
 - 删除 Keychain 中某个 WebDAV 来源的凭据，然后在浏览页点视频，应看到「缺少密码」的提示，提示里要有重新输入或重试的入口。
 - 让 Jellyfin 测试服务器返回 500 或断网，再点播放，应看到错误提示。
 
+### 已采用的修复
+
+修复提交 `8f59139`：
+
+- [MainShellView.swift](../Sources/OpenFuseApp/MainShellView.swift) 新增全局提示条 `StatusToast`：显示 `statusMessage`，6 秒后自动消失，右上角 × 可手动关闭；`.task(id: message)` 让新消息重置计时，全部用普通 SwiftUI（不依赖任何只在某个系统版本可用的呈现修饰符），macOS 14/15/26 都是同一条横条。
+- [AppModel.swift](../Sources/OpenFuseApp/AppModel.swift) 增加 `showStatus(_:)`、`showKeychainNotice(_:account:service:retry:)`、`dismissStatus()`、`retryCredentialAccess()`；`statusMessage` 的 `didSet` 会清掉上一条提示的按钮，避免「重试」残留在无关的提示上。
+- Keychain 需要授权时走 `showKeychainNotice`：提示里的「重试」先调用 `CredentialStore.loadInteractive`（系统弹窗这时才会出现），再自动重跑被打断的那次打开。
+- [BrowserView.swift](../Sources/OpenFuseApp/BrowserView.swift) 的 `play(_:)` 在 `openRemote` 返回后检查 `model.player?.item.remotePath`：没打开就在目录上方显示失败原因（`playErrorBanner`，和目录错误页同一套图标/配色），列表行也改走同一个 `play()`，两条入口不再各写一份。
+- Jellyfin 一侧沿用 `openJellyfinItem` 已有的 `statusMessage` 赋值，不需要逐个改调用点。
+
+### 验证结果
+
+- WebDAV：`OPENFUSE_CREDENTIAL_MODE=session` 添加来源后重启，凭据被删掉，点视频时同时看到顶部提示条与页内横幅「需要输入 Fixture 的密码」，见 [05-webdav-play-failure-toast-and-banner.jpg](Evidence/bug-review-2026-11-27/05-webdav-play-failure-toast-and-banner.jpg)。复现命令：
+
+```bash
+S=build/bug-review-2026-11-27/toast-webdav   # 见下方「本轮验证记录」
+OPENFUSE_SUPPORT_DIR="$S/support" OPENFUSE_BROWSER_PLAY_FIRST=1 OPENFUSE_BROWSER_PLAY_AFTER=0.5 \
+  OPENFUSE_BROWSER_DROP_CREDENTIAL=1 \
+  build/OpenFuse.app/Contents/MacOS/OpenFuse \
+  --webdav-url "http://127.0.0.1:$PORT/dav/" --webdav-name Fixture --webdav-user admin \
+  --webdav-pass test --webdav-browse --webdav-browse-path Shows \
+  --capture-ui "$S/after-click.png" --ui-after 6 --quit-after 7
+```
+
+（`OPENFUSE_BROWSER_PLAY_FIRST` / `OPENFUSE_BROWSER_DROP_CREDENTIAL` 是验收钩子：前者按真实 `play(_:)` 路径点第一个视频，后者在列出目录之后、点播放之前用 `CredentialStore.delete` 删掉凭据，等价于「凭据被删除了」。）
+
+- Jellyfin：测试服务器在，但条目 id 不存在时点播放，顶部出现「Jellyfin 条目不存在」，见 [06-jellyfin-play-failure-toast.jpg](Evidence/bug-review-2026-11-27/06-jellyfin-play-failure-toast.jpg)。
+- 「重试」按钮的 Keychain 分支：本机 Keychain 不会对 OpenFuse 拒绝授权，无法制造 `needsAuthorization`，只做了代码层与单测验证（`StatusNoticeKind.keychainAuthorization.offersCredentialRetry`）。
+
 ---
 
 ## 3. 「仅本次会话」的 WebDAV 来源重启后显示「用户名或密码不正确」（中）
@@ -131,6 +205,36 @@ open "$S/after-close.png"
 
 - 按上面的步骤复现，应看到「需要输入密码」和输入入口。输入正确密码后能列出目录，在同一个会话里播放不再要求输入。
 - Keychain 模式的来源不受影响。
+
+### 已采用的修复
+
+修复提交 `8f59139`：
+
+- [WebDAV.swift](../Sources/OpenFuseData/WebDAV.swift) 新增 `WebDAVError.missingCredential(sourceName:)`，文案「需要输入 \(来源名) 的密码」；`loadDirectory` 取不到密码时改抛它，`openRemote`（条目与路径两个入口）取不到密码时用同一句文案，不再说「请重新添加来源」。
+- [RemoteFailurePolicy.swift](../Sources/OpenFuseCore/RemoteFailurePolicy.swift) 的 `RemoteDirectoryRecovery.action(for:)` 把错误分类成「重试」或「输入密码」。
+- [BrowserView.swift](../Sources/OpenFuseApp/BrowserView.swift) 的目录错误页遇到 `enterPassword` 时显示「输入密码」按钮；按钮打开 `AddSourceSheet(existing:)`，标题变成「更新 <名称> 的密码」，地址和用户名按来源预填并锁定（来源 id 由这两项决定），提交沿用同一份 `addSource` 流程（先 `list()` 校验，再按「仅本次会话」开关写入）。表单关闭后在**当前目录**重新 `load(path:)`，层级不变。
+- [HomeView.swift](../Sources/OpenFuseApp/HomeView.swift) 的来源卡片右键菜单新增「更新密码…」，走同一个表单（`AppModel.requestPasswordUpdate(for:)` 和 `passwordUpdateSource`，由 `MainShellView` 统一呈现）。
+
+### 验证结果
+
+复现（`OPENFUSE_CREDENTIAL_MODE=session` + `--webdav-session-only` 添加来源，进程退出后凭据只在内存里，重启即丢失）：
+
+- 目录页显示「需要输入 Fixture 的密码」和「输入密码」按钮，见 [07-missing-credential-page.jpg](Evidence/bug-review-2026-11-27/07-missing-credential-page.jpg)。
+- 点「输入密码」后的表单按来源预填了名称、地址、用户名，见 [08-prefilled-password-form.jpg](Evidence/bug-review-2026-11-27/08-prefilled-password-form.jpg)。
+- 提交同一份逻辑后目录能重新列出（`--webdav-credential-report` 的输出）：
+
+```json
+{
+  "firstLoad" : "需要输入 Fixture 的密码",
+  "firstRecovery" : "enterPassword",
+  "secondEntries" : 1,
+  "secondLoad" : "ok",
+  "source" : "Fixture",
+  "submit" : "ok"
+}
+```
+
+- Keychain 模式的来源不受影响：`Scripts/run-webdav-browser.sh` 用的就是不勾「仅本次会话」的来源，本轮仍然通过（见下「本轮验证记录」）。
 
 ---
 
@@ -218,6 +322,21 @@ swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests
 
 在模拟器里：来源 → WebDAV → 进入一个子目录 → 点 MP4 和 MKV。两种文件都应进入全屏播放；关闭播放器后，应回到原来的目录。
 
+### 已采用的修复
+
+修复提交 `8f59139`（**未能在模拟器实测**，见下）：
+
+- [MobileRootView.swift](../Platforms/Mobile/MobileRootView.swift) 去掉挂在根视图上的 `.fullScreenCover(item: browserPlayback)`。
+- [MobileWebDAVBrowserView.swift](../Platforms/Mobile/MobileWebDAVBrowserView.swift) 把这个覆盖层挂到浏览器自己身上：浏览器在「媒体来源」sheet 里，根视图已经在 present 那个 sheet，iOS 会丢弃第二次全屏呈现（控制台会打印 "already presenting"）。改到浏览器上之后，呈现由 sheet 自己的 hosting controller 发起。
+- 关闭播放器回到原目录：`browserPlayback` 置 nil 只是收掉覆盖层，`RemotePathState` 导航栈没有被改动。
+
+### 验证情况
+
+- 本机没有可启动的 iOS 运行时：`xcrun simctl list runtimes` 输出为空，`xcrun simctl list devices` 里所有设备都是 `unavailable, runtime profile not found using "System" match policy`，`xcrun simctl boot "iPhone 16 Pro"` 直接报 `Invalid device`。因此**没能**在模拟器里复现或确认「打不开」。
+- 能做的：`Scripts/build-ios.sh` 构建通过（`** BUILD SUCCEEDED **`），说明改动本身可编译。
+- 判断依据：这条按文档给的方案一改（挂到浏览器视图自己身上），是在既有 sheet 之上弹全屏覆盖层的标准做法；若原来的位置本来能工作，改动后仍然是同一个 `fullScreenCover(item:)`、同一份 `MobilePlayerView`，行为只会从「从根视图发起」变成「从 sheet 内容发起」。
+- 待验证方法（有模拟器时）：`Scripts/build-ios.sh` + `xcrun simctl install booted build/mobile-derived/Build/Products/Debug-iphonesimulator/OpenFuse.app`，用 `OPENFUSE_BROWSE_ACCEPTANCE=1` 打开来源 sheet，`OPENFUSE_BROWSE_SCRIPT` 里带 `probe`（会分别记录 MP4/MKV 的 `requiresMPV`），随后脚本会自动依次播放 MP4 与 MKV；也可以手动：媒体来源 → WebDAV → 子目录 → 点 MP4 / MKV，看是否进入全屏、关闭后是否回到同一目录。
+
 ---
 
 ## 7. 来源被删后点它的历史记录，提示「文件不存在」（低）
@@ -238,6 +357,28 @@ swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests
 ### 验收
 
 添加一个 WebDAV 来源，播放一个文件生成历史记录，然后删除这个来源，再点这条历史记录，应看到上面的提示和移除按钮。
+
+### 已采用的修复
+
+修复提交 `8f59139`：
+
+- [RemoteFailurePolicy.swift](../Sources/OpenFuseCore/RemoteFailurePolicy.swift) 新增 `PlaybackSourceKind.isRemote`（`webdav`/`jellyfin`/`emby`/`smb`/`plex`）和 `LoadingFailureKind`。`PlaybackRecord.isRemote` 只认 webdav/jellyfin，是首页封面用的窄集合，不能拿来做这个判断。
+- [AppModel.swift](../Sources/OpenFuseApp/AppModel.swift) 的 `performResume` 在这条链的最后加了一个分支：远程类型而来源已经不存在时直接 `finishLoadingFailure(..., kind: .sourceRemoved)`，提示「这个视频所在的来源「名称」已被移除」（来源名称已随来源一起消失时用「这个视频所在的来源已被移除」），不再把远程 URL 当本地文件去检查。
+- [PlayerLoadingView.swift](../Sources/OpenFuseApp/PlayerLoadingView.swift) 按 `loadingFailure.offersRemoveFromHistory` 显示「从历史中移除」（替代「重试」），调用新的 `AppModel.removeFailedRecordFromHistory()`（复用 `removeRecent` + `cancelLoading`）。
+
+### 验证结果
+
+```bash
+# 1) 播放一次生成历史记录   2) 清空 sources.json 模拟来源被删   3) 再点这条历史记录
+OPENFUSE_SUPPORT_DIR="$S/support" OPENFUSE_WEBDAV_PASSWORD=test "$APP" --resume-first --route-log "$S/route.jsonl" \
+  --capture-ui "$S/removed-source.png" --ui-after 5 --quit-after 6
+cat "$S/route.jsonl"
+{"error":"","loading":false,"player":"","route":"home","t":0}
+{"error":"这个视频所在的来源已被移除","loading":false,"player":"","route":"loading","t":0.9}
+```
+
+- 加载页显示提示和「从历史中移除」「返回首页」两个按钮，见 [09-removed-source-history.jpg](Evidence/bug-review-2026-11-27/09-removed-source-history.jpg)。
+- 按钮的处理函数复用已有的 `removeRecent`（`PlaybackStore.remove(path:)` + `refreshRecent`）与 `cancelLoading`，两条都有现成的调用方；本轮没有对按钮做自动点击（没有 UI 自动化），只验证了错误分类、文案与按钮出现。
 
 ---
 
@@ -260,6 +401,18 @@ swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests
 
 用会写入失败的 Keychain 环境（比如拒绝授权）添加来源，应看到警告。
 
+### 已采用的修复
+
+修复提交 `8f59139`，两条都做了：
+
+- 第 2 条的全局提示条会让这条警告显示出来（`addSource` 仍然写 `statusMessage`）。
+- 更重要的是 `addSource` 现在返回 `SourceAddOutcome(source:warning:)`（[SourceStore.swift](../Sources/OpenFuseData/SourceStore.swift)），弹窗不再靠全局字符串猜结果：`SourceFormStep.step(for:statusMessage:)` 把结果分成「关闭」「原位显示错误」「停留显示警告」三种，[AddSourceSheet](../Sources/OpenFuseApp/BrowserView.swift) 有警告时先显示警告和「知道了」，用户确认后才关闭，提交按钮同时隐藏，避免重复提交。
+
+### 验证结果
+
+- 单测覆盖三种结果（`PlayerRoutePolicyTests` 的 `testSourceFormClosesOnlyWhenNothingNeedsSaying`、`testSourceFormShowsTheFailureInPlace`、`testSourceFormStaysOpenForAKeychainWarning`）。
+- **没能实测「Keychain 写入失败」这一步**：本机 Keychain 不对 OpenFuse 拒绝写入。用 `security add-generic-password -T /usr/bin/security` 造出的「只信任 security 命令行」条目，OpenFuse 仍然能更新成功（macOS 27 里这类条目的 ACL 仍允许其它 App 访问），`security lock-keychain` 会要求用户密码、属于会破坏本机会话状态的操作，因此没有采用。所以「警告确实弹出」只做了代码路径 + 单测验证；`--webdav-credential-report` 已把 `addSource` 的 `warning` 写进报告，有拒绝授权的环境时可以直接看 `warning` 字段。
+
 ---
 
 ## 9. iOS：添加 Jellyfin 失败时，表单照样关闭（低，疑似）
@@ -279,3 +432,105 @@ swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests
 ### 验收
 
 在模拟器里用错误的密码添加 Jellyfin，表单应保持打开，并显示错误；用正确的密码添加，表单关闭，来源出现在列表里。
+
+### 已采用的修复
+
+修复提交 `8f59139`（**未能在模拟器实测**，原因同第 6 条）：
+
+- [MobileLibraryModel.swift](../Platforms/Mobile/MobileLibraryModel.swift) 的 `addJellyfin` 改为返回 `Bool`（成功才返回 true，失败时把原因写进 `status`）。
+- [MobileSourcesView.swift](../Platforms/Mobile/MobileSourcesView.swift) 的 `MobileAddSourceForm` 保存按钮按 WebDAV 那一支的写法处理：成功才 `dismiss()`，失败时 `errorText = model.status ?? "登录失败"`，表单保持打开，`isSaving` 复位。
+
+### 验证情况
+
+- `Scripts/build-ios.sh` 构建通过。
+- 没有可启动的 iOS 运行时（`xcrun simctl list runtimes` 为空），因此没能实测。待验证方法：模拟器里「媒体来源 → 添加 Jellyfin → 错误密码 → 保存」应留在表单并显示「添加 Jellyfin 失败：…」；正确密码 → 表单关闭、来源出现在列表。
+
+---
+
+## 本轮验证记录
+
+环境：macOS 27.2（arm64），Xcode 27.2 / iOS SDK 27.2，基线 `fa11eb6`，分支 `fix/bug-review-2026-11-27`。所有 UI 验收都用 `OPENFUSE_SUPPORT_DIR` 指向临时目录，不碰个人数据。
+
+### 单元测试与构建
+
+| 命令 | 结果 |
+| --- | --- |
+| `swift test` | 179 个用例全部通过（基线 160 + 本轮新增 19，含 `PlayerRoutePolicyTests`） |
+| `Scripts/build-app.sh` | `built build/OpenFuse.app` |
+| `Scripts/build-ios.sh` | `** BUILD SUCCEEDED **` |
+
+### 脚本验收
+
+`Scripts/run-close-return-route.sh`（本轮新增）：
+
+```
+ok   resume played before closing: yes
+ok   resume close returns to the home page: home
+ok   no loading spinner after resume close: false
+ok   local file played before closing: yes
+ok   local close returns to the home page: home
+ok   cancel: the loading page was really shown: yes
+ok   cancel during loading returns to the home page: home
+ok   failed resume shows the loading page: yes
+ok   failed resume stays on the loading page: loading
+ok   failed resume: error message kept after 重试: 网络错误：无法连接服务器。
+PASS: resume close, local close, cancel during loading, retry after failure
+```
+
+`Scripts/run-episode-switch-pause.sh`：`PASS: right-click / space / volume keys follow episode switches`。
+
+`Scripts/run-webdav-browser.sh`：`PASS: WebDAV deep path browsed with a single canonical listing request (/dav/Shows/Season%201/)`。
+
+`Scripts/run-player-interactions.sh`（本轮修掉了它的一个环境依赖，全屏那一项在本机是既有问题，见下节）：
+
+```
+ok   arrow keys change in-app volume: 95
+ok   mpv volume follows: 95.000000
+ok   right click toggles in video: True
+ok   pause in video recorded as user intent: True
+ok   right click toggles in letterbox: True
+ok   right click toggles in controlbar: True
+ok   two right clicks resume: False
+ok   right click toggles in fullscreen: True
+ok   fullscreen window was used: True
+ok   pause during buffering is kept after recovery: True
+ok   buffering pause recorded as user intent: True
+ok   buffering finished while staying paused: False
+PASS: volume keys, right-click regions/fullscreen, buffered pause
+```
+
+### 脚本会碰到的窗口与应用设置
+
+- 三个既有脚本都会启动 `build/OpenFuse.app` 的窗口，并用 AppleScript / System Events 发送真实按键和鼠标事件（`run-player-interactions.sh` 还会 `defaults write com.openfuse.app openfuse.player.volume`）；这需要辅助功能权限，运行时不要同时操作鼠标键盘。
+- 新增的 `run-close-return-route.sh` 不用 AppleScript、不写 `defaults`、不发合成事件：截图来自应用自身 `captureUI`（不需要屏幕录制权限），断言来自 `--route-log`，全部状态都在 `build/close-return-route/` 下的一次性数据目录里。
+
+### `run-player-interactions.sh` 的两处环境问题
+
+1. **缺夹具**：它的「pause during buffering」一段直接从 `build/cache-features/root` 取流，而这个目录只有在跑过 `Scripts/run-cache-features.sh` 之后才存在。本轮给它加了兜底：目录不存在时用同一条 ffmpeg 命令生成 `Shows/fast.mp4`（与 `run-cache-features.sh` 完全一致），此后这一段通过。
+2. **全屏那一项在本机是既有失败**：`right click toggles in fullscreen` 在基线 `fa11eb6` 上同样失败（新建 worktree、干净构建基线后单独跑该项，3/3 失败）。原因是在 2560x1440 上进入全屏 Space 的动画超过脚本给的 4 秒，合成点击落在桌面 Space 被丢弃；把等待拉到 6 秒并在点击前先把光标移进视频区后，该项在本轮构建上连续两次通过（基线同样操作 2/3 通过）。因此本轮只调整了脚本的等待与光标预热，没有改播放器的输入处理，也没有放宽断言。
+
+### 截图证据
+
+都在 `Docs/Evidence/bug-review-2026-11-27/`：
+
+- `01-resume-close-returns-home.jpg`（第 1 条：续播后关闭回到首页）
+- `02-local-close-returns-home.jpg`（第 1 条：本地文件关闭回到首页）
+- `03-cancel-during-loading.jpg`、`04-retry-keeps-error-page.jpg`（第 1 条：加载中取消 / 失败后重试）
+- `05-webdav-play-failure-toast-and-banner.jpg`（第 2 条：顶部提示条 + 页内失败原因）
+- `06-jellyfin-play-failure-toast.jpg`（第 2 条：Jellyfin 播放失败的提示条）
+- `07-missing-credential-page.jpg`、`08-prefilled-password-form.jpg`（第 3 条：需要输入密码 / 预填表单）
+- `09-removed-source-history.jpg`（第 7 条：来源被移除提示与「从历史中移除」）
+
+原始 PNG 与命令日志在 `build/bug-review-2026-11-27/`（`build/` 不入库）。
+
+### 本轮没能验证的部分
+
+| 项 | 原因 |
+| --- | --- |
+| 第 6 条 iOS 全屏播放（改动前后） | 本机没有可启动的 iOS 运行时：`xcrun simctl list runtimes` 为空，所有设备报 `runtime profile not found`，`simctl boot` 报 `Invalid device`。只验证了 `build-ios.sh` 能构建。 |
+| 第 9 条 iOS 添加 Jellyfin 失败留在表单 | 同上。 |
+| 第 8 条「Keychain 写入失败时弹出警告」 | 本机 Keychain 不对 OpenFuse 拒绝写入，无法制造真实的写入失败；没有采用锁定登录钥匙串这类会破坏本机会话状态的做法。改为单测 + 返回值路径验证。 |
+| 第 2 条提示条里「重试」按钮的 Keychain 授权分支 | 同上，无法制造 `needsAuthorization`。 |
+| 第 3 条表单提交的按钮点击 | 用 `--webdav-credential-report` 走同一份提交逻辑验证（报告里 `submit: ok` + `secondLoad: ok`），没有做按钮的合成点击。 |
+| 第 7 条「从历史中移除」按钮点击 | 只验证了提示与按钮出现；处理函数复用已有的 `removeRecent` / `cancelLoading`。 |
+| 第 1 条「WebDAV 目录/Jellyfin 详情页播放后关闭回到原处」 | 脚本用加载中取消 / 失败后重试覆盖了 `.loading` 的进出；返回原处依赖 `playerReturnRoute` 记录 `.browser` / `.jellyfinBrowser`，由代码路径与 `run-webdav-browser.sh` 的层级断言间接覆盖。 |
