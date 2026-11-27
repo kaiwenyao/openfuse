@@ -34,8 +34,16 @@ struct PlayerLoadingView: View {
                         .foregroundStyle(Theme.secondary)
                         .multilineTextAlignment(.center)
                     HStack(spacing: 12) {
-                        Button("重试") { model.retryLoading() }
-                            .buttonStyle(.borderedProminent)
+                        // Retrying a record whose source is gone can only fail
+                        // again, so that case offers the useful action instead.
+                        if !model.loadingFailure.offersRemoveFromHistory {
+                            Button("重试") { model.retryLoading() }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        if model.loadingFailure.offersRemoveFromHistory {
+                            Button("从历史中移除") { model.removeFailedRecordFromHistory() }
+                                .buttonStyle(.borderedProminent)
+                        }
                         Button("返回首页") { model.cancelLoading() }
                             .buttonStyle(.bordered)
                     }

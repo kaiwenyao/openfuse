@@ -55,8 +55,25 @@ struct MainShellView<Content: View>: View {
                 }
         }
         .background(Theme.background.ignoresSafeArea())
+        .overlay(alignment: .top) {
+            if let message = model.statusMessage, !message.isEmpty {
+                StatusToast(
+                    message: message,
+                    offersRetry: model.statusOffersCredentialRetry,
+                    onRetry: { model.retryCredentialAccess() },
+                    onClose: { model.dismissStatus() }
+                )
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: model.statusMessage)
         .sheet(isPresented: $model.showAddSource) {
             AddSourceSheet().environmentObject(model)
+        }
+        .sheet(item: $model.passwordUpdateSource) { source in
+            AddSourceSheet(existing: source).environmentObject(model)
         }
         .sheet(isPresented: $model.showSettings) {
             SettingsView().environmentObject(model)
@@ -166,5 +183,73 @@ struct MainShellView<Content: View>: View {
             .padding(.bottom, 16)
         }
         .background(Theme.panel.opacity(0.6))
+    }
+}
+
+/// The shell-wide notice for `AppModel.statusMessage`.
+///
+/// Every failure that has no form of its own lands here: reopening a video whose
+/// source is gone, a Jellyfin play request that the server refused, a missing
+/// WebDAV password, a Keychain prompt that was denied. The Keychain case carries
+/// a 重试 button because the system dialog only appears while the app asks again.
+///
+/// Nothing here is version-gated: it is plain SwiftUI (no presentation modifiers,
+/// no material) so macOS 14, 15 and 26 all render the same bar.
+struct StatusToast: View {
+    let message: String
+    var offersRetry = false
+    var onRetry: () -> Void = {}
+    var onClose: () -> Void = {}
+
+    /// Long enough to read a Chinese sentence twice without sitting on top of the
+    /// content for long.
+    private static let lifetime: Duration = .seconds(6)
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: "exclamationmark.bubble.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.text)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if offersRetry {
+                Button("重试") { onRetry() }
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.accent)
+                    .help("重新请求 Keychain 授权并再次打开")
+            }
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help("关闭提示")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 680, alignment: .leading)
+        .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.22), radius: 12, y: 4)
+        .task(id: message) {
+            // A new message restarts the timer. Dismissal goes through the model
+            // so every entry point (auto, manual, retry) stays in sync.
+            try? await Task.sleep(for: Self.lifetime)
+            guard !Task.isCancelled else { return }
+            onClose()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("提示：\(message)")
     }
 }

@@ -571,10 +571,13 @@ final class MobileLibraryModel: ObservableObject {
         status = "WebDAV \(source.name)：\(scanned.works.count) 个作品"
     }
 
-    func addJellyfin(name: String, urlText: String, username: String, password: String) async {
+    /// Returns whether the source was saved. The form stays open on failure so
+    /// the reason is visible instead of vanishing with the sheet.
+    @discardableResult
+    func addJellyfin(name: String, urlText: String, username: String, password: String) async -> Bool {
         guard let url = URL(string: urlText) else {
             status = "Jellyfin 地址无效"
-            return
+            return false
         }
         isWorking = true
         defer { isWorking = false }
@@ -587,8 +590,10 @@ final class MobileLibraryModel: ObservableObject {
             try CredentialStore.save(password: session.accessToken, account: source.id, service: "com.openfuse.jellyfin")
             jellyfinSources = jellyfinStore.sources
             try await scanJellyfin(source)
+            return true
         } catch {
             status = "添加 Jellyfin 失败：\(error.localizedDescription)"
+            return false
         }
     }
 

@@ -59,6 +59,17 @@ struct MobileWebDAVBrowserView: View {
             guard url == nil else { return }
             advanceAcceptancePlayback()
         }
+        // Presented from the browser itself, which is inside the 媒体来源 sheet:
+        // the root view is already presenting that sheet, so a cover attached
+        // there was silently dropped. Closing the player comes back to this
+        // directory because the navigation stack is untouched.
+        .fullScreenCover(item: Binding(
+            get: { model.browserPlayback },
+            set: { model.browserPlayback = $0 }
+        )) { item in
+            MobilePlayerView(item: item)
+                .environmentObject(model)
+        }
     }
 
     private var pathBar: some View {

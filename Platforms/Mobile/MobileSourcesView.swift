@@ -251,8 +251,19 @@ private struct MobileAddSourceForm: View {
                                     errorText = model.status ?? "连接失败"
                                 }
                             } else {
-                                await model.addJellyfin(name: name, urlText: url, username: username, password: password)
-                                dismiss()
+                                // Same rule as the WebDAV branch: a rejected
+                                // login keeps the form (and the typed password)
+                                // so the error can be read and corrected.
+                                if await model.addJellyfin(
+                                    name: name,
+                                    urlText: url,
+                                    username: username,
+                                    password: password
+                                ) {
+                                    dismiss()
+                                } else {
+                                    errorText = model.status ?? "登录失败"
+                                }
                             }
                             isSaving = false
                         }

@@ -12,6 +12,15 @@ struct WebDAVBrowserView: View {
     @State private var entries: [RemoteEntry] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    /// What the error page can offer besides 重试; a lost password gets the
+    /// credential form instead.
+    @State private var errorRecovery: RemoteDirectoryRecovery = .retry
+    /// Set when a video did not start, so the reason stays on the page instead of
+    /// only in the shell toast.
+    @State private var playError: String?
+    /// True while the «输入密码» sheet is up, so its dismissal reloads this
+    /// directory at the same level.
+    @State private var waitingForPassword = false
     @State private var opening: String?
     /// Identifies the in-flight listing so a slow response for a directory the
     /// user already left cannot overwrite the newer one.
@@ -35,6 +44,9 @@ struct WebDAVBrowserView: View {
         VStack(spacing: 0) {
             header
             Divider().overlay(Theme.stroke)
+            if let playError {
+                playErrorBanner(playError)
+            }
             content
         }
         .background(Theme.background.ignoresSafeArea())
@@ -46,8 +58,18 @@ struct WebDAVBrowserView: View {
         .onChange(of: nav.stack) { _, newValue in
             model.setWebDAVPath(newValue, for: source)
         }
+        .onChange(of: model.passwordUpdateSource?.id) { _, newValue in
+            // The credential form closed: the directory was kept, so reload it in
+            // place rather than sending the user back to the source list.
+            guard waitingForPassword, newValue == nil else { return }
+            waitingForPassword = false
+            Task { await load(path: currentPath) }
+        }
         .task(id: currentPath) {
             await load(path: currentPath)
+        }
+        .task {
+            await playFirstVideoIfRequested()
         }
         .sheet(isPresented: $showMatchEditor) {
             matchEditor
@@ -166,10 +188,22 @@ struct WebDAVBrowserView: View {
                 Text(errorMessage)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.secondary)
-                Button("重试") {
-                    Task { await load(path: currentPath) }
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 10) {
+                    if errorRecovery == .enterPassword {
+                        // The password is gone (session-only source after a
+                        // restart). Asking for it again is the only way forward.
+                        Button("输入密码") {
+                            waitingForPassword = true
+                            model.requestPasswordUpdate(for: source)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button("重试") {
+                        Task { await load(path: currentPath) }
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
             Spacer()
         } else if entries.isEmpty {
@@ -459,8 +493,69 @@ struct WebDAVBrowserView: View {
 
     private func play(_ entry: RemoteEntry) async {
         opening = entry.path
+        playError = nil
         await model.openRemote(source: source, entry: entry, siblings: entries)
         opening = nil
+        // openRemote() is async and reports nothing back; the player appearing is
+        // the only success signal. Anything else has to be visible here, because
+        // a shell-level toast can be missed while the list still says nothing.
+        if model.player?.item.remotePath != entry.path {
+            playError = model.statusMessage ?? "无法播放 \(entry.name)"
+        }
+    }
+
+    /// Acceptance hook (`OPENFUSE_BROWSER_PLAY_FIRST=1`): click the first video
+    /// through the real `play(_:)` path once the listing settles, so a script can
+    /// assert what a failed open shows without synthetic mouse input.
+    ///
+    /// `OPENFUSE_BROWSER_DROP_CREDENTIAL=1` deletes the source credential between
+    /// the listing and the click with the same API the app uses, which is the
+    /// «凭据被删除了» case the review lists: the folder is already on screen, so
+    /// the failure has to be shown on this page.
+    private func playFirstVideoIfRequested() async {
+        guard ProcessInfo.processInfo.environment["OPENFUSE_BROWSER_PLAY_FIRST"] == "1" else { return }
+        let delay = ProcessInfo.processInfo.environment["OPENFUSE_BROWSER_PLAY_AFTER"]
+            .flatMap(Double.init) ?? 0.5
+        for _ in 0..<120 {
+            if !isLoading, opening == nil,
+               let video = entries.first(where: { !$0.isDirectory && $0.isPlayableVideo }) {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                if ProcessInfo.processInfo.environment["OPENFUSE_BROWSER_DROP_CREDENTIAL"] == "1" {
+                    CredentialStore.delete(account: source.id)
+                }
+                if model.player == nil { await play(video) }
+                return
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+    }
+
+    /// Same visual language as the directory error state, but it does not replace
+    /// the list: one unplayable file must not hide the rest of the folder.
+    private func playErrorBanner(_ message: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondary)
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button {
+                playError = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("关闭提示")
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.panel)
     }
 
     private func row(_ entry: RemoteEntry) -> some View {
@@ -469,10 +564,7 @@ struct WebDAVBrowserView: View {
                 openFolder(entry)
             } else if entry.isPlayableVideo {
                 opening = entry.path
-                Task {
-                    await model.openRemote(source: source, entry: entry, siblings: entries)
-                    opening = nil
-                }
+                Task { await play(entry) }
             }
         } label: {
             HStack(spacing: 12) {
@@ -578,6 +670,7 @@ struct WebDAVBrowserView: View {
         loadToken = token
         isLoading = true
         errorMessage = nil
+        errorRecovery = .retry
         do {
             let listing = try await model.loadDirectory(source: source, path: path)
             guard loadToken == token else { return }
@@ -585,6 +678,7 @@ struct WebDAVBrowserView: View {
         } catch {
             guard loadToken == token else { return }
             errorMessage = error.localizedDescription
+            errorRecovery = RemoteDirectoryRecovery.action(for: error)
             entries = []
         }
         guard loadToken == token else { return }
@@ -832,21 +926,38 @@ struct AddSourceSheet: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
 
+    /// Non-nil when the sheet only asks for the password of an existing source
+    /// (the directory error page and the source card's «更新密码…» both use it).
+    var existing: WebDAVSource? = nil
+
     @State private var name = ""
     @State private var url = ""
     @State private var username = ""
     @State private var password = ""
     @State private var isBusy = false
     @State private var errorMessage: String?
+    @State private var warningMessage: String?
     @State private var sessionOnly = CredentialStore.defaultMode == .session
+
+    init(existing: WebDAVSource? = nil) {
+        self.existing = existing
+        _name = State(initialValue: existing?.name ?? "")
+        _url = State(initialValue: existing?.baseURL.absoluteString ?? "")
+        _username = State(initialValue: existing?.username ?? "")
+        _sessionOnly = State(initialValue: CredentialStore.defaultMode == .session)
+    }
+
+    private var isUpdate: Bool { existing != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("添加 WebDAV 来源")
+                    Text(isUpdate ? "更新 \(existing?.name ?? "") 的密码" : "添加 WebDAV 来源")
                         .font(.system(size: 18, weight: .semibold))
-                    Text("OpenList、Nextcloud、群晖等提供 WebDAV 的服务均可。密码默认存入本机 Keychain，不会写入明文文件。")
+                    Text(isUpdate
+                         ? "地址和用户名决定来源的标识，不能在这里修改。保存前会重新读取根目录，用来确认新密码。"
+                         : "OpenList、Nextcloud、群晖等提供 WebDAV 的服务均可。密码默认存入本机 Keychain，不会写入明文文件。")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                 }
@@ -856,9 +967,12 @@ struct AddSourceSheet: View {
 
             Form {
                 TextField("名称", text: $name, prompt: Text("例如：OpenList"))
+                    .disabled(isUpdate)
                 TextField("服务器地址", text: $url, prompt: Text("https://example.com:5244/dav/"))
                     .textContentType(.URL)
+                    .disabled(isUpdate)
                 TextField("用户名", text: $username)
+                    .disabled(isUpdate)
                 SecureField("密码", text: $password)
                 Toggle("仅本次会话（不写入 Keychain，退出后需重新输入）", isOn: $sessionOnly)
             }
@@ -870,20 +984,40 @@ struct AddSourceSheet: View {
                     .font(.system(size: 11.5))
                     .foregroundStyle(.red)
             }
+            if let warningMessage {
+                // A source that only exists in memory must not be dismissed
+                // silently: the user has to know the password will be asked for
+                // again after a restart.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(warningMessage)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Spacer()
+                        Button("知道了") { dismiss() }
+                            .keyboardShortcut(.defaultAction)
+                    }
+                }
+            }
 
             HStack {
-                Text("示例：OpenList 的 WebDAV 根路径通常是 /dav/，百度网盘目录会按原结构显示。")
+                Text(isUpdate
+                     ? "示例：OpenList 的 WebDAV 根路径通常是 /dav/。"
+                     : "示例：OpenList 的 WebDAV 根路径通常是 /dav/，百度网盘目录会按原结构显示。")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                 Spacer()
                 if isBusy {
                     ProgressView().controlSize(.small)
                 }
-                Button("连接并保存") {
-                    Task { await submit() }
+                if warningMessage == nil {
+                    Button(isUpdate ? "验证并保存" : "连接并保存") {
+                        Task { await submit() }
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(isBusy || url.isEmpty)
                 }
-                .keyboardShortcut(.defaultAction)
-                .disabled(isBusy || url.isEmpty)
             }
         }
         .padding(22)
@@ -894,7 +1028,8 @@ struct AddSourceSheet: View {
     private func submit() async {
         isBusy = true
         errorMessage = nil
-        let source = await model.addSource(
+        warningMessage = nil
+        let outcome = await model.addSource(
             name: name,
             urlText: url,
             username: username,
@@ -902,10 +1037,14 @@ struct AddSourceSheet: View {
             rememberInKeychain: !sessionOnly
         )
         isBusy = false
-        if source != nil {
+        switch SourceFormStep.step(for: outcome, statusMessage: model.statusMessage) {
+        case .close:
             dismiss()
-        } else {
-            errorMessage = model.statusMessage ?? "连接失败"
+        case .showError(let message):
+            errorMessage = message
+        case .showWarning(let warning):
+            // Stay open so the warning is actually read; 知道了 closes the form.
+            warningMessage = warning
         }
     }
 }

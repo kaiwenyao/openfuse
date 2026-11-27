@@ -17,6 +17,19 @@ enum AppRoute: Equatable {
     case jellyfinBrowser(JellyfinSource)
     case plexBrowser(PlexSource)
     case library(LibraryWork)
+
+    /// Stable name for the acceptance route log.
+    var debugName: String {
+        switch self {
+        case .home: return "home"
+        case .player: return "player"
+        case .loading: return "loading"
+        case .browser: return "browser"
+        case .jellyfinBrowser: return "jellyfinBrowser"
+        case .plexBrowser: return "plexBrowser"
+        case .library: return "library"
+        }
+    }
 }
 
 enum LibrarySort: String, CaseIterable, Identifiable {
@@ -92,10 +105,23 @@ final class AppModel: ObservableObject {
     @Published var route: AppRoute = .home
     @Published var recent: [PlaybackRecord] = []
     @Published var player: PlayerModel?
-    @Published var statusMessage: String?
+    /// Any transient message the shell shows in its toast. Every write clears the
+    /// affordance from the previous message; `showKeychainNotice` re-adds it.
+    @Published var statusMessage: String? {
+        didSet {
+            statusCredentialRetry = nil
+            statusOffersCredentialRetry = false
+        }
+    }
+    /// Set while `statusMessage` came from a Keychain authorization failure, so
+    /// the toast can offer the 重试 button that reopens the system dialog.
+    @Published private(set) var statusOffersCredentialRetry = false
+    private var statusCredentialRetry: (account: String, service: String, action: () async -> Void)?
     @Published var sources: [WebDAVSource] = []
     @Published var browsingSource: WebDAVSource?
     @Published var showAddSource = false
+    /// Non-nil while the «更新密码…» form is up for that source.
+    @Published var passwordUpdateSource: WebDAVSource?
     @Published var showSeekPrompt = false
     @Published var seekPromptText = ""
     @Published var credentialMigrationSummary: String?
@@ -122,6 +148,8 @@ final class AppModel: ObservableObject {
     @Published var loadingSubtitle = ""
     @Published var sidebarDestination: SidebarDestination = .home
     @Published var loadingError: String?
+    /// What the loading page can offer besides 重试.
+    @Published var loadingFailure: LoadingFailureKind = .generic
     @Published var isLoadingPlayback = false
     private var loadingGeneration = 0
     private var lastLoadingRecord: PlaybackRecord?
@@ -171,6 +199,8 @@ final class AppModel: ObservableObject {
     /// stale lookup can never start the wrong file.
     private var pendingNextOwner: String?
     private var keychainPromptedAccounts: Set<String> = []
+    /// The source whose credential lookup the Keychain prompt just blocked.
+    private var lastKeychainDenial: (account: String, service: String)?
     /// Incremented whenever a playback intent starts or is cancelled. Async
     /// source lookups capture this token and drop their result if a newer
     /// session began meanwhile, so a slow PROPFIND/Jellyfin lookup cannot
@@ -185,6 +215,100 @@ final class AppModel: ObservableObject {
 
     private func sessionIsCurrent(_ token: Int) -> Bool {
         token == sessionGeneration
+    }
+
+    // MARK: - Shell status notice
+
+    /// Publishes a message in the shell's toast. Used for failures that have no
+    /// form to show them (opening a video, playing a Jellyfin item, …).
+    func showStatus(_ message: String) {
+        statusMessage = message
+    }
+
+    /// Publishes the Keychain authorization message together with the 重试 button
+    /// and the action it should repeat once the user allows access.
+    func showKeychainNotice(
+        _ message: String,
+        account: String,
+        service: String,
+        retry: @escaping () async -> Void
+    ) {
+        statusMessage = message
+        statusCredentialRetry = (account, service, retry)
+        statusOffersCredentialRetry = true
+    }
+
+    func dismissStatus() {
+        statusMessage = nil
+    }
+
+    /// The toast's 重试 button: reopen the system Keychain dialog for the account
+    /// that was denied, then repeat the action it interrupted.
+    func retryCredentialAccess() {
+        guard let retry = statusCredentialRetry else { return }
+        dismissStatus()
+        // Asking for the item is what makes the system show its dialog again.
+        _ = CredentialStore.loadInteractive(account: retry.account, service: retry.service)
+        Task { await retry.action() }
+    }
+
+    // MARK: - Acceptance route log
+
+    private var routeLogHandle: FileHandle?
+    private var routeLogStart: Date?
+    private var routeLogTimer: Timer?
+    private var routeLogLast: String?
+
+    /// `--route-log <path>`: samples the navigation state ten times a second and
+    /// appends one JSON line whenever it changes. The close-return-route
+    /// acceptance reads it to assert the page the player came back to, and to see
+    /// the loading route survive a cancel/retry, which a screenshot cannot pin to
+    /// an exact moment.
+    func startRouteLog(at url: URL) {
+        guard routeLogHandle == nil else { return }
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        routeLogStart = Date()
+        routeLogHandle = try? FileHandle(forWritingTo: url)
+        appendRouteLog()
+        let timer = Timer(timeInterval: 0.1, repeats: true) { _ in
+            MainActor.assumeIsolated {
+                AppModel.shared.appendRouteLog()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        routeLogTimer = timer
+    }
+
+    private func appendRouteLog() {
+        guard let handle = routeLogHandle, let start = routeLogStart else { return }
+        let state = [
+            route.debugName,
+            isLoadingPlayback ? "loading" : "idle",
+            loadingError ?? "",
+            player?.item.title ?? "",
+        ].joined(separator: "|")
+        // Only a real state change is written, so the log stays readable and a
+        // consumer can take the last line as the settled state.
+        guard state != routeLogLast else { return }
+        routeLogLast = state
+        let line: [String: Any] = [
+            "t": (Date().timeIntervalSince(start) * 100).rounded() / 100,
+            "route": route.debugName,
+            "loading": isLoadingPlayback,
+            "error": loadingError ?? "",
+            "player": player?.item.title ?? "",
+        ]
+        guard JSONSerialization.isValidJSONObject(line),
+              let data = try? JSONSerialization.data(withJSONObject: line, options: [.sortedKeys]) else {
+            return
+        }
+        handle.write(data)
+        handle.write(Data("\n".utf8))
+        try? handle.synchronize()
     }
 
     init(supportDirectory: URL? = nil) {
@@ -377,7 +501,7 @@ final class AppModel: ObservableObject {
             )
         }
         if route != .player {
-            playerReturnRoute = route
+            rememberPlayerReturnRoute()
         }
         let model = PlayerModel(
             item: item,
@@ -425,6 +549,12 @@ final class AppModel: ObservableObject {
         configureFolderVideos(for: model, item: item, siblings: folderSiblings)
         player = model
         route = .player
+        // The source resolved and the engine is up: the loading page is over, so
+        // nothing may leave `isLoadingPlayback` set and show a fake spinner if
+        // this route is ever reached again.
+        isLoadingPlayback = false
+        loadingError = nil
+        loadingFailure = .generic
         playerWindow?.contentMinSize = NSSize(width: 320, height: 180)
         PlaybackTrace.mark("startPlayer.routeSet")
         model.start()
@@ -451,16 +581,43 @@ final class AppModel: ObservableObject {
     private func credential(account: String, service: String) -> String? {
         switch CredentialStore.loadDetailed(account: account, service: service, interactive: false) {
         case .found(let value):
+            lastKeychainDenial = nil
             return value
         case .missing:
+            lastKeychainDenial = nil
             return nil
         case .needsAuthorization:
             if keychainPromptedAccounts.contains(account) {
-                return CredentialStore.loadInteractive(account: account, service: service)
+                if let value = CredentialStore.loadInteractive(account: account, service: service) {
+                    lastKeychainDenial = nil
+                    return value
+                }
+                lastKeychainDenial = (account, service)
+                return nil
             }
             keychainPromptedAccounts.insert(account)
-            statusMessage = "Keychain 需要授权访问此来源的凭据：请在系统弹窗中允许 OpenFuse，然后再次操作"
+            lastKeychainDenial = (account, service)
+            showStatus("Keychain 需要授权访问此来源的凭据：请在系统弹窗中允许 OpenFuse，然后再次操作")
             return nil
+        }
+    }
+
+    /// Explains why a source could not produce a client for playback or listing.
+    /// A Keychain denial gets the toast's 重试 button; a lost credential gets the
+    /// new `missingCredential` wording instead of blaming the account.
+    private func reportMissingWebDAVPassword(
+        _ source: WebDAVSource,
+        retry: @escaping () async -> Void
+    ) {
+        if let denial = lastKeychainDenial, denial.account == source.id {
+            showKeychainNotice(
+                "Keychain 需要授权访问此来源的凭据：请在系统弹窗中允许 OpenFuse，然后点击重试",
+                account: denial.account,
+                service: denial.service,
+                retry: retry
+            )
+        } else {
+            showStatus(WebDAVError.missingCredential(sourceName: source.name).localizedDescription)
         }
     }
 
@@ -469,6 +626,11 @@ final class AppModel: ObservableObject {
         return WebDAVClient(source: source, password: password)
     }
 
+    /// Adds (or, for the same address and user, updates) a WebDAV source.
+    ///
+    /// The returned outcome carries a warning when the source is usable but
+    /// something the user must know about did not work — in practice a Keychain
+    /// write that failed, which leaves a source that only lives for this run.
     @discardableResult
     func addSource(
         name: String,
@@ -476,10 +638,10 @@ final class AppModel: ObservableObject {
         username: String,
         password: String,
         rememberInKeychain: Bool = true
-    ) async -> WebDAVSource? {
+    ) async -> SourceAddOutcome<WebDAVSource>? {
         guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
-            statusMessage = "服务器地址需要是 http:// 或 https://"
+            showStatus("服务器地址需要是 http:// 或 https://")
             return nil
         }
         let source = WebDAVSource(name: name.isEmpty ? url.host ?? "WebDAV" : name, baseURL: url, username: username)
@@ -501,17 +663,19 @@ final class AppModel: ObservableObject {
             if let keychainError {
                 // The source still works for this run through the in-memory copy;
                 // nothing was written to disk.
-                statusMessage = "来源已保存到本次会话，但 Keychain 写入失败：\(keychainError.localizedDescription)"
+                let warning = "来源已保存到本次会话，但 Keychain 写入失败：\(keychainError.localizedDescription)"
+                showStatus(warning)
+                return SourceAddOutcome(source: source, warning: warning)
             } else if usesEnvironmentPassword {
-                statusMessage = "已添加 \(source.name)（密码来自环境变量，未写入 Keychain）"
+                showStatus("已添加 \(source.name)（密码来自环境变量，未写入 Keychain）")
             } else if mode == .session {
-                statusMessage = "已添加 \(source.name)（仅本次会话，退出后需重新输入密码），根目录 \(entries.count) 项"
+                showStatus("已添加 \(source.name)（仅本次会话，退出后需重新输入密码），根目录 \(entries.count) 项")
             } else {
-                statusMessage = "已添加 \(source.name)，凭据已存入 Keychain，根目录 \(entries.count) 项"
+                showStatus("已添加 \(source.name)，凭据已存入 Keychain，根目录 \(entries.count) 项")
             }
-            return source
+            return SourceAddOutcome(source: source)
         } catch {
-            statusMessage = error.localizedDescription
+            showStatus(error.localizedDescription)
             return nil
         }
     }
@@ -520,10 +684,74 @@ final class AppModel: ObservableObject {
         try? sourceStore.remove(id: source.id)
         CredentialStore.delete(account: source.id)
         sources = sourceStore.sources
+        if passwordUpdateSource?.id == source.id { passwordUpdateSource = nil }
         if let browsingSource, browsingSource.id == source.id {
             self.browsingSource = nil
             route = .home
         }
+    }
+
+    /// Opens the credential form for an existing source. The address and user
+    /// name identify the source, so only the password is asked for again.
+    func requestPasswordUpdate(for source: WebDAVSource) {
+        passwordUpdateSource = source
+    }
+
+    /// Acceptance: walk the «仅本次会话» recovery path without synthetic input.
+    /// Lists once (must fail with `missingCredential`), submits through the same
+    /// `addSource` call the form uses, then lists again.
+    func runCredentialRecoveryCheck(reportURL: URL, password: String) async {
+        var report: [String: Any] = [:]
+        guard let source = sources.first else {
+            report["error"] = "没有已保存的来源"
+            writeReport(report, to: reportURL)
+            return
+        }
+        report["source"] = source.name
+        do {
+            let entries = try await loadDirectory(source: source, path: "")
+            report["firstLoad"] = "ok"
+            report["firstEntries"] = entries.count
+        } catch {
+            report["firstLoad"] = error.localizedDescription
+            switch RemoteDirectoryRecovery.action(for: error) {
+            case .enterPassword: report["firstRecovery"] = "enterPassword"
+            case .retry: report["firstRecovery"] = "retry"
+            }
+        }
+        // Exactly what AddSourceSheet.submit() calls for an existing source.
+        let outcome = await addSource(
+            name: source.name,
+            urlText: source.baseURL.absoluteString,
+            username: source.username,
+            password: password,
+            rememberInKeychain: false
+        )
+        report["submit"] = outcome == nil ? "failed" : "ok"
+        if let warning = outcome?.warning {
+            report["warning"] = warning
+        }
+        do {
+            let entries = try await loadDirectory(source: source, path: "")
+            report["secondLoad"] = "ok"
+            report["secondEntries"] = entries.count
+        } catch {
+            report["secondLoad"] = error.localizedDescription
+        }
+        writeReport(report, to: reportURL)
+    }
+
+    private func writeReport(_ object: [String: Any], to url: URL) {
+        guard JSONSerialization.isValidJSONObject(object),
+              let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]) else {
+            return
+        }
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try? data.write(to: url, options: .atomic)
+        print("[OpenFuse] wrote report to \(url.path)")
     }
 
     func browse(_ source: WebDAVSource) {
@@ -563,7 +791,10 @@ final class AppModel: ObservableObject {
 
     func loadDirectory(source: WebDAVSource, path: String) async throws -> [RemoteEntry] {
         guard let client = webdavClient(for: source) else {
-            throw WebDAVError.unauthorized
+            // No password at all: a «仅本次会话» source after a restart. Reporting
+            // 401 here made the page say the account was wrong and left no way to
+            // enter the password again.
+            throw WebDAVError.missingCredential(sourceName: source.name)
         }
         return try await client.list(path: path)
     }
@@ -581,7 +812,9 @@ final class AppModel: ObservableObject {
         let token = sessionToken ?? beginPlaybackSession()
         guard sessionIsCurrent(token) else { return }
         guard let password = password(for: source) else {
-            statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
+            reportMissingWebDAVPassword(source) { [weak self] in
+                await self?.openRemote(source: source, entry: entry, siblings: siblings, sessionToken: nil)
+            }
             return
         }
         var directoryEntries = siblings
@@ -627,12 +860,14 @@ final class AppModel: ObservableObject {
     func openRemote(source: WebDAVSource, path: String) async {
         let token = beginPlaybackSession()
         guard let client = webdavClient(for: source) else {
-            statusMessage = "缺少 \(source.name) 的密码，请重新添加来源"
+            reportMissingWebDAVPassword(source) { [weak self] in
+                await self?.openRemote(source: source, path: path)
+            }
             return
         }
         do {
             guard let entry = try await client.stat(path: path) else {
-                statusMessage = "远程条目不存在：\(path)"
+                showStatus("远程条目不存在：\(path)")
                 return
             }
             let parent = (path as NSString).deletingLastPathComponent
@@ -640,7 +875,7 @@ final class AppModel: ObservableObject {
             guard sessionIsCurrent(token) else { return }
             await openRemote(source: source, entry: entry, siblings: siblings, sessionToken: token)
         } catch {
-            statusMessage = error.localizedDescription
+            showStatus(error.localizedDescription)
         }
     }
 
@@ -669,10 +904,26 @@ final class AppModel: ObservableObject {
         loadingSubtitle = [record.episodeLabel, sourceDisplayName(for: record)]
             .compactMap { $0 }.joined(separator: " · ")
         loadingError = nil
+        loadingFailure = .generic
         isLoadingPlayback = true
         beginPlaybackSession()
+        // Remember the page the user is actually on before the loading route
+        // replaces it, so closing the player comes back here and not to the
+        // spinner.
+        rememberPlayerReturnRoute()
         route = .loading
         Task { await performResume(record, generation: generation) }
+    }
+
+    /// Records the current page as the player's return route. `.loading` is a
+    /// placeholder: it never becomes the destination, and an already remembered
+    /// page survives the loading route.
+    private func rememberPlayerReturnRoute() {
+        playerReturnRoute = PlayerReturnRoutePolicy.route(
+            current: route,
+            existing: playerReturnRoute,
+            isPlaceholder: { $0 == .loading }
+        )
     }
 
     private func sourceDisplayName(for record: PlaybackRecord) -> String? {
@@ -711,6 +962,15 @@ final class AppModel: ObservableObject {
                   let path = record.remotePath,
                   let source = sources.first(where: { $0.id == sourceID }) {
             await openRemote(source: source, path: path)
+        } else if PlaybackSourceKind.isRemote(record.sourceKind) {
+            // The record belongs to a source that is gone. Its URL is not a local
+            // file, so falling through to open(url:) only reported 文件不存在.
+            finishLoadingFailure(
+                generation,
+                message: removedSourceMessage(for: record),
+                kind: .sourceRemoved
+            )
+            return
         } else {
             open(url: record.url)
         }
@@ -720,10 +980,22 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func finishLoadingFailure(_ generation: Int, message: String) {
+    private func removedSourceMessage(for record: PlaybackRecord) -> String {
+        if let name = sourceDisplayName(for: record), !name.isEmpty {
+            return "这个视频所在的来源「\(name)」已被移除"
+        }
+        return "这个视频所在的来源已被移除"
+    }
+
+    private func finishLoadingFailure(
+        _ generation: Int,
+        message: String,
+        kind: LoadingFailureKind = .generic
+    ) {
         guard generation == loadingGeneration else { return }
         isLoadingPlayback = false
         loadingError = message
+        loadingFailure = kind
     }
 
     func cancelLoading() {
@@ -733,6 +1005,7 @@ final class AppModel: ObservableObject {
         player = nil
         isLoadingPlayback = false
         loadingError = nil
+        loadingFailure = .generic
         route = .home
     }
 
@@ -742,6 +1015,15 @@ final class AppModel: ObservableObject {
             return
         }
         resume(record)
+    }
+
+    /// The loading page's 从历史中移除 button for a record whose source is gone.
+    func removeFailedRecordFromHistory() {
+        if let record = lastLoadingRecord {
+            removeRecent(record)
+        }
+        lastLoadingRecord = nil
+        cancelLoading()
     }
 
     func removeRecent(_ record: PlaybackRecord) {

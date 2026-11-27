@@ -75,6 +75,10 @@ public enum WebDAVError: LocalizedError, Sendable {
     case httpStatus(Int)
     case invalidResponse(String)
     case network(String)
+    /// No password is available for the source at all. A «仅本次会话» source loses
+    /// its credential at quit, and blaming the account ("用户名或密码不正确")
+    /// sent users to re-add the source instead of entering the password.
+    case missingCredential(sourceName: String)
 
     public var errorDescription: String? {
         switch self {
@@ -84,7 +88,16 @@ public enum WebDAVError: LocalizedError, Sendable {
         case .httpStatus(let code): return "服务器返回 HTTP \(code)"
         case .invalidResponse(let message): return "服务器响应无法解析：\(message)"
         case .network(let message): return "网络错误：\(message)"
+        case .missingCredential(let name):
+            return name.isEmpty ? "需要输入密码" : "需要输入 \(name) 的密码"
         }
+    }
+
+    /// The source name carried by `.missingCredential`, for the form the browser
+    /// opens from its error page.
+    public var missingCredentialSourceName: String? {
+        guard case .missingCredential(let name) = self else { return nil }
+        return name
     }
 }
 

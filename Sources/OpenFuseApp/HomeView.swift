@@ -244,6 +244,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 model.captureUI(to: URL(fileURLWithPath: captureUI), preferKeyWindow: preferKey)
             }
         }
+        // Every route change is appended to this log. Acceptance scripts assert
+        // the page the player returned to, which a single screenshot cannot.
+        if let routeLog = value(after: "--route-log", in: arguments) {
+            model.startRouteLog(at: URL(fileURLWithPath: routeLog))
+        }
         if let captureWindow = value(after: "--capture-window", in: arguments) {
             let delayed = value(after: "--ui-after", in: arguments).flatMap(Double.init) ?? 2.5
             DispatchQueue.main.asyncAfter(deadline: .now() + delayed) {
@@ -421,6 +426,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // Acceptance hook: open the «输入密码» form for the saved source, so the
+        // prefilled sheet can be captured without synthetic clicks.
+        if arguments.contains("--show-update-password") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let source = model.sources.first {
+                    model.requestPasswordUpdate(for: source)
+                }
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
+        // Acceptance hook: prove the credential loss and that the form's submit
+        // path restores the listing, without driving the sheet.
+        if let credentialReport = value(after: "--webdav-credential-report", in: arguments) {
+            let password = ProcessInfo.processInfo.environment["OPENFUSE_WEBDAV_PASSWORD"]
+                ?? self.value(after: "--webdav-pass", in: arguments) ?? ""
+            Task { @MainActor in
+                await model.runCredentialRecoveryCheck(
+                    reportURL: URL(fileURLWithPath: credentialReport),
+                    password: password
+                )
+                self.scheduleQuitOnly(arguments: arguments)
+            }
+            return
+        }
         if arguments.contains("--resume-first") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 if let record = model.recent.first {
@@ -571,12 +601,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let name = self.value(after: "--webdav-name", in: arguments) ?? "WebDAV"
             let remotePath = self.value(after: "--webdav-path", in: arguments)
             let browseOnly = remotePath == nil || arguments.contains("--webdav-browse")
+            // Same switch the Add Source sheet offers, so the acceptance run can
+            // create a «仅本次会话» source without synthetic clicks.
+            let sessionOnly = arguments.contains("--webdav-session-only")
 
             Task { @MainActor in
-                guard let source = await model.addSource(name: name, urlText: baseURL.absoluteString, username: user, password: password) else {
+                guard let outcome = await model.addSource(
+                    name: name,
+                    urlText: baseURL.absoluteString,
+                    username: user,
+                    password: password,
+                    rememberInKeychain: !sessionOnly
+                ) else {
                     self.scheduleQuitOnly(arguments: arguments)
                     return
                 }
+                let source = outcome.source
                 if arguments.contains("--webdav-scan") {
                     await model.scanWebDAVSource(source)
                     self.finishLibraryLaunch(model: model, arguments: arguments)
@@ -718,6 +758,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 reopen()
             }
         }
+        // Acceptance hooks for the close-return-route script. `--close-after`
+        // closes exactly like the close button, without reopening anything, so
+        // the page the player came back to is what the route log records.
+        if let closeAfter = value(after: "--close-after", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + closeAfter) {
+                model.closePlayer()
+            }
+        }
+        if let cancelAfter = value(after: "--cancel-loading-after", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + cancelAfter) {
+                model.cancelLoading()
+            }
+        }
+        if let retryAfter = value(after: "--retry-loading-after", in: arguments).flatMap(Double.init) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + retryAfter) {
+                model.retryLoading()
+            }
+        }
         if let capture = value(after: "--capture", in: arguments) {
             let captureAfter = value(after: "--capture-after", in: arguments).flatMap(Double.init) ?? 3
             DispatchQueue.main.asyncAfter(deadline: .now() + captureAfter) {
@@ -770,7 +828,16 @@ struct RootView: View {
                     HomeView()
                 }
             case .loading:
-                PlayerLoadingView()
+                // A stale loading route (nothing in flight, no error to show)
+                // must fall back to the home page instead of an endless spinner.
+                if PlaybackLoadingState.showsLoadingPage(
+                    isLoading: model.isLoadingPlayback,
+                    error: model.loadingError
+                ) {
+                    PlayerLoadingView()
+                } else {
+                    MainShellView { HomeView(destination: model.sidebarDestination) }
+                }
             case .browser(let source):
                 MainShellView { WebDAVBrowserView(source: source) }
             case .jellyfinBrowser(let source):
@@ -1529,6 +1596,7 @@ struct HomeView: View {
                     .contextMenu {
                         Button("扫描") { model.startWebDAVScan(source) }
                         Button("浏览") { model.browse(source) }
+                        Button("更新密码…") { model.requestPasswordUpdate(for: source) }
                         Button("移除来源", role: .destructive) { model.removeSource(source) }
                     }
                 }
