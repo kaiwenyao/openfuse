@@ -1,6 +1,6 @@
-# OpenFuse 0.9.6 · macOS 交付包
+# OpenFuse 0.9.7 · macOS 交付包
 
-本版修复 2026-11-27 功能问题清单里的 7 条：从「继续观看」打开后关闭卡在加载页、打开失败无提示、「仅本次会话」的 WebDAV 来源重启后误报密码错误、来源移除后的历史条目、Keychain 写入警告不可见，以及两条 iOS 问题。Plex 条目在来源仍在时可以从「继续观看」续播。[问题清单](../Docs/BUG-REVIEW-2026-11-27.md) · [PR #3](https://github.com/kaiwenyao/openfuse/pull/3)
+本版为 macOS 应用加入新的 OpenFuse 图标，采用深色底和暖橙色折面播放键。
 
 ## 安装
 
@@ -18,8 +18,8 @@ bash install-openfuse-macos.sh --app OpenFuse-macos.zip
 
 | 路径 | 说明 |
 | --- | --- |
-| `OpenFuse-macos.zip` | Apple Silicon 自包含应用。版本为 `0.9.6`，构建提交为 `7d3ce6b`。 |
-| `OpenFuse-macos.zip.sha256` | `bbd2bcf4bfdf25ce12b4e6bf6f2283c31966b5f0df4722b99d8837d0dee1c8f4` |
+| `OpenFuse-macos.zip` | Apple Silicon 自包含应用。版本为 `0.9.7`，构建提交为 `0a98d64`。 |
+| `OpenFuse-macos.zip.sha256` | `69a016f4fc7ea88890171e53d763a2eb7d53388cafe44d3129737cb055721920` |
 | `install-openfuse-macos.sh` | 安装和升级脚本 |
-| `TEST-RESULTS.md` | 0.9.6 安装包验收及历史测试结果 |
+| `TEST-RESULTS.md` | 0.9.7 安装包验收及历史测试结果 |
 | `screenshots/`、`recording/`、`evidence/` | 0.9.2 界面改版的历史截图、录屏与运行时报告 |

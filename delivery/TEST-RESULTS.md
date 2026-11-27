@@ -1,5 +1,14 @@
 # OpenFuse macOS 交付验证
 
+## 0.9.7 应用图标
+
+- 构建提交 `0a98d64`，Apple Silicon，验证环境为 macOS 27.2.1。
+- `swift test` 通过 182 项。ZIP 完整性、SHA-256、解包应用签名及安装脚本语法检查均通过。
+- 解包应用的 `Info.plist` 指向 `AppIcon.icns`。图标资源与源码一致，包含 16×16 到 1024×1024 像素的图像。
+- 解包后播放本地 HEVC Main 10 MKV，生成播放器截图，报告播放位置为 3.79 秒。
+- iOS 模拟器构建成功，确认应用包内包含 iPhone 和 iPad 的图标资源。
+- SHA-256 为 `69a016f4fc7ea88890171e53d763a2eb7d53388cafe44d3129737cb055721920`。
+
 ## 0.9.6 功能问题修复
 
 - 构建提交 `7d3ce6b`，Apple Silicon，验证环境为 macOS 27.2.1。
