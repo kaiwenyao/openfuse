@@ -13,7 +13,16 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.5（2026-11-25）
+## 当前版本 0.9.6（2026-11-27）
+
+- **修复从「继续观看」打开视频后关闭卡在加载页。** 关闭播放器会回到打开前所在的页面。
+- **打开失败时有提示。** 窗口顶部会显示失败原因，WebDAV 浏览页也会在列表上方说明哪个视频没能播放。Keychain 需要授权时，提示里提供「重试」。
+- **「仅本次会话」的 WebDAV 来源重启后提示输入密码**，不再误报「用户名或密码不正确」。目录页提供「输入密码」，来源右键菜单增加「更新密码…」。
+- 来源被移除后，「继续观看」里的条目会说明来源已移除，并可从历史中移除。Plex 条目在来源还在时可以直接续播。
+- 添加 WebDAV 时 Keychain 写入失败，表单会先显示警告再关闭。
+- iOS：来源页里的 WebDAV 浏览器可以打开播放器；添加 Jellyfin 登录失败时表单保留。这两项只验证了构建。[问题清单与验证记录](Docs/BUG-REVIEW-2026-11-27.md) · [PR #3](https://github.com/kaiwenyao/openfuse/pull/3)
+
+## 历史版本 0.9.5（2026-11-25）
 
 - **改善 macOS 播放视频时用 `Cmd+Tab` 切换应用的卡顿。** 播放器调整出帧时序，减少 libmpv 在窗口主线程上的等待。本地样片中，渲染耗时中位数从约 35 ms 降到 3–4 ms。[修复与验证记录](Docs/MACOS-CMD-TAB-FIX.md) · [PR #2](https://github.com/kaiwenyao/openfuse/pull/2)
 

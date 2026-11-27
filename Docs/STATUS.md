@@ -2,7 +2,9 @@
 
 当前只排期 [Mac 的 WebDAV 和 Jellyfin](MAC-FIRST.md)。下表是既有实现的历史记录。
 
-更新：2026-11-25。基线 Infuse 8.5.10。
+更新：2026-11-27。基线 Infuse 8.5.10。
+
+0.9.6 修复 2026-11-27 功能问题清单中的 7 条：续播后关闭卡在加载页、失败无提示、「仅本次会话」来源误报密码错误、来源移除后的历史条目、Keychain 写入警告不可见，以及两条 iOS 问题。[问题清单](BUG-REVIEW-2026-11-27.md) · [PR #3](https://github.com/kaiwenyao/openfuse/pull/3)
 
 0.9.5 改善 macOS 持续播放视频时的 `Cmd+Tab` 卡顿。渲染路径减少主线程对目标帧时刻的等待，验收脚本记录切换前后的进度、音画同步和掉帧。[修复与验证记录](MACOS-CMD-TAB-FIX.md) · [PR #2](https://github.com/kaiwenyao/openfuse/pull/2)
 
