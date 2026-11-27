@@ -1,7 +1,6 @@
 # OpenFuse macOS 播放时 Cmd+Tab 卡顿修复
 
-调查与方案见 [MACOS-CMD-TAB-PLAYBACK.md](MACOS-CMD-TAB-PLAYBACK.md)，任务要求见
-[MACOS-CMD-TAB-FIX-PROMPT.md](MACOS-CMD-TAB-FIX-PROMPT.md)。本文件记录实现、实测数据、
+问题现象与原因见 [BUG-REVIEW-2026-11-27.md](BUG-REVIEW-2026-11-27.md) 第 5 条。本文件记录实现、实测数据、
 回归结果和仍未覆盖的分支。
 
 工作区：从 `ce8ac76` 新建 worktree `openfuse-cmdtab-fix` / 分支 `fix/macos-cmd-tab`，提交前 rebase 到 `origin/main` 的 `5f02d75`（0.9.4）；主工作区里未提交的移动端/WebDAV 改动保持不动。

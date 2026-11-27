@@ -1,6 +1,6 @@
 # 功能性问题清单（2026-11-27）
 
-审查基线为 `ce8ac76`（0.9.3）。本文合并并取代此前的四份问题文档：`MACOS-CMD-TAB-PLAYBACK.md`、`MACOS-CMD-TAB-FIX-PROMPT.md`、`MACOS-SUBTITLE-OFFSET-BUG.md`、`MACOS-SUBTITLE-OFFSET-FIX-PROMPT.md`。只记录用户能感知到的问题，不含性能、安全和代码风格方面的建议。
+审查基线为 `ce8ac76`（0.9.3），并已对照 0.9.5（`eb6cbf2`）更新状态。本文合并并取代此前的四份问题文档：`MACOS-CMD-TAB-PLAYBACK.md`、`MACOS-CMD-TAB-FIX-PROMPT.md`、`MACOS-SUBTITLE-OFFSET-BUG.md`、`MACOS-SUBTITLE-OFFSET-FIX-PROMPT.md`。只记录用户能感知到的问题，不含性能、安全和代码风格方面的建议。
 
 ## 怎么查的
 
@@ -15,8 +15,8 @@
 | 1 | 高 | 从「继续观看」打开的视频，关闭后卡在加载页 | 确认（实测） |
 | 2 | 中 | 打开 WebDAV、Jellyfin 或本地文件失败时，界面没有提示 | 确认 |
 | 3 | 中 | 「仅本次会话」的 WebDAV 来源重启后显示「用户名或密码不正确」 | 确认 |
-| 4 | 中 | 字幕偏移的显示精度不够，负号和部分输入被解析错 | 确认 |
-| 5 | 中 | 播放时 ⌘Tab 切换应用卡顿 | 确认（采样） |
+| 4 | 中 | 字幕偏移的显示精度不够，负号和部分输入被解析错 | 已在 0.9.4 修复 |
+| 5 | 中 | 播放时 ⌘Tab 切换应用卡顿 | 已在 0.9.5 修复 |
 | 6 | 中 | iOS：来源页里的 WebDAV 浏览器点视频，可能打不开播放器 | 疑似 |
 | 7 | 低 | 来源被删后点它的历史记录，提示「文件不存在」 | 确认 |
 | 8 | 低 | 添加 WebDAV 时 Keychain 写入失败，用户看不到警告 | 确认 |
@@ -134,137 +134,65 @@ open "$S/after-close.png"
 
 ---
 
-## 4. 字幕偏移的显示精度和输入解析（中）
+## 4. 字幕偏移的显示精度和输入解析（中，已在 0.9.4 修复）
 
 ### 现象
 
-偏移的显示精度比实际生效的低：
-
-| 实际生效的偏移 | 菜单显示 | 输入框预填 | 直接点「应用」后的偏移 |
-| ---: | --- | --- | ---: |
-| 0.04 秒 | 同步（0 秒） | 0.0 | 0 |
-| 0.15 秒 | 延后 0.2 秒 | 0.1 | 0.1 |
-
-以 0.04 秒为例，在 5.02 秒处，从 5.000 秒开始的字幕实际上不显示，但菜单显示「同步」。关闭影片再重开，偏移仍然生效。
-
-输入解析也有问题：
-
-| 输入 | 现在的结果 | 期望 |
-| --- | ---: | --- |
-| `-0.1` | -0.1 | 提前 0.1 秒 |
-| `−0.1`（U+2212） | +0.1 | 提前 0.1 秒 |
-| `-.1` | +1.0 | -0.1，或提示格式无效 |
-| `提前 0.1 秒` | +0.1 | -0.1，或提示要输入带符号的数字 |
-| `1,5` | +1.5 | 延后 1.5 秒（正确） |
+- 偏移设为 `0.04` 秒时字幕实际已经偏移，菜单却显示「同步（0 秒）」，输入框预填 `0.0`。
+- 偏移为 `0.15` 秒时，菜单显示「延后 0.2 秒」，输入框预填 `0.1`；直接点「应用」，偏移会被改成 0.1 秒。
+- 输入 `−0.1`（U+2212 数学负号）会被解析成 +0.1 秒，`-.1` 被解析成 +1 秒，「提前 0.1 秒」被解析成延后 0.1 秒。
 
 ### 原因
 
-- `SubtitleOffsetText.summary(_:)` 先把偏移舍入到 0.1 秒，所以部分非零偏移会显示成「同步」（[SubtitleOffset.swift:5-11](../Sources/OpenFuseData/SubtitleOffset.swift#L5)）。
-- `beginSubtitleDelayInput()` 用 `%.1f` 预填输入框，提交时会重新解析这个已经截断的字符串（[AppModel.swift:3690-3693](../Sources/OpenFuseApp/AppModel.swift#L3690)）。
-- 但 `MPVEngine.setSubtitleDelay` 按 3 位小数设置 `sub-delay`，所以实际生效的精度更高（[MPVEngine.swift:368](../Sources/OpenFuseCore/MPVEngine.swift#L368)）。
-- `parse(_:)` 只把全角的 `＋`、`－` 归一化，没有处理 U+2212。它用正则找第一个形如 `[+-]?\d+(?:\.\d+)?` 的片段，所以 `-.1` 匹配到的是 `1`，「提前」这样的方向词则被忽略（[SubtitleOffset.swift:14-24](../Sources/OpenFuseData/SubtitleOffset.swift#L14)）。
+- 菜单文案先把偏移舍入到 0.1 秒，输入框按 `%.1f` 预填，但 mpv 实际按毫秒精度生效，所以显示和实际不一致，原样「应用」还会改变偏移。
+- 解析只处理了全角正负号，用正则找第一个数字片段，所以 U+2212 的负号会丢失，`-.1` 匹配成 `1`，方向词被忽略。
 
-### 解决方案
+### 已采用的修复
 
-- 所有地方统一用毫秒精度（3 位小数）：
-  - `summary` 和输入框预填都改为最多 3 位小数，并去掉末尾的 0。
-  - 只有偏移绝对值小于 0.0005 时，才显示「同步（0 秒）」。负零也按 0 处理。
-  - 保存和恢复都用同一个归一化函数，比如 `(x * 1000).rounded() / 1000`。
-- `parse` 的修改：
-  - 先把 `−`（U+2212）、`－`、`‐` 等负号统一成 `-`。
-  - 支持 `-.1` 和 `.5` 这种省略整数部分的写法。
-  - 识别「提前」和「延后」：「提前」取负值，「延后」取正值。
-  - 只接受整个字符串（去掉首尾空白、方向词和「秒」之后）都是数字的输入，否则返回 nil，由弹窗提示格式错误，当前偏移保持不变。
-- 保留 ±600 秒的上下限，`subtitle-offsets.json` 的格式和存储键都不变。
+修复提交为 `1093bfe`，随 0.9.4 发布：
 
-### 验收
+- [SubtitleOffset.swift](../Sources/OpenFuseData/SubtitleOffset.swift) 新增 `normalized` 和 `valueText`：菜单、输入框、存储和 mpv 统一用毫秒精度，只有实际为 0 时才显示「同步」。
+- `parse` 改为整串锚定匹配：支持 U+2212、全角负号、逗号小数、`.1` 这种省略整数部分的写法，以及「提前」「延后」方向词；只匹配到一部分的输入会被拒绝，不再悄悄取出别的数字。
+- `PlayerModel` 恢复旧记录时也走 `normalized`。
 
-- 更新 `Tests/OpenFuseCoreTests/SubtitleOffsetTests.swift`，补充以下样例：
-  - 0、`0.04`、`-0.04`、`0.15` 的显示，以及「预填 → 应用」往返后值不变；
-  - U+2212 负号、全角负号、`-.1`、方向词；
-  - 完全无效的输入、±600 上下限、负零；
-  - 旧记录的恢复，以及按轨重置。
-- 运行 `swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests'`。
-- 用下面的样片手动验证：
-  - 设为 `0.04` 后，菜单和输入框都显示 `0.04`；
-  - 打开输入框直接点「应用」，偏移不变；
-  - 粘贴 `−0.1` 后，4.95 秒处能看到字幕。
+### 回归
+
+`Tests/OpenFuseCoreTests/SubtitleOffsetTests.swift` 已覆盖以上样例。以后改字幕偏移相关代码时，要运行：
 
 ```bash
-test_dir="$(mktemp -d)"
-ffmpeg -v error -f lavfi -i 'color=c=black:size=320x180:rate=60:duration=8' -c:v libx264 -pix_fmt yuv420p "$test_dir/sample.mp4"
-printf '1\n00:00:05,000 --> 00:00:06,000\nOPENFUSE TIMING MARKER\n' > "$test_dir/sample.zh-Hans.srt"
-for offset in 0 0.04; do
-  OPENFUSE_SUPPORT_DIR="$test_dir/profile" OPENFUSE_CREDENTIAL_MODE=session OPENFUSE_DISABLE_THUMB_PREFETCH=1 \
-  build/OpenFuse.app/Contents/MacOS/OpenFuse --open "$test_dir/sample.mp4" --freeze-at 0.1 --seek 5.02 \
-    --sub-delay "$offset" --capture "$test_dir/frame-$offset.png" \
-    --report "$test_dir/report-$offset.json" --capture-after 4 --quit-after 4.5
-done
+swift test --filter 'SubtitleOffsetTests|SubtitleCatalogTests|PlaybackClockTests'
 ```
-
-在报告里查看 `subDelay`、`subDelaySummary` 和 `subText`，并对比两张截图。
 
 ---
 
-## 5. 播放时 ⌘Tab 切换应用卡顿（中）
+## 5. 播放时 ⌘Tab 切换应用卡顿（中，已在 0.9.5 修复）
 
 ### 现象
 
-在 OpenFuse 里持续播放视频时，按 ⌘Tab 切到其他应用（Chrome 等）会明显卡顿。暂停时，或者在首页切换，都不会出现。用户在 0.9.1 上反馈过，0.9.3 有同样的问题。
+在 OpenFuse 里持续播放视频时，按 ⌘Tab 切到其他应用会明显卡顿。暂停时或在首页切换都不会出现。
 
 ### 原因
 
-调查日期：2026-11-25；设备：M2 Pro；系统：macOS 27.2.1。
+- 渲染链路是：libmpv 更新回调 → 主队列设置 `needsDisplay` → AppKit 调用 `MPVGLView.draw(_:)` → `mpv_render_context_render`。
+- 在默认的 `video-sync=audio` 下，libmpv 会提前 `video-timing-offset`（默认 0.05 秒）把帧交给渲染接口，渲染调用再阻塞到目标呈现时刻。
+- 这段等待发生在 AppKit 主线程上。0.9.3 播放时，约 67% 的主线程样本落在 libmpv 的条件等待里，暂停时为 0，所以切换应用时窗口合成会抖动。
 
-- 系统焦点交接本身很快。现场日志里 29 次从 OpenFuse 切出，从松开 ⌘ 到焦点切换的中位数是 3 ms（范围 2–10 ms）。
-- 卡顿来自播放时主线程被渲染占住。渲染链路如下：
+### 已采用的修复
 
-  ```text
-  libmpv 更新回调 → 主队列设置 needsDisplay → AppKit 调用 MPVGLView.draw(_:)
-    → MPVEngine.render(into:) → mpv_render_context_render（libmpv 条件等待）
-    → NSOpenGLContext.flushBuffer()
-  ```
+修复提交为 `a3f8dcd`，随 0.9.5 发布，详细记录见 [MACOS-CMD-TAB-FIX.md](MACOS-CMD-TAB-FIX.md)：
 
-- 0.9.3 用同一个本地 MKV 做 `sample` 对照，并在采样期间来回切换应用：
+- macOS 上用 `NSOpenGLView` 的交互式播放引擎在 `video-sync=audio` 时，把 `video-timing-offset` 设为 0。具体规则在 `VideoTimingPolicy` 里。
+- 效果：渲染阻塞的中位数从约 35 ms 降到约 3 ms；超出一帧预算的绘制从约 95% 降到约 5%；音画同步没有变差。
+- 新增 `RenderTiming` 分段计时诊断。
 
-  | 状态 | 主线程样本 | 落在 `MPVGLView.draw` | 落在 libmpv 条件等待 | 落在 OpenGL 交换缓冲 |
-  | --- | ---: | ---: | ---: | ---: |
-  | 持续播放 | 935 | 837 | 626（约 67%） | 33 |
-  | 已暂停 | 924 | 0 | 0 | 0 |
+### 回归
 
-  播放组还记录到一次 `MAIN-STALL 255ms`。
+改动播放渲染链路时，要运行：
 
-- 默认设置是 `video-sync=audio`，渲染时没有传 `MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME`。按 `mpv/render.h` 的说明，这种情况下 libmpv 会提前进入渲染并阻塞到目标呈现时刻，最多阻塞 `video-timing-offset`，默认 0.05 秒。这段等待发生在 AppKit 主线程的画面提交里，所以切换期间窗口合成会抖动。
-- 相关代码：[MPVEngine.swift:143](../Sources/OpenFuseCore/MPVEngine.swift#L143)、[MPVEngine.swift:435-448](../Sources/OpenFuseCore/MPVEngine.swift#L435)、[MPVGLView.swift:66](../Sources/OpenFuseCore/MPVGLView.swift#L66)。
-- `draw` 和 `CVDisplayLink` 回调都会调用 `reportSwap()`，排查时要分清是哪个入口（[MPVGLView.swift:224](../Sources/OpenFuseCore/MPVGLView.swift#L224)）。
-
-### 解决方案
-
-**第一阶段：量化，然后做单变量 A/B**
-
-1. 在可关闭的诊断模式下，分段计时以下环节：`mpv_render_context_render`、`reportSwap`、`flushBuffer`、截图读回，以及整次 `draw`。记录 p50、p95、p99、最大值和超过一帧预算的次数，同时记录应用激活、失活和窗口遮挡变化的时间点。
-2. 首选方案：只对 macOS 上用 `NSOpenGLView` 的交互式播放引擎，在 `mpv_initialize` 之前设置 `video-timing-offset=0`，仅限有效同步模式为 `audio` 的情况。缩略图引擎、无界面引擎和其他同步模式保持不变。这样渲染不会提前进入阻塞等待，出帧仍由 libmpv 调度。
-3. 定位用的对照：单独设置 `MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME=0`，看等待是否消失。这个方法会改变出帧时序，必须单独验证音画同步，不能直接作为修复。
-4. 每次只改一个变量。交换缓冲、显示链路和 `reportSwap()` 的改动放到独立实验里。
-
-**第二阶段：第一阶段后如果仍有可见卡顿**
-
-- 如果证据显示应用失活后还在给完全被遮挡的窗口绘制，就按窗口可见性减少冗余的画面提交，切回时呈现最新一帧。后台声音、播放进度和部分可见窗口的出画都必须保持正常。
-- 如果 OpenGL 提交仍然造成明显的主线程停顿，再评估独立渲染线程加可合成的呈现表面。这需要处理 GL 上下文的线程归属，对同一个 render context 的渲染、截图和释放做串行化，并覆盖启动、退出、换集时的生命周期。历史上的图层方案出现过 SRT 缺失和 XDR 偏色，换呈现表面后必须用真实的 SRT、ASS、SDR、HDR 片源复测。
-
-### 验收
-
-- 同一台机器、同一片源、同一窗口布局下比较改前和改后。普通窗口和原生全屏各做至少 20 次真实的 ⌘Tab 切出和切回，并分别对照播放、暂停和首页三种状态。用高帧率录屏比较长帧数、p95 和最差的一轮。
-- 主线程采样中，libmpv 等待栈应消失或大幅减少，同时没有新的长尾停顿转移到交换缓冲或 AppKit 提交。
-- 切出再切回后，进度继续推进、声音连续、音画对齐。首帧、暂停/继续、跳转、变速、换集、关闭都要回归，SRT、ASS、SDR、HDR 的画面和截图也要回归。
-- 运行 `swift test`，并跑以下回归脚本：
-  - `Scripts/run-player-responsiveness.sh`
-  - `Scripts/run-player-interactions.sh`
-  - `Scripts/run-episode-switch-pause.sh`
-  - `Scripts/run-window-management.sh`
-  - `Scripts/run-hdr-playback.sh`
-
-采样方法：带 `OPENFUSE_DEBUG_TIMING=1` 运行 `--open <样片> --report <路径>`；暂停组加 `--freeze-at 0.5`。等报告确认 `hasRenderContext` 和 `paused` 后，执行 `sample <pid> 5 3 -file sample.txt`，然后统计主线程调用树里 `MPVGLView.draw(_:)`、`mpv_render_context_render` 等待分支和 `CGLFlushDrawable` 的占比。
+- `swift test`，其中包括 `RenderTimingTests` 和 `VideoTimingPolicyTests`；
+- `Scripts/run-player-responsiveness.sh`
+- `Scripts/run-player-interactions.sh`
+- `Scripts/run-episode-switch-pause.sh`
 
 ---
 
@@ -321,7 +249,7 @@ done
 
 ### 原因
 
-警告「来源已保存到本次会话，但 Keychain 写入失败」写进了 `statusMessage`（[AppModel.swift:501-504](../Sources/OpenFuseApp/AppModel.swift#L501)），而成功分支直接 `dismiss()`，这条消息没有任何地方显示（同第 2 条）。
+警告「来源已保存到本次会话，但 Keychain 写入失败」写进了 `statusMessage`（[AppModel.swift:501-504](../Sources/OpenFuseApp/AppModel.swift#L501)），而成功分支直接 `dismiss()`，这条消息没有任何地方显示（见第 2 条）。
 
 ### 解决方案
 
