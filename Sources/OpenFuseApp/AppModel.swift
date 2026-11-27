@@ -962,6 +962,32 @@ final class AppModel: ObservableObject {
                   let path = record.remotePath,
                   let source = sources.first(where: { $0.id == sourceID }) {
             await openRemote(source: source, path: path)
+        } else if record.sourceKind == "plex",
+                  let sourceID = record.sourceID,
+                  let partKey = record.remotePath,
+                  let source = plexSources.first(where: { $0.id == sourceID }) {
+            // The source still exists: resume it instead of calling it removed.
+            // A history record only keeps the part key, so the rating key that
+            // openPlexItem needs comes from the scanned library.
+            guard let token = plexToken(for: source), !token.isEmpty else {
+                finishLoadingFailure(generation, message: "缺少「\(source.name)」的 Plex token，请重新添加这个来源")
+                return
+            }
+            guard let ratingKey = plexRatingKey(sourceID: sourceID, partKey: partKey) else {
+                finishLoadingFailure(
+                    generation,
+                    message: "资料库里找不到这个 Plex 条目：请先扫描「\(source.name)」，或从 Plex 浏览页打开"
+                )
+                return
+            }
+            await openPlexItem(
+                source: source,
+                token: token,
+                ratingKey: ratingKey,
+                partKey: partKey,
+                title: record.displayTitle ?? "Plex",
+                duration: record.duration
+            )
         } else if PlaybackSourceKind.isRemote(record.sourceKind) {
             // The record belongs to a source that is gone. Its URL is not a local
             // file, so falling through to open(url:) only reported 文件不存在.
@@ -978,6 +1004,25 @@ final class AppModel: ObservableObject {
         if player == nil, route == .loading {
             finishLoadingFailure(generation, message: statusMessage ?? "无法打开这个视频")
         }
+    }
+
+    /// Finds the Plex rating key of the scanned episode or movie that plays
+    /// `partKey`. Episodes are checked first; their versions only if needed.
+    private func plexRatingKey(sourceID: String, partKey: String) -> String? {
+        let works = ((try? libraryStore.works()) ?? [])
+            .filter { $0.sourceKind == "plex" && $0.sourceID == sourceID }
+        let episodes = works.flatMap { libraryEpisodes(workID: $0.id) }
+        let direct = episodes.map {
+            PlexResumeLookup.Candidate(ratingKey: $0.serverID, partKeys: [$0.remotePath])
+        }
+        if let key = PlexResumeLookup.ratingKey(for: partKey, in: direct) { return key }
+        let viaVersions = episodes.map { episode in
+            PlexResumeLookup.Candidate(
+                ratingKey: episode.serverID,
+                partKeys: libraryVersions(itemID: episode.id).map(\.remotePath)
+            )
+        }
+        return PlexResumeLookup.ratingKey(for: partKey, in: viaVersions)
     }
 
     private func removedSourceMessage(for record: PlaybackRecord) -> String {

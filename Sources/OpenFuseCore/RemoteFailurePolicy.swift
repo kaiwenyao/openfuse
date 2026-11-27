@@ -52,3 +52,28 @@ public enum LoadingFailureKind: Equatable, Sendable {
 
     public var offersRemoveFromHistory: Bool { self == .sourceRemoved }
 }
+
+/// Resolves a Plex history record back to the item it played.
+///
+/// A record keeps only the part key; resuming needs the rating key, which the
+/// scanned library stores on the episode (or movie) that owns that part.
+public enum PlexResumeLookup {
+    public struct Candidate: Equatable, Sendable {
+        public var ratingKey: String?
+        public var partKeys: [String?]
+
+        public init(ratingKey: String?, partKeys: [String?]) {
+            self.ratingKey = ratingKey
+            self.partKeys = partKeys
+        }
+    }
+
+    /// The first non-empty rating key whose candidate plays `partKey`.
+    public static func ratingKey(for partKey: String, in candidates: [Candidate]) -> String? {
+        guard !partKey.isEmpty else { return nil }
+        for candidate in candidates where candidate.partKeys.contains(partKey) {
+            if let key = candidate.ratingKey, !key.isEmpty { return key }
+        }
+        return nil
+    }
+}

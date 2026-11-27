@@ -170,4 +170,29 @@ final class PlayerRoutePolicyTests: XCTestCase {
             .showWarning("来源已保存到本次会话，但 Keychain 写入失败：denied")
         )
     }
+
+    // MARK: - Plex resume
+
+    func testPlexResumeFindsRatingKeyByPartKey() {
+        let candidates = [
+            PlexResumeLookup.Candidate(ratingKey: "11", partKeys: ["/library/parts/1/a.mkv"]),
+            PlexResumeLookup.Candidate(ratingKey: "22", partKeys: [nil, "/library/parts/2/b.mkv"]),
+        ]
+        XCTAssertEqual(PlexResumeLookup.ratingKey(for: "/library/parts/2/b.mkv", in: candidates), "22")
+    }
+
+    func testPlexResumeSkipsCandidatesWithoutRatingKey() {
+        let candidates = [
+            PlexResumeLookup.Candidate(ratingKey: "", partKeys: ["/p"]),
+            PlexResumeLookup.Candidate(ratingKey: nil, partKeys: ["/p"]),
+            PlexResumeLookup.Candidate(ratingKey: "33", partKeys: ["/p"]),
+        ]
+        XCTAssertEqual(PlexResumeLookup.ratingKey(for: "/p", in: candidates), "33")
+    }
+
+    func testPlexResumeReturnsNilWhenNothingMatches() {
+        let candidates = [PlexResumeLookup.Candidate(ratingKey: "11", partKeys: ["/a"])]
+        XCTAssertNil(PlexResumeLookup.ratingKey(for: "/b", in: candidates))
+        XCTAssertNil(PlexResumeLookup.ratingKey(for: "", in: [PlexResumeLookup.Candidate(ratingKey: "1", partKeys: [""])]))
+    }
 }
