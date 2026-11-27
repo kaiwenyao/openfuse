@@ -34,14 +34,14 @@ final class MobileLibraryModel: ObservableObject {
     @Published var groups: [LibraryGroup] = []
     @Published var recent: [PlaybackRecord] = []
     @Published var status: String?
-    @Published var syncStatus: String?
-    @Published var syncURLText = ""
-    @Published var syncTokenInput = ""
-    @Published var syncCAPath: String?
-    @Published var syncBusy = false
     @Published var isWorking = false
     @Published var webdavSources: [WebDAVSource] = []
     @Published var jellyfinSources: [JellyfinSource] = []
+    /// Set by the WebDAV browser when a file should play. The root view presents
+    /// it so playback is not trapped behind the sources sheet.
+    @Published var browserPlayback: MobilePlaybackItem?
+    /// Notes collected by the browse-acceptance launch. Empty in normal use.
+    var acceptanceContext: [String: String] = [:]
 
     let supportDirectory: URL
     let autoplaySample = ProcessInfo.processInfo.arguments.contains("--autoplay-sample")
@@ -52,21 +52,6 @@ final class MobileLibraryModel: ObservableObject {
     private let jellyfinStore: JellyfinSourceStore
     private var ephemeralPasswords: [String: String] = [:]
     private var ephemeralTokens: [String: String] = [:]
-    private var lastSyncAt = Date.distantPast
-    private var syncURL: URL? {
-        if let raw = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"],
-           let url = URL(string: raw) { return url }
-        return URL(string: UserDefaults.standard.string(forKey: "openfuse.sync.url") ?? "")
-    }
-    private var syncToken: String? {
-        if let token = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_TOKEN"], !token.isEmpty {
-            return token
-        }
-        return CredentialStore.load(account: "sync-token", service: "com.openfuse.sync")
-    }
-    private var effectiveSyncCAPath: String? {
-        ProcessInfo.processInfo.environment["OPENFUSE_SYNC_CA"] ?? syncCAPath
-    }
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -82,13 +67,8 @@ final class MobileLibraryModel: ObservableObject {
         }
         webdavSources = sourceStore.sources
         jellyfinSources = jellyfinStore.sources
-        syncURLText = ProcessInfo.processInfo.environment["OPENFUSE_SYNC_URL"]
-            ?? UserDefaults.standard.string(forKey: "openfuse.sync.url")
-            ?? ""
-        syncCAPath = UserDefaults.standard.string(forKey: "openfuse.sync.ca")
         seedBundledSampleIfNeeded()
         reload()
-        Task { await syncProgress(force: true) }
     }
 
     var countsText: String {
@@ -209,9 +189,6 @@ final class MobileLibraryModel: ObservableObject {
         }
         let key = "jellyfin://\(source.id)/\(itemID)/\(media.id)"
         let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
-        if playbackStore.record(forPath: key) == nil, syncURL != nil {
-            await syncProgress(force: true)
-        }
         let record = playbackStore.record(forPath: key)
         // Cross-device resume: a fresh install (or another device) has no local
         // record, so fall back to the position Jellyfin already knows.
@@ -284,25 +261,83 @@ final class MobileLibraryModel: ObservableObject {
                 url: client.url(for: remotePath),
                 isDirectory: false
             )
-            let tracks = WebDAVClient.subtitleTracks(for: video, siblings: siblings)
-            let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
-            try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
-            for track in tracks {
-                let remoteSubtitle = String(track.id.dropFirst("remote:".count))
-                guard let (data, _) = try? await client.fetch(path: remoteSubtitle), !data.isEmpty else { continue }
-                let ext = (remoteSubtitle as NSString).pathExtension.lowercased()
-                let target = cache.appendingPathComponent(LibraryID.hash(remoteSubtitle) + "." + (ext.isEmpty ? "srt" : ext))
-                try? data.write(to: target, options: .atomic)
-                var local = track
-                local.id = "remote:" + remoteSubtitle
-                local.url = target
-                local.source = .downloaded
-                localTracks.append(local)
-            }
+            localTracks = await cacheRemoteSubtitles(client: client, video: video, siblings: siblings)
         }
         var item = playbackItem(work: work, episode: episode)
         item?.sidecarSubtitles = localTracks
         return item
+    }
+
+    /// Plays a WebDAV file that has never been scanned into the library.
+    /// Progress uses the same source-id and remote-path key as a scanned episode.
+    func remotePlaybackItem(
+        source: WebDAVSource,
+        entry: RemoteEntry,
+        siblings: [RemoteEntry]
+    ) async -> MobilePlaybackItem? {
+        guard entry.isPlayableVideo else { return nil }
+        guard let password = webdavPassword(for: source) else {
+            status = "缺少 \(source.name) 的密码，请重新添加来源"
+            return nil
+        }
+        let client = WebDAVClient(source: source, password: password)
+        let url = client.url(for: entry.path)
+        let key = "webdav://\(source.id)/\(entry.path)"
+        let fingerprint = MediaFingerprint(path: key, fileSize: 0, modifiedAt: nil)
+        let record = playbackStore.record(forPath: key)
+        let credential = Data("\(source.username):\(password)".utf8).base64EncodedString()
+        let sidecars = await cacheRemoteSubtitles(client: client, video: entry, siblings: siblings)
+        return MobilePlaybackItem(
+            url: url,
+            title: entry.baseName,
+            subtitle: nil,
+            fingerprint: fingerprint,
+            resumePosition: record.flatMap(ResumePolicy.resumePosition(for:)),
+            sourceKind: "webdav",
+            sourceID: source.id,
+            remotePath: entry.path,
+            remoteURL: url.absoluteString,
+            httpHeaders: ["Authorization": "Basic \(credential)"],
+            sidecarSubtitles: sidecars
+        )
+    }
+
+    /// PROPFIND Depth 1 for one directory. Browsing never walks the tree.
+    func loadWebDAVDirectory(source: WebDAVSource, path: String) async throws -> [RemoteEntry] {
+        guard let password = webdavPassword(for: source) else {
+            throw WebDAVError.unauthorized
+        }
+        let client = WebDAVClient(source: source, password: password)
+        return try await client.list(path: path)
+    }
+
+    private func webdavPassword(for source: WebDAVSource) -> String? {
+        ephemeralPasswords[source.id] ?? CredentialStore.load(account: source.id)
+    }
+
+    private func cacheRemoteSubtitles(
+        client: WebDAVClient,
+        video: RemoteEntry,
+        siblings: [RemoteEntry]
+    ) async -> [SubtitleTrack] {
+        let tracks = WebDAVClient.subtitleTracks(for: video, siblings: siblings)
+        guard !tracks.isEmpty else { return [] }
+        let cache = supportDirectory.appendingPathComponent("SubtitleCache", isDirectory: true)
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        var localTracks: [SubtitleTrack] = []
+        for track in tracks {
+            let remoteSubtitle = String(track.id.dropFirst("remote:".count))
+            guard let (data, _) = try? await client.fetch(path: remoteSubtitle), !data.isEmpty else { continue }
+            let ext = (remoteSubtitle as NSString).pathExtension.lowercased()
+            let target = cache.appendingPathComponent(LibraryID.hash(remoteSubtitle) + "." + (ext.isEmpty ? "srt" : ext))
+            try? data.write(to: target, options: .atomic)
+            var local = track
+            local.id = "remote:" + remoteSubtitle
+            local.url = target
+            local.source = .downloaded
+            localTracks.append(local)
+        }
+        return localTracks
     }
 
     func episodes(for workID: String) -> [LibraryEpisode] {
@@ -380,74 +415,6 @@ final class MobileLibraryModel: ObservableObject {
             remoteURL: item.remoteURL
         )
         recent = playbackStore.recentlyPlayed(limit: 12)
-        Task { await syncProgress(force: true) }
-    }
-
-    @discardableResult
-    func saveSyncSettings(urlText: String, token: String, caURL: URL?) -> Bool {
-        guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)),
-              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
-            syncStatus = "同步地址需要 http:// 或 https://"
-            return false
-        }
-        let defaults = UserDefaults.standard
-        defaults.set(url.absoluteString, forKey: "openfuse.sync.url")
-        syncURLText = url.absoluteString
-        if let caURL {
-            let accessing = caURL.startAccessingSecurityScopedResource()
-            defer { if accessing { caURL.stopAccessingSecurityScopedResource() } }
-            let target = supportDirectory.appendingPathComponent("sync-ca.pem")
-            do {
-                try Data(contentsOf: caURL).write(to: target, options: .atomic)
-                syncCAPath = target.path
-                defaults.set(target.path, forKey: "openfuse.sync.ca")
-            } catch {
-                syncStatus = "CA 导入失败：\(error.localizedDescription)"
-                return false
-            }
-        }
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            try? CredentialStore.save(password: trimmed, account: "sync-token", service: "com.openfuse.sync")
-        }
-        syncTokenInput = ""
-        syncStatus = "同步设置已保存"
-        return true
-    }
-
-    func syncWithSettings() async {
-        syncBusy = true
-        defer { syncBusy = false }
-        guard let syncURL else {
-            syncStatus = "未配置同步地址"
-            return
-        }
-        await runSync(transport: HTTPProgressTransport(
-            url: syncURL,
-            token: syncToken,
-            caPath: effectiveSyncCAPath
-        ))
-    }
-
-    private func runSync(transport: ProgressSyncTransport) async {
-        do {
-            let result = try await ProgressSyncService(store: playbackStore, transport: transport).sync()
-            syncStatus = "同步：远端 \(result.remoteCount)，本地 \(result.localCount)，更新 \(result.changed)"
-            recent = playbackStore.recentlyPlayed(limit: 12)
-        } catch {
-            syncStatus = "同步失败：\(error.localizedDescription)"
-        }
-    }
-
-    func syncProgress(force: Bool = false) async {
-        guard let syncURL else { return }
-        if !force, Date().timeIntervalSince(lastSyncAt) < 5 { return }
-        lastSyncAt = Date()
-        await runSync(transport: HTTPProgressTransport(
-            url: syncURL,
-            token: syncToken,
-            caPath: syncCAPath
-        ))
     }
 
     func bootstrapTestSourcesIfRequested() async {
@@ -552,26 +519,42 @@ final class MobileLibraryModel: ObservableObject {
         return nil
     }
 
-    func addWebDAV(name: String, urlText: String, username: String, password: String) async {
-        guard let url = URL(string: urlText) else {
-            status = "WebDAV 地址无效"
-            return
+    /// Validates the root listing before anything is saved. A failure leaves the
+    /// source and Keychain untouched so the form can be corrected and retried.
+    /// Saving does not scan the library.
+    @discardableResult
+    func addWebDAV(name: String, urlText: String, username: String, password: String) async -> WebDAVSource? {
+        let trimmed = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            status = "服务器地址需要是 http:// 或 https://"
+            return nil
         }
         isWorking = true
         defer { isWorking = false }
-        let source = WebDAVSource(name: name.isEmpty ? url.host ?? "WebDAV" : name, baseURL: url, username: username)
+        let source = WebDAVSource(
+            name: name.isEmpty ? (url.host ?? "WebDAV") : name,
+            baseURL: url,
+            username: username
+        )
+        let client = WebDAVClient(source: source, password: password)
         do {
-            try sourceStore.upsert(source)
+            _ = try await client.list(path: "")
             try CredentialStore.save(password: password, account: source.id)
+            try sourceStore.upsert(source)
+            ephemeralPasswords[source.id] = password
             webdavSources = sourceStore.sources
-            try await scanWebDAV(source)
+            status = "已添加 \(source.name)，凭据已存入 Keychain"
+            return source
         } catch {
-            status = "添加 WebDAV 失败：\(error.localizedDescription)"
+            status = error.localizedDescription
+            return nil
         }
     }
 
     func scanWebDAV(_ source: WebDAVSource) async throws {
-        guard let password = ephemeralPasswords[source.id] ?? CredentialStore.load(account: source.id) else {
+        guard let password = webdavPassword(for: source) else {
             status = "WebDAV 缺少 Keychain 密码"
             return
         }

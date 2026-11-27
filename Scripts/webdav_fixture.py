@@ -11,6 +11,7 @@ free of Docker and of any third-party package.
 from __future__ import annotations
 
 import argparse
+import base64
 import email.utils
 import http.server
 import mimetypes
@@ -79,9 +80,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
     stall_after_bytes = 0
     stall_seconds = 0.0
     display_mode = "base"
+    auth_user = None
+    auth_password = None
 
     def log_message(self, fmt, *args):  # noqa: N802 - stdlib signature
-        sys.stderr.write("[webdav] " + fmt % args + "\n")
+        depth = self.headers.get("Depth", "-")
+        sys.stderr.write(f"[webdav] depth={depth} " + fmt % args + "\n")
+
+    def authorized(self) -> bool:
+        if self.auth_user is None:
+            return True
+        header = self.headers.get("Authorization", "")
+        if not header.startswith("Basic "):
+            return False
+        try:
+            decoded = base64.b64decode(header[6:].strip()).decode("utf-8")
+        except (ValueError, UnicodeError):
+            return False
+        return decoded == f"{self.auth_user}:{self.auth_password}"
+
+    def reject_if_unauthorized(self) -> bool:
+        if self.authorized():
+            return False
+        body = b"unauthorized"
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="OpenFuse"')
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+        return True
 
     # -- helpers ---------------------------------------------------------
     def relpath(self) -> str:
@@ -108,6 +137,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     # -- verbs -----------------------------------------------------------
     def do_PROPFIND(self):  # noqa: N802
+        if self.reject_if_unauthorized():
+            return
         if self.propfind_delay > 0:
             time.sleep(self.propfind_delay)
         rel = self.relpath()
@@ -130,6 +161,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_GET(self):  # noqa: N802
+        if self.reject_if_unauthorized():
+            return
         if self.first_byte_delay > 0:
             time.sleep(self.first_byte_delay)
         rel = self.relpath()
@@ -230,7 +263,12 @@ def main() -> int:
     parser.add_argument("--displayname-mode", choices=["base", "path", "missing"], default="base",
                         help="base = normal servers; path = OpenList repeats the full path; "
                              "missing = server omits <displayname>")
+    parser.add_argument("--user", default=None, help="require this Basic-auth user; omit to leave auth off")
+    parser.add_argument("--password", default="", help="Basic-auth password used with --user")
     args = parser.parse_args()
+    if args.user is not None:
+        Handler.auth_user = args.user
+        Handler.auth_password = args.password
 
     Handler.root = os.path.abspath(args.root)
     Handler.rate_bytes = max(0, args.rate_bytes)

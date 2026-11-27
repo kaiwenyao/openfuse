@@ -72,7 +72,10 @@ struct MobileRootView: View {
                 )
                 return
             }
-            await model.syncProgress(force: true)
+            if ProcessInfo.processInfo.environment["OPENFUSE_BROWSE_ACCEPTANCE"] == "1" {
+                showSources = true
+                return
+            }
             await model.bootstrapTestSourcesIfRequested()
             guard model.autoplaySample, autoplayItem == nil else { return }
             let preferred = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_SOURCE"] ?? ""
@@ -103,6 +106,13 @@ struct MobileRootView: View {
 
         }
         .fullScreenCover(item: $autoplayItem) { item in
+            MobilePlayerView(item: item)
+                .environmentObject(model)
+        }
+        .fullScreenCover(item: Binding(
+            get: { model.browserPlayback },
+            set: { model.browserPlayback = $0 }
+        )) { item in
             MobilePlayerView(item: item)
                 .environmentObject(model)
         }

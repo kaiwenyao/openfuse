@@ -46,6 +46,13 @@ struct MobileMPVPlayerView: View {
             }
         }
         .onAppear(perform: startIfNeeded)
+        .task {
+            guard let raw = ProcessInfo.processInfo.environment["OPENFUSE_AUTOPLAY_STOP_AFTER"],
+                  let seconds = Double(raw), seconds > 0 else { return }
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            save()
+            dismiss()
+        }
         .onDisappear {
             engine.pause()
             save()
