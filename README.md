@@ -13,7 +13,13 @@ curl -fL --proto '=https' --proto-redir '=https' \
 
 iPhone / iPad 用数据线安装与 7 天续签：`Scripts/install-openfuse-ios.sh --device "设备名"`，前置步骤见 [INSTALL-MAC-IOS.md](Docs/INSTALL-MAC-IOS.md)。
 
-## 当前版本 0.9.6（2026-11-27）
+## 当前版本 0.9.7（2026-11-27）
+
+<img src="Platforms/Mobile/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="OpenFuse 应用图标" width="96">
+
+- macOS、iPhone 和 iPad 换上新的 OpenFuse 应用图标，采用深色底和暖橙色折面播放键。
+
+## 历史版本 0.9.6（2026-11-27）
 
 - **修复从「继续观看」打开视频后关闭卡在加载页。** 关闭播放器会回到打开前所在的页面。
 - **打开失败时有提示。** 窗口顶部会显示失败原因，WebDAV 浏览页也会在列表上方说明哪个视频没能播放。Keychain 需要授权时，提示里提供「重试」。

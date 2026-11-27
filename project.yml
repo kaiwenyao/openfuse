@@ -27,6 +27,7 @@ targets:
         product: MPVKit
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.openfuse.mobile
         PRODUCT_NAME: OpenFuse
         GENERATE_INFOPLIST_FILE: YES

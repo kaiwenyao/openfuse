@@ -24,6 +24,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp ".build/$CONFIG/OpenFuse" "$APP/Contents/MacOS/OpenFuse"
 cp Scripts/Info.plist "$APP/Contents/Info.plist"
+cp Scripts/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo 1)
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist" >/dev/null
