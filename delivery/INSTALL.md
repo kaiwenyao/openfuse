@@ -1,10 +1,10 @@
-# OpenFuse 0.9.5 · macOS 安装
+# OpenFuse 0.9.6 · macOS 安装
 
 ## 包内容
 
 ```text
-delivery/OpenFuse-macos.zip              约 28 MiB，自包含 libmpv 及依赖，版本 0.9.5（cc6e753）
-delivery/OpenFuse-macos.zip.sha256       7a8bc13f0278e8b428e8d7f53c1e1c1424ec6974981ec59393ffccfed9933bf0
+delivery/OpenFuse-macos.zip              约 28 MiB，自包含 libmpv 及依赖，版本 0.9.6（7d3ce6b）
+delivery/OpenFuse-macos.zip.sha256       bbd2bcf4bfdf25ce12b4e6bf6f2283c31966b5f0df4722b99d8837d0dee1c8f4
 delivery/install-openfuse-macos.sh       安装/升级脚本
 ```
 

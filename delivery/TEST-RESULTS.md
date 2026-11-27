@@ -1,5 +1,14 @@
 # OpenFuse macOS 交付验证
 
+## 0.9.6 功能问题修复
+
+- 构建提交 `7d3ce6b`，Apple Silicon，验证环境为 macOS 27.2.1。
+- `swift test` 通过 182 项。ZIP 完整性、SHA-256、解包应用完整签名和安装脚本 Bash 语法均通过检查；可执行文件和内置动态库没有 `/opt/homebrew` 依赖。
+- 从 ZIP 解包启动并播放本地 MKV，报告位置 2.5 秒、`videoSync` 为 `audio`。
+- 对发布构建运行 `Scripts/run-close-return-route.sh`：续播后关闭、本地文件关闭、加载中取消、失败后重试四种情况全部通过。
+- iOS 两项只验证了构建，未在模拟器上运行。
+- SHA-256 为 `bbd2bcf4bfdf25ce12b4e6bf6f2283c31966b5f0df4722b99d8837d0dee1c8f4`。
+
 ## 0.9.5 播放时切换应用
 
 - 构建提交 `cc6e753`，Apple Silicon，验证环境为 macOS 27.2.1。ZIP 内置 libmpv 的目标系统版本为 macOS 27.2。
