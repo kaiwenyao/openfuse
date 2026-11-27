@@ -1,10 +1,10 @@
-# OpenFuse 0.9.7 · macOS 安装
+# OpenFuse 0.9.8 · macOS 安装
 
 ## 包内容
 
 ```text
-delivery/OpenFuse-macos.zip              约 30 MiB，自包含 libmpv 及依赖，版本 0.9.7（0a98d64）
-delivery/OpenFuse-macos.zip.sha256       69a016f4fc7ea88890171e53d763a2eb7d53388cafe44d3129737cb055721920
+delivery/OpenFuse-macos.zip              约 30 MiB，自包含 libmpv 及依赖，版本 0.9.8（1934829）
+delivery/OpenFuse-macos.zip.sha256       053cca0aab291115bf1bd97b90edc434c7f88cb828a2f16149c98c7444f7e19f
 delivery/install-openfuse-macos.sh       安装/升级脚本
 ```
 
@@ -53,4 +53,4 @@ open /Applications/OpenFuse.app
 - `unzip -t`：无错误。
 - `shasum -a 256 -c OpenFuse-macos.zip.sha256`：`OpenFuse-macos.zip: OK`。
 - 解包应用通过 `codesign --verify --deep --strict`。`otool -L` 检查了可执行文件和内置动态库，确认依赖已打包。
-- 解包应用包含新图标，并通过本地 MKV 播放和截图验证。见 [TEST-RESULTS.md](TEST-RESULTS.md)。
+- 解包应用通过本地 MKV 播放和截图验证，并能直接打开「添加 Jellyfin」表单。见 [TEST-RESULTS.md](TEST-RESULTS.md)。
